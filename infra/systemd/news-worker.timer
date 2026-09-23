@@ -1,0 +1,12 @@
+[Unit]
+Description=Teen Pehr edition worker, 3x/day (Asia/Karachi)
+
+[Timer]
+OnCalendar=*-*-* 07,13:00 Asia/Karachi
+OnCalendar=*-*-* 19:30 Asia/Karachi
+Persistent=true
+RandomizedDelaySec=120
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

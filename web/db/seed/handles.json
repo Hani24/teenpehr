@@ -1,0 +1,578 @@
+[
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "dawn_com",
+    "display_name": "Dawn",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "cyalm",
+    "display_name": "Cyril Almeida",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "ZarrarKhuhro",
+    "display_name": "Zarrar Khuhro",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "DawnNews",
+    "display_name": "Dawn News",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "geonews_english",
+    "display_name": "Geo News English",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "HamidMirPAK",
+    "display_name": "Hamid Mir",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "AnsarAbbasi_",
+    "display_name": "Ansar Abbasi",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "UmarCheema1",
+    "display_name": "Umar Cheema",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "etribune",
+    "display_name": "Express Tribune",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "Fahdhusain",
+    "display_name": "Fahd Husain",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "KamranYousaf",
+    "display_name": "Kamran Yousaf",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "ExpressNewsPK",
+    "display_name": "Express News",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "thenews_intl",
+    "display_name": "The News",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "MarianaBaabar",
+    "display_name": "Mariana Baabar",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "brecorder",
+    "display_name": "Business Recorder",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "ShahbazRana",
+    "display_name": "Shahbaz Rana",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "ARYNEWSOFFICIAL",
+    "display_name": "ARY News",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "BBCUrdu",
+    "display_name": "BBC Urdu",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "indyurdu",
+    "display_name": "Independent Urdu",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "x",
+    "handle": "appcsocialmedia",
+    "display_name": "APP",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "the_hindu",
+    "display_name": "The Hindu",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "suhasinih",
+    "display_name": "Suhasini Haidar",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "scroll_in",
+    "display_name": "Scroll",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "thewire_in",
+    "display_name": "The Wire",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "svaradarajan",
+    "display_name": "Siddharth Varadarajan",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "khanumarfa",
+    "display_name": "Arfa Khanum Sherwani",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "htTweets",
+    "display_name": "Hindustan Times",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "GreaterKashmir",
+    "display_name": "Greater Kashmir",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "KashmirObserver",
+    "display_name": "Kashmir Observer",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "x",
+    "handle": "TheSiasatDaily",
+    "display_name": "Siasat Daily",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "AmuTelevision",
+    "display_name": "Amu TV",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "bsarwary",
+    "display_name": "Bilal Sarwary",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "8am_media",
+    "display_name": "Hasht-e Subh",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "AfIntlEnglish",
+    "display_name": "Afghanistan International English",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "Khaama",
+    "display_name": "Khaama Press",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "x",
+    "handle": "GandharaRFE",
+    "display_name": "RFE/RL Gandhara",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "AJEnglish",
+    "display_name": "Al Jazeera English",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "marwanbishara",
+    "display_name": "Marwan Bishara",
+    "role": "analyst",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "AJArabic",
+    "display_name": "Al Jazeera Arabic",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "MiddleEastEye",
+    "display_name": "Middle East Eye",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "DavidHearst",
+    "display_name": "David Hearst",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "ragipsoylu",
+    "display_name": "Ragıp Soylu",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "trtworld",
+    "display_name": "TRT World",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "anadoluagency",
+    "display_name": "Anadolu Agency",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "TimesofIsrael",
+    "display_name": "Times of Israel",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "haaretzcom",
+    "display_name": "Haaretz",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "GideonLevy",
+    "display_name": "Gideon Levy",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "IrnaEnglish",
+    "display_name": "IRNA English",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "Mondoweiss",
+    "display_name": "Mondoweiss",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "x",
+    "handle": "intifada",
+    "display_name": "Electronic Intifada",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "dailystarnews",
+    "display_name": "The Daily Star",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "DhakaTribune",
+    "display_name": "Dhaka Tribune",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "malaymail",
+    "display_name": "Malay Mail",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "EurasiaNet",
+    "display_name": "Eurasianet",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "joannalillis",
+    "display_name": "Joanna Lillis",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "PremiumTimesng",
+    "display_name": "Premium Times",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "DabangaSudan",
+    "display_name": "Radio Dabanga",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "muslim-world",
+    "platform": "x",
+    "handle": "RFA_Uyghur",
+    "display_name": "RFA Uyghur",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "BBCWorld",
+    "display_name": "BBC World",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "secunderkermani",
+    "display_name": "Secunder Kermani",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "guardian",
+    "display_name": "The Guardian",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "AFP",
+    "display_name": "AFP",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "MichaelKugelman",
+    "display_name": "Michael Kugelman",
+    "role": "analyst",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "x",
+    "handle": "CrisisGroup",
+    "display_name": "Crisis Group",
+    "role": "analyst",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "bluesky",
+    "handle": "ndtv.com",
+    "display_name": "NDTV",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "bluesky",
+    "handle": "scroll.in",
+    "display_name": "Scroll",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "bluesky",
+    "handle": "thewire.in",
+    "display_name": "The Wire",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "bluesky",
+    "handle": "aljazeera.com",
+    "display_name": "Al Jazeera",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "afghanistan",
+    "platform": "bluesky",
+    "handle": "tolonews.bsky.social",
+    "display_name": "TOLOnews",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "pakistan",
+    "platform": "bluesky",
+    "handle": "geonewsurdu.bsky.social",
+    "display_name": "Geo News Urdu",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "india",
+    "platform": "bluesky",
+    "handle": "ravishndtv.bsky.social",
+    "display_name": "Ravish Kumar",
+    "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "mehdirhasan.bsky.social",
+    "display_name": "Mehdi Hasan",
+    "role": "journalist",
+    "active": true
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "pakistan",
+    "name_en": "Pakistan",
+    "name_ur": "پاکستان",
+    "order": 1,
+    "brief": "Politics, the economy, security, the courts and governance, plus anything that changes daily life or business in Pakistan. The reader wants what actually happened, with each outlet's spin made visible rather than smoothed over. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 8
+  },
+  {
+    "slug": "india",
+    "name_en": "India",
+    "name_ur": "بھارت",
+    "order": 2,
+    "brief": "India's politics and economy, Kashmir, the situation of Indian Muslims, and India–Pakistan relations as seen from both sides. Prefer what happened over what was said about it, and show where Indian outlets diverge. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 6
+  },
+  {
+    "slug": "afghanistan",
+    "name_en": "Afghanistan",
+    "name_ur": "افغانستان",
+    "order": 3,
+    "brief": "Taliban governance and decrees, security, the humanitarian situation, the Pakistan–Afghanistan border and the TTP, and what exile media are reporting from inside the country. Label Taliban state media and exile outlets so the reader can weigh them. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 5
+  },
+  {
+    "slug": "middle-east",
+    "name_en": "Middle East",
+    "name_ur": "مشرقِ وسطیٰ",
+    "order": 4,
+    "brief": "Palestine and Gaza, Israel, Iran, the Gulf states, Turkey, Egypt, Syria, Lebanon, Iraq and Yemen. Lead with events on the ground and diplomacy, and make clear which side each outlet speaks from. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 7
+  },
+  {
+    "slug": "muslim-world",
+    "name_en": "Muslim World",
+    "name_ur": "عالمِ اسلام",
+    "order": 5,
+    "brief": "Bangladesh, Indonesia, Malaysia, Central Asia, Nigeria, Sudan, Somalia, the Uyghurs, the Rohingya and Muslim minorities in the West. Pick the stories a Pakistani reader would not otherwise see, and say in a line why they matter. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 5
+  },
+  {
+    "slug": "world",
+    "name_en": "World",
+    "name_ur": "دنیا",
+    "order": 6,
+    "brief": "International stories that matter to the audiences above: US policy, China, Russia, the UN, climate and the world economy. Explain the link to South Asia or the Muslim world in a line and leave the rest to the wires. Skip sport, celebrity, the crime blotter and opinion pieces unless the opinion itself is the news.",
+    "story_count": 5
+  }
+]

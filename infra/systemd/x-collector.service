@@ -1,0 +1,12 @@
+[Unit]
+Description=Teen Pehr X list collector run
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/dev/teenpehr/worker
+EnvironmentFile=%h/dev/teenpehr/worker/.env
+Environment=TZ=Asia/Karachi
+ExecStart=/usr/bin/flock -n %t/x-collector.lock /usr/bin/uv run teenpehr collect-x
+TimeoutStartSec=15min
+KillSignal=SIGINT
+SyslogIdentifier=x-collector

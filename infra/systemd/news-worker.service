@@ -1,0 +1,15 @@
+[Unit]
+Description=Teen Pehr edition run
+OnFailure=news-alert@%n.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/dev/teenpehr/worker
+EnvironmentFile=%h/dev/teenpehr/worker/.env
+Environment=DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_CRON=1 TZ=Asia/Karachi
+ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle --who=news-worker --why=edition /usr/bin/flock -n %t/news-worker.lock /usr/bin/uv run teenpehr edition
+TimeoutStartSec=100min
+KillSignal=SIGINT
+TimeoutStopSec=90
+SyslogIdentifier=news-worker
+Nice=5

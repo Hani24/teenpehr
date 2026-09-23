@@ -1,0 +1,5 @@
+<rss version="2.0"><channel><title>The News</title>
+<item><title>Undated headline one</title><link>https://www.thenews.com.pk/latest/1-one</link><description>One.</description><pubDate></pubDate></item>
+<item><title>Undated headline two</title><link>https://www.thenews.com.pk/latest/2-two</link><description>Two.</description></item>
+<item><title>Dated old item</title><link>https://www.thenews.com.pk/latest/3-old</link><description>Old.</description><pubDate>Fri, 21 Nov 2025 06:33:00 +0500</pubDate></item>
+</channel></rss>

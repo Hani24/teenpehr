@@ -1,0 +1,19 @@
+[Unit]
+Description=Teen Pehr web (Next.js standalone server)
+After=network-online.target docker.service
+
+[Service]
+WorkingDirectory=%h/dev/teenpehr/web
+EnvironmentFile=%h/dev/teenpehr/web/.env.local
+Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
+# Build first: cd web && npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+# node is installed via fnm, so use a login shell to resolve it
+ExecStart=/bin/bash -lc 'exec node .next/standalone/server.js'
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+SyslogIdentifier=teenpehr-web
+
+[Install]
+WantedBy=default.target

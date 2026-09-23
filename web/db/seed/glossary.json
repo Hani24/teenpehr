@@ -1,0 +1,747 @@
+[
+  {
+    "term_en": "Shehbaz Sharif",
+    "term_ur": "شہباز شریف",
+    "kind": "person"
+  },
+  {
+    "term_en": "Asim Munir",
+    "term_ur": "عاصم منیر",
+    "kind": "person"
+  },
+  {
+    "term_en": "Imran Khan",
+    "term_ur": "عمران خان",
+    "kind": "person"
+  },
+  {
+    "term_en": "Asif Ali Zardari",
+    "term_ur": "آصف علی زرداری",
+    "kind": "person"
+  },
+  {
+    "term_en": "Bilawal Bhutto Zardari",
+    "term_ur": "بلاول بھٹو زرداری",
+    "kind": "person"
+  },
+  {
+    "term_en": "Maryam Nawaz",
+    "term_ur": "مریم نواز",
+    "kind": "person"
+  },
+  {
+    "term_en": "Nawaz Sharif",
+    "term_ur": "نواز شریف",
+    "kind": "person"
+  },
+  {
+    "term_en": "ISPR",
+    "term_ur": "آئی ایس پی آر",
+    "kind": "org"
+  },
+  {
+    "term_en": "PTI",
+    "term_ur": "پی ٹی آئی",
+    "kind": "org"
+  },
+  {
+    "term_en": "PML-N",
+    "term_ur": "مسلم لیگ ن",
+    "kind": "org"
+  },
+  {
+    "term_en": "PPP",
+    "term_ur": "پیپلز پارٹی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Supreme Court",
+    "term_ur": "سپریم کورٹ",
+    "kind": "org"
+  },
+  {
+    "term_en": "National Assembly",
+    "term_ur": "قومی اسمبلی",
+    "kind": "org"
+  },
+  {
+    "term_en": "State Bank of Pakistan",
+    "term_ur": "اسٹیٹ بینک آف پاکستان",
+    "kind": "org"
+  },
+  {
+    "term_en": "IMF",
+    "term_ur": "آئی ایم ایف",
+    "kind": "org"
+  },
+  {
+    "term_en": "TTP",
+    "term_ur": "تحریکِ طالبان پاکستان",
+    "kind": "org"
+  },
+  {
+    "term_en": "Islamabad",
+    "term_ur": "اسلام آباد",
+    "kind": "place"
+  },
+  {
+    "term_en": "Lahore",
+    "term_ur": "لاہور",
+    "kind": "place"
+  },
+  {
+    "term_en": "Karachi",
+    "term_ur": "کراچی",
+    "kind": "place"
+  },
+  {
+    "term_en": "Peshawar",
+    "term_ur": "پشاور",
+    "kind": "place"
+  },
+  {
+    "term_en": "Quetta",
+    "term_ur": "کوئٹہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Rawalpindi",
+    "term_ur": "راولپنڈی",
+    "kind": "place"
+  },
+  {
+    "term_en": "Balochistan",
+    "term_ur": "بلوچستان",
+    "kind": "place"
+  },
+  {
+    "term_en": "Khyber Pakhtunkhwa",
+    "term_ur": "خیبر پختونخوا",
+    "kind": "place"
+  },
+  {
+    "term_en": "Gilgit-Baltistan",
+    "term_ur": "گلگت بلتستان",
+    "kind": "place"
+  },
+  {
+    "term_en": "Sindh",
+    "term_ur": "سندھ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Punjab",
+    "term_ur": "پنجاب",
+    "kind": "place"
+  },
+  {
+    "term_en": "Narendra Modi",
+    "term_ur": "نریندر مودی",
+    "kind": "person"
+  },
+  {
+    "term_en": "BJP",
+    "term_ur": "بی جے پی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Congress",
+    "term_ur": "کانگریس",
+    "kind": "org"
+  },
+  {
+    "term_en": "Rahul Gandhi",
+    "term_ur": "راہل گاندھی",
+    "kind": "person"
+  },
+  {
+    "term_en": "Amit Shah",
+    "term_ur": "امت شاہ",
+    "kind": "person"
+  },
+  {
+    "term_en": "S. Jaishankar",
+    "term_ur": "ایس جے شنکر",
+    "kind": "person"
+  },
+  {
+    "term_en": "Omar Abdullah",
+    "term_ur": "عمر عبداللہ",
+    "kind": "person"
+  },
+  {
+    "term_en": "Kashmir",
+    "term_ur": "کشمیر",
+    "kind": "place"
+  },
+  {
+    "term_en": "Srinagar",
+    "term_ur": "سری نگر",
+    "kind": "place"
+  },
+  {
+    "term_en": "New Delhi",
+    "term_ur": "نئی دہلی",
+    "kind": "place"
+  },
+  {
+    "term_en": "Taliban",
+    "term_ur": "طالبان",
+    "kind": "org"
+  },
+  {
+    "term_en": "Hibatullah Akhundzada",
+    "term_ur": "ہبت اللہ اخوندزادہ",
+    "kind": "person"
+  },
+  {
+    "term_en": "Zabihullah Mujahid",
+    "term_ur": "ذبیح اللہ مجاہد",
+    "kind": "person"
+  },
+  {
+    "term_en": "Kabul",
+    "term_ur": "کابل",
+    "kind": "place"
+  },
+  {
+    "term_en": "Kandahar",
+    "term_ur": "قندھار",
+    "kind": "place"
+  },
+  {
+    "term_en": "Gaza",
+    "term_ur": "غزہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Hamas",
+    "term_ur": "حماس",
+    "kind": "org"
+  },
+  {
+    "term_en": "Netanyahu",
+    "term_ur": "نیتن یاہو",
+    "kind": "person"
+  },
+  {
+    "term_en": "Hezbollah",
+    "term_ur": "حزب اللہ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Tehran",
+    "term_ur": "تہران",
+    "kind": "place"
+  },
+  {
+    "term_en": "Riyadh",
+    "term_ur": "ریاض",
+    "kind": "place"
+  },
+  {
+    "term_en": "Mohammed bin Salman",
+    "term_ur": "محمد بن سلمان",
+    "kind": "person"
+  },
+  {
+    "term_en": "Erdogan",
+    "term_ur": "اردوان",
+    "kind": "person"
+  },
+  {
+    "term_en": "Ankara",
+    "term_ur": "انقرہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Beirut",
+    "term_ur": "بیروت",
+    "kind": "place"
+  },
+  {
+    "term_en": "Damascus",
+    "term_ur": "دمشق",
+    "kind": "place"
+  },
+  {
+    "term_en": "Houthis",
+    "term_ur": "حوثی",
+    "kind": "org"
+  },
+  {
+    "term_en": "UNRWA",
+    "term_ur": "انروا",
+    "kind": "org"
+  },
+  {
+    "term_en": "IDF",
+    "term_ur": "اسرائیلی فوج",
+    "kind": "org"
+  },
+  {
+    "term_en": "West Bank",
+    "term_ur": "مغربی کنارہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Jerusalem",
+    "term_ur": "یروشلم",
+    "kind": "place"
+  },
+  {
+    "term_en": "Tel Aviv",
+    "term_ur": "تل ابیب",
+    "kind": "place"
+  },
+  {
+    "term_en": "Dhaka",
+    "term_ur": "ڈھاکہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Muhammad Yunus",
+    "term_ur": "محمد یونس",
+    "kind": "person"
+  },
+  {
+    "term_en": "Jakarta",
+    "term_ur": "جکارتہ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Kuala Lumpur",
+    "term_ur": "کوالالمپور",
+    "kind": "place"
+  },
+  {
+    "term_en": "Khartoum",
+    "term_ur": "خرطوم",
+    "kind": "place"
+  },
+  {
+    "term_en": "RSF",
+    "term_ur": "ریپڈ سپورٹ فورسز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Rohingya",
+    "term_ur": "روہنگیا",
+    "kind": "other"
+  },
+  {
+    "term_en": "Uyghur",
+    "term_ur": "ایغور",
+    "kind": "other"
+  },
+  {
+    "term_en": "Xinjiang",
+    "term_ur": "سنکیانگ",
+    "kind": "place"
+  },
+  {
+    "term_en": "United Nations",
+    "term_ur": "اقوامِ متحدہ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Security Council",
+    "term_ur": "سلامتی کونسل",
+    "kind": "org"
+  },
+  {
+    "term_en": "White House",
+    "term_ur": "وائٹ ہاؤس",
+    "kind": "org"
+  },
+  {
+    "term_en": "Pentagon",
+    "term_ur": "پینٹاگون",
+    "kind": "org"
+  },
+  {
+    "term_en": "Beijing",
+    "term_ur": "بیجنگ",
+    "kind": "place"
+  },
+  {
+    "term_en": "Moscow",
+    "term_ur": "ماسکو",
+    "kind": "place"
+  },
+  {
+    "term_en": "Washington",
+    "term_ur": "واشنگٹن",
+    "kind": "place"
+  },
+  {
+    "term_en": "European Union",
+    "term_ur": "یورپی یونین",
+    "kind": "org"
+  },
+  {
+    "term_en": "NATO",
+    "term_ur": "نیٹو",
+    "kind": "org"
+  },
+  {
+    "term_en": "Donald Trump",
+    "term_ur": "ڈونلڈ ٹرمپ",
+    "kind": "person"
+  },
+  {
+    "term_en": "Vladimir Putin",
+    "term_ur": "ولادیمیر پوتن",
+    "kind": "person"
+  },
+  {
+    "term_en": "Xi Jinping",
+    "term_ur": "شی جن پنگ",
+    "kind": "person"
+  },
+  {
+    "term_en": "Dawn",
+    "term_ur": "ڈان",
+    "kind": "org"
+  },
+  {
+    "term_en": "Dawn News",
+    "term_ur": "ڈان نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Geo News",
+    "term_ur": "جیو نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Jang",
+    "term_ur": "جنگ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Express Tribune",
+    "term_ur": "ایکسپریس ٹریبیون",
+    "kind": "org"
+  },
+  {
+    "term_en": "Express News",
+    "term_ur": "ایکسپریس نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "The News",
+    "term_ur": "دی نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Business Recorder",
+    "term_ur": "بزنس ریکارڈر",
+    "kind": "org"
+  },
+  {
+    "term_en": "ARY News",
+    "term_ur": "اے آر وائی نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "BBC Urdu",
+    "term_ur": "بی بی سی اردو",
+    "kind": "org"
+  },
+  {
+    "term_en": "BBC",
+    "term_ur": "بی بی سی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Independent Urdu",
+    "term_ur": "انڈپینڈنٹ اردو",
+    "kind": "org"
+  },
+  {
+    "term_en": "APP",
+    "term_ur": "اے پی پی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Nawa-i-Waqt",
+    "term_ur": "نوائے وقت",
+    "kind": "org"
+  },
+  {
+    "term_en": "The Nation",
+    "term_ur": "دی نیشن",
+    "kind": "org"
+  },
+  {
+    "term_en": "Daily Pakistan",
+    "term_ur": "ڈیلی پاکستان",
+    "kind": "org"
+  },
+  {
+    "term_en": "Aaj News",
+    "term_ur": "آج نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Samaa",
+    "term_ur": "سما",
+    "kind": "org"
+  },
+  {
+    "term_en": "Dunya News",
+    "term_ur": "دنیا نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Hum News",
+    "term_ur": "ہم نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Reuters",
+    "term_ur": "رائٹرز",
+    "kind": "org"
+  },
+  {
+    "term_en": "AP",
+    "term_ur": "ایسوسی ایٹڈ پریس",
+    "kind": "org"
+  },
+  {
+    "term_en": "AFP",
+    "term_ur": "اے ایف پی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Al Jazeera",
+    "term_ur": "الجزیرہ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Middle East Eye",
+    "term_ur": "مڈل ایسٹ آئی",
+    "kind": "org"
+  },
+  {
+    "term_en": "TRT World",
+    "term_ur": "ٹی آر ٹی ورلڈ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Anadolu",
+    "term_ur": "انادولو ایجنسی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Times of Israel",
+    "term_ur": "ٹائمز آف اسرائیل",
+    "kind": "org"
+  },
+  {
+    "term_en": "Haaretz",
+    "term_ur": "ہارٹز",
+    "kind": "org"
+  },
+  {
+    "term_en": "IRNA",
+    "term_ur": "ارنا",
+    "kind": "org"
+  },
+  {
+    "term_en": "Tehran Times",
+    "term_ur": "تہران ٹائمز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Arab News",
+    "term_ur": "عرب نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Al Arabiya",
+    "term_ur": "العربیہ",
+    "kind": "org"
+  },
+  {
+    "term_en": "The New Arab",
+    "term_ur": "دی نیو عرب",
+    "kind": "org"
+  },
+  {
+    "term_en": "Mondoweiss",
+    "term_ur": "مونڈووائس",
+    "kind": "org"
+  },
+  {
+    "term_en": "Electronic Intifada",
+    "term_ur": "الیکٹرانک انتفاضہ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Guardian",
+    "term_ur": "گارڈین",
+    "kind": "org"
+  },
+  {
+    "term_en": "New York Times",
+    "term_ur": "نیویارک ٹائمز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Washington Post",
+    "term_ur": "واشنگٹن پوسٹ",
+    "kind": "org"
+  },
+  {
+    "term_en": "France 24",
+    "term_ur": "فرانس 24",
+    "kind": "org"
+  },
+  {
+    "term_en": "Crisis Group",
+    "term_ur": "کرائسس گروپ",
+    "kind": "org"
+  },
+  {
+    "term_en": "The Hindu",
+    "term_ur": "دی ہندو",
+    "kind": "org"
+  },
+  {
+    "term_en": "Indian Express",
+    "term_ur": "انڈین ایکسپریس",
+    "kind": "org"
+  },
+  {
+    "term_en": "Hindustan Times",
+    "term_ur": "ہندوستان ٹائمز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Times of India",
+    "term_ur": "ٹائمز آف انڈیا",
+    "kind": "org"
+  },
+  {
+    "term_en": "NDTV",
+    "term_ur": "این ڈی ٹی وی",
+    "kind": "org"
+  },
+  {
+    "term_en": "The Wire",
+    "term_ur": "دی وائر",
+    "kind": "org"
+  },
+  {
+    "term_en": "Scroll",
+    "term_ur": "اسکرول",
+    "kind": "org"
+  },
+  {
+    "term_en": "ThePrint",
+    "term_ur": "دی پرنٹ",
+    "kind": "org"
+  },
+  {
+    "term_en": "The Quint",
+    "term_ur": "دی کوئنٹ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Greater Kashmir",
+    "term_ur": "گریٹر کشمیر",
+    "kind": "org"
+  },
+  {
+    "term_en": "Kashmir Observer",
+    "term_ur": "کشمیر آبزرور",
+    "kind": "org"
+  },
+  {
+    "term_en": "Siasat",
+    "term_ur": "سیاست",
+    "kind": "org"
+  },
+  {
+    "term_en": "TOLOnews",
+    "term_ur": "طلوع نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Ariana News",
+    "term_ur": "آریانا نیوز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Amu TV",
+    "term_ur": "آمو ٹی وی",
+    "kind": "org"
+  },
+  {
+    "term_en": "Hasht-e Subh",
+    "term_ur": "ہشتِ صبح",
+    "kind": "org"
+  },
+  {
+    "term_en": "Afghanistan International",
+    "term_ur": "افغانستان انٹرنیشنل",
+    "kind": "org"
+  },
+  {
+    "term_en": "Khaama Press",
+    "term_ur": "خامہ پریس",
+    "kind": "org"
+  },
+  {
+    "term_en": "RFE/RL",
+    "term_ur": "ریڈیو فری یورپ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Daily Star",
+    "term_ur": "ڈیلی اسٹار",
+    "kind": "org"
+  },
+  {
+    "term_en": "Dhaka Tribune",
+    "term_ur": "ڈھاکہ ٹریبیون",
+    "kind": "org"
+  },
+  {
+    "term_en": "Malay Mail",
+    "term_ur": "ملے میل",
+    "kind": "org"
+  },
+  {
+    "term_en": "Eurasianet",
+    "term_ur": "یوریشیا نیٹ",
+    "kind": "org"
+  },
+  {
+    "term_en": "Premium Times",
+    "term_ur": "پریمیم ٹائمز",
+    "kind": "org"
+  },
+  {
+    "term_en": "Radio Dabanga",
+    "term_ur": "ریڈیو ڈبنگا",
+    "kind": "org"
+  },
+  {
+    "term_en": "RFA",
+    "term_ur": "ریڈیو فری ایشیا",
+    "kind": "org"
+  },
+  {
+    "term_en": "Radio Pakistan",
+    "term_ur": "ریڈیو پاکستان",
+    "kind": "org"
+  },
+  {
+    "term_en": "PTV",
+    "term_ur": "پی ٹی وی",
+    "kind": "org"
+  }
+]

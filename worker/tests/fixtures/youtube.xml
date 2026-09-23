@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+<title>Geo News</title>
+<entry><id>yt:video:abc</id><yt:videoId>abc</yt:videoId><title>Headlines 9pm</title><link rel="alternate" href="https://www.youtube.com/watch?v=abc"/><published>2026-09-23T04:00:00+00:00</published><media:group><media:description>Top stories tonight</media:description></media:group></entry>
+</feed>

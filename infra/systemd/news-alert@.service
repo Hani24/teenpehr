@@ -1,0 +1,7 @@
+[Unit]
+Description=Alert on failure of %i
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/dev/teenpehr/worker/.env
+ExecStart=/bin/sh -c 'journalctl --user -u %i -n 40 --no-pager | curl -sS -H "Title: %i FAILED on $(hostname)" -H "Priority: high" --data-binary @- https://ntfy.sh/$NTFY_TOPIC'

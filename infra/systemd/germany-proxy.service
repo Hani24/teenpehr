@@ -1,0 +1,13 @@
+[Unit]
+Description=SOCKS5 proxy to the Hetzner server in Germany (for hosts blocked from Pakistan)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Needs an ssh config Host named "hetzner" with key auth (see infra/README.md). Plain ssh + systemd restarts, no autossh needed.
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -D 127.0.0.1:1080 hetzner
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

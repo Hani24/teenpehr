@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------------------
+   Teen Pehr design tokens. Three themes (classic, night, buzurg) switch by [data-theme] on
+   <html>; text size for Buzurg by [data-size]. Every colour is defined on :root first so no
+   theme is ever missing a token. See docs/PLAN.md § Themes and § Urdu typography.
+--------------------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --bg: #f7f3ec;         /* paper */
+  --surface: #fffdf9;
+  --surface-2: #f1ebe0;
+  --ink: #1c1917;
+  --ink-2: #57534e;
+  --ink-3: #78716c;
+  --rule: #d9d1c4;
+  --rule-strong: #1c1917;
+  --accent: #9a2f22;     /* deep red: edition name, must-read */
+  --accent-ink: #ffffff;
+  --link: #1c1917;
+  --focus: #1d4ed8;
+  --ok: #2f6b3a;
+  --warn: #9a6b1e;
+  --radius: 6px;
+  --measure: 66ch;
+  --gutter: clamp(1rem, 4vw, 2rem);
+
+  --font-latin: var(--font-inter), system-ui, sans-serif;
+  --font-latin-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-urdu-body: var(--font-nastaliq), var(--font-naskh), "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif;
+  --font-urdu-display: var(--font-nastaliq), var(--font-naskh), "Noto Nastaliq Urdu", serif;
+  --font-urdu-ui: var(--font-vazir), var(--font-naskh), "Vazirmatn", system-ui, sans-serif;
+
+  /* fluid type scale (Latin); Urdu sizes are derived per script below */
+  --step--1: clamp(0.83rem, 0.8rem + 0.2vw, 0.9rem);
+  --step-0: clamp(1.05rem, 1rem + 0.3vw, 1.15rem);
+  --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.45rem);
+  --step-2: clamp(1.6rem, 1.4rem + 1vw, 2.1rem);
+  --step-3: clamp(2.1rem, 1.7rem + 2vw, 3.2rem);
+  --lh-body: 1.6;
+  --lh-tight: 1.15;
+  --urdu-body-scale: 1.12;   /* Nastaliq needs to be a touch larger than Latin at the same step */
+  --urdu-lh-body: 2.2;       /* Nastaliq body */
+  --urdu-lh-display: 2.0;
+}
+
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #1f232c;
+  --ink: #ece7de;
+  --ink-2: #b4ada3;
+  --ink-3: #8a847b;
+  --rule: #2a2f3a;
+  --rule-strong: #ece7de;
+  --accent: #e0b46a;
+  --accent-ink: #14110a;
+  --link: #ece7de;
+  --focus: #8fc1ff;
+  --ok: #7cc48a;
+  --warn: #e0b46a;
+}
+
+/* Buzurg: large, warm, high contrast, one column. Body Urdu defaults to Naskh. */
+:root[data-theme="buzurg"] {
+  color-scheme: light;
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-2: #f2efea;
+  --ink: #1a1a1a;
+  --ink-2: #3d3d3d;
+  --ink-3: #4a4a4a;
+  --rule: #c9c4bd;
+  --rule-strong: #1a1a1a;
+  --accent: #b3261e;
+  --accent-ink: #ffffff;
+  --link: #0a4a8f;
+  --focus: #0a4a8f;
+  --radius: 10px;
+  --measure: 34rem;
+  --font-latin-display: var(--font-inter), system-ui, sans-serif;
+  --font-urdu-body: var(--font-naskh), "Noto Naskh Arabic", serif;
+  --step--1: 0.92rem;
+  --step-0: 1rem;
+  --step-1: 1.15rem;
+  --step-2: 1.35rem;
+  --step-3: 1.7rem;
+  --lh-body: 1.6;
+  --lh-tight: 1.25;
+  --urdu-body-scale: 1.08;
+  --urdu-lh-body: 1.9;
+  --urdu-lh-display: 1.7;
+  font-size: 24px;
+}
+:root[data-theme="buzurg"][data-size="sm"] { font-size: 20px; }
+:root[data-theme="buzurg"][data-size="lg"] { font-size: 28px; }
+:root[data-theme="buzurg"].nastaliq { --font-urdu-body: var(--font-nastaliq), var(--font-naskh), serif; --urdu-lh-body: 2.4; --urdu-body-scale: 1.15; }
+:root[data-theme="buzurg"][data-contrast="high"] {
+  color-scheme: dark;
+  --bg: #121417; --surface: #171a1f; --surface-2: #20242b; --ink: #ffffff; --ink-2: #ece7de; --ink-3: #d6d0c6;
+  --rule: #3a3f48; --rule-strong: #ffffff; --link: #8fc1ff; --focus: #8fc1ff; --accent: #ffb4ab; --accent-ink: #1a1a1a;
+}
+
+@theme inline {
+  --color-paper: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-link: var(--link);
+  --color-focus: var(--focus);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-latin);
+  --font-display: var(--font-latin-display);
+  --radius-card: var(--radius);
+}
+
+@custom-variant ur (&:where(:lang(ur), :lang(ur) *));
+@custom-variant buzurg (&:where([data-theme="buzurg"], [data-theme="buzurg"] *));
+
+/* ---- base ------------------------------------------------------------------------------ */
+html { background: var(--bg); color: var(--ink); -webkit-text-size-adjust: 100%; scroll-padding-block-start: 5rem; }
+body { margin: 0; font-family: var(--font-latin); font-size: var(--step-0); line-height: var(--lh-body); font-synthesis: none; text-rendering: optimizeSpeed; }
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+::selection { background: color-mix(in oklab, var(--accent) 25%, transparent); }
+hr { border: 0; border-top: 1px solid var(--rule); }
+img { max-width: 100%; height: auto; }
+button { font: inherit; color: inherit; }
+
+/* Latin display and text roles */
+.display { font-family: var(--font-latin-display); font-weight: 600; line-height: var(--lh-tight); letter-spacing: -0.012em; font-variation-settings: "opsz" 72; }
+.headline { font-family: var(--font-latin-display); font-weight: 600; line-height: 1.2; letter-spacing: -0.008em; font-variation-settings: "opsz" 32; text-wrap: balance; }
+.meta { font-size: var(--step--1); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.measure { max-inline-size: var(--measure); }
+.prose p + p { margin-block-start: 0.85em; }
+
+/* ---- Urdu: script-specific rules (never letter-spacing, never justify) ------------------ */
+html:lang(ur) { font-family: var(--font-urdu-body); }
+:lang(ur) {
+  letter-spacing: 0 !important;
+  hyphens: none;
+  text-align: start;
+  overflow-wrap: normal;
+  word-spacing: 0.04em;
+  font-kerning: normal;
+}
+:lang(ur) body { font-size: calc(var(--step-0) * var(--urdu-body-scale)); line-height: var(--urdu-lh-body); }
+:lang(ur) .display, :lang(ur) .headline { font-family: var(--font-urdu-display); font-weight: 600; line-height: var(--urdu-lh-display); letter-spacing: 0; padding-block: 0.12em; overflow: visible; text-wrap: pretty; }
+:lang(ur) :is(.ui, nav, button, select, .meta, .chip, .pill) { font-family: var(--font-urdu-ui); line-height: 1.8; }
+:lang(ur) :is(time, .num) { unicode-bidi: isolate; }
+:lang(ur) .meta { font-size: calc(var(--step--1) * 1.05); }
+:lang(ur) .clamp { padding-block: 0.25em; }
+:lang(ur) .prose p + p { margin-block-start: 1em; }
+:lang(ur) .display { font-variation-settings: normal; }
+bdi, [dir="ltr"] { unicode-bidi: isolate; }
+.latin { font-family: var(--font-latin); unicode-bidi: isolate; }
+
+/* ---- shared components -------------------------------------------------------------- */
+.chip { display: inline-flex; align-items: center; gap: 0.35em; min-height: 1.9em; padding: 0.1em 0.6em; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: var(--step--1); text-decoration: none; white-space: nowrap; }
+.chip:hover { border-color: var(--rule-strong); color: var(--ink); }
+.pill { display: inline-block; padding: 0.1em 0.55em; border-radius: 999px; font-size: var(--step--1); font-weight: 600; letter-spacing: 0.01em; }
+.pill-accent { background: var(--accent); color: var(--accent-ink); }
+.pill-soft { background: var(--surface-2); color: var(--ink-2); }
+.rule-top { border-top: 1px solid var(--rule); }
+.rule-strong { border-top: 3px solid var(--rule-strong); }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+.cov { display: inline-block; inline-size: 0.6em; block-size: 0.6em; border-radius: 999px; background: var(--ink-3); margin-inline-end: 0.35em; vertical-align: middle; }
+.cov-broad { background: var(--ok); } .cov-partisan { background: var(--warn); } .cov-single { background: var(--ink-3); }
+.clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.masthead-title { font-family: var(--font-latin-display); font-weight: 700; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; }
+:lang(ur) .masthead-title { font-family: var(--font-urdu-display); font-weight: 700; letter-spacing: 0; padding-block: 0.1em; }
+
+/* ---- Buzurg layout rules ---------------------------------------------------------------- */
+[data-theme="buzurg"] body { line-height: 1.6; }
+[data-theme="buzurg"] a:not(.chip):not(.pill) { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+[data-theme="buzurg"] .page { max-inline-size: 46rem; }
+[data-theme="buzurg"] :is(.edition-grid, .ntk-grid) { grid-template-columns: 1fr; }
+[data-theme="buzurg"] .chip { min-height: 2.4em; padding: 0.3em 0.9em; font-size: var(--step-0); border-width: 2px; }
+[data-theme="buzurg"] button, [data-theme="buzurg"] .btn { min-block-size: 3rem; min-inline-size: 3rem; }
+[data-theme="buzurg"] .clamp-3 { display: block; -webkit-line-clamp: unset; overflow: visible; }
+[data-theme="buzurg"] * { animation: none !important; transition: none !important; }
+[data-theme="buzurg"] .cov { inline-size: 0.8em; block-size: 0.8em; }
+
+/* ---- motion & print ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+@media print {
+  :root { --bg: #fff; --surface: #fff; --ink: #000; --ink-2: #222; --rule: #999; font-size: 13pt; }
+  nav, .no-print { display: none !important; }
+  a { color: inherit; text-decoration: none; }
+  .card { break-inside: avoid; }
+}
