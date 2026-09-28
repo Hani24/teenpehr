@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
+/** Invite-only (decision D2): nothing on this site is for crawlers. Pages also carry noindex. */
 export default function robots(): MetadataRoute.Robots {
-  const site = process.env.SITE_URL ?? "http://localhost:3000";
-  return { rules: [{ userAgent: "*", allow: "/", disallow: ["/admin", "/api/"] }], sitemap: `${site}/sitemap.xml` };
+  return { rules: [{ userAgent: "*", disallow: "/" }] };
 }

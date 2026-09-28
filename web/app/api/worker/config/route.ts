@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull } from "drizzle-orm";
 import { checkWorkerAuth, noStore } from "@/lib/worker-auth";
 import { db, schema } from "@/db";
 import { getSettings } from "@/lib/queries";
@@ -11,10 +11,11 @@ export async function GET(req: Request) {
   const [settings, groups, sources, handles, topics, glossary, threads] = await Promise.all([
     getSettings(),
     db.select().from(schema.groups).where(eq(schema.groups.active, true)).orderBy(schema.groups.order),
-    db.select().from(schema.sources).where(eq(schema.sources.active, true)).orderBy(schema.sources.id),
+    db.select().from(schema.sources).where(and(eq(schema.sources.active, true), isNull(schema.sources.archivedAt))).orderBy(schema.sources.id),
     db.select().from(schema.handles).where(eq(schema.handles.active, true)).orderBy(schema.handles.id),
     db.select().from(schema.topics),
-    db.select().from(schema.glossary),
+    // Locked (editor-approved) spellings first, so they survive any cap the worker puts on the prompt.
+    db.select().from(schema.glossary).orderBy(desc(schema.glossary.locked), asc(schema.glossary.termEn)),
     db.select().from(schema.threads).where(gte(schema.threads.lastSeen, since)),
   ]);
   const activeGroupIds = new Set(groups.map((g) => g.id));

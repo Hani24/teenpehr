@@ -1,11 +1,19 @@
 [Unit]
-Description=Teen Pehr X list collector run
+Description=Tabayyun X list collector run
+# A crash, a failed run-row update or a non-zero exit (the collector exits non-zero when X looks
+# closed) posts the last 40 log lines to ntfy, like the edition run.
+OnFailure=news-alert@%n.service
+Wants=teenpehr-web.service
+After=network-online.target teenpehr-web.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=%h/dev/teenpehr/worker
 EnvironmentFile=%h/dev/teenpehr/worker/.env
-Environment=TZ=Asia/Karachi
+# The collector makes no Claude call; the environment matches news-worker.service all the same (HOME for
+# the user's files, and no API key ever passed on).
+Environment=HOME=%h TZ=Asia/Karachi
+UnsetEnvironment=ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
 ExecStart=/usr/bin/flock -n %t/x-collector.lock /usr/bin/uv run teenpehr collect-x
 TimeoutStartSec=15min
 KillSignal=SIGINT

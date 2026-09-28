@@ -43,9 +43,9 @@ export function formatTime(d: Date, locale: Locale, digits?: UrduDigits): string
 }
 
 /** Hijri date, computed (may drift a day from the Ruet-e-Hilal announcement). */
-export function formatHijri(d: Date, locale: Locale, adjustDays = 0): string {
+export function formatHijri(d: Date, locale: Locale, adjustDays = 0, digits: UrduDigits = "latn"): string {
   const shifted = new Date(d.getTime() + adjustDays * 86_400_000);
-  const tag = locale === "ur" ? "ur-PK-u-ca-islamic-nu-latn" : "en-PK-u-ca-islamic";
+  const tag = locale === "ur" ? `ur-PK-u-ca-islamic-nu-${digits}` : "en-PK-u-ca-islamic";
   return new Intl.DateTimeFormat(tag, { timeZone: TZ, day: "numeric", month: "long", year: "numeric" }).format(shifted);
 }
 
@@ -64,12 +64,36 @@ export function formatNumber(n: number, locale: Locale, digits?: UrduDigits): st
   return new Intl.NumberFormat(bcp47(locale, digits)).format(n);
 }
 
+/**
+ * Western → Urdu digits in a string that was already formatted, for Urdu pages set to "arabext".
+ * next-intl formats `{count}` and `#` with the plain "ur" locale (Western digits), so translated
+ * strings with numbers go through this; strings from formatDate/formatTime already carry the digits.
+ */
+export function localDigits(text: string, locale: Locale, digits?: UrduDigits): string {
+  if (locale !== "ur" || digits !== "arabext") return text;
+  return text.replace(/[0-9]/g, (d) => String.fromCharCode(0x06f0 + Number(d)));
+}
+
 /** Pick the localized field pair: t(story, "title") → title_ur in Urdu when present, else English. */
 export function pick<T extends Record<string, unknown>>(obj: T, base: string, locale: Locale): string {
+  return picked(obj, base, locale).text;
+}
+
+/** Like pick(), but also says which language the text is in, so a fallback can be marked up. */
+export function picked<T extends Record<string, unknown>>(obj: T, base: string, locale: Locale): { text: string; lang: Locale } {
   const ur = obj[`${base}Ur`] as string | undefined;
   const en = obj[`${base}En`] as string | undefined;
-  if (locale === "ur" && ur && ur.trim()) return ur;
-  return en ?? "";
+  if (locale === "ur" && ur && ur.trim()) return { text: ur, lang: "ur" };
+  return { text: en ?? "", lang: "en" };
+}
+
+/**
+ * `lang`/`dir` for a run of text in `textLang` on a `pageLocale` page: nothing when they match,
+ * otherwise both, so an English fallback on an Urdu page is laid out LTR in the Latin face
+ * (and its trailing full stop stays on the right) instead of inheriting the page's RTL.
+ */
+export function langAttrs(textLang: Locale, pageLocale: Locale): { lang?: Locale; dir?: "ltr" | "rtl" } {
+  return textLang === pageLocale ? {} : { lang: textLang, dir: dirOf(textLang) };
 }
 
 export const SLOTS = ["subh", "dopahar", "shaam"] as const;

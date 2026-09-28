@@ -2,6 +2,49 @@
 
 # Bilingual News Digest Plan
 
+## Decisions of 28 September 2026 (they override anything below)
+
+The owner made six decisions after the first build. The rest of this document is kept as the history of how
+the product was planned; statements the decisions made wrong have been corrected in place.
+
+- **D1 Name: Tabayyun (تبیُّن).** Seeking clarity, verification: from Quran 49:6 (al-Hujurat), "…fa-tabayyanū
+  (فَتَبَيَّنُوا)…", "if a news-bearer brings you a report, verify it". Tagline: "Verify before you believe" /
+  "خبر کی تحقیق کر لیا کرو". The About page shows the verse in Arabic (`lang="ar"`, Noto Naskh Arabic, never
+  Nastaliq) with its reference and an explanation of the name. Only reader- and operator-visible branding changed:
+  the Python package and CLI (`teenpehr`), systemd unit names, the database name and localStorage keys stay.
+- **D2 Invite-only.** The whole site is behind a login wall. Roles: owner (everything, including accounts), editor
+  (admin and newsroom), reader (reads the site). No public sign-up: owners send single-use invite links (the first
+  owner's comes from `npm run user:invite`). The worker API (`/api/worker/*`, bearer token) stays outside the wall.
+  The shared `ADMIN_PASSWORD` is retired for real accounts (`users`, `sessions`, `invites`; `web/lib/auth/`).
+- **D3 Saving.** Each reader has a Saved shelf of stories and whole editions; an edition downloads as a
+  print-to-PDF page and as one self-contained HTML file, and the whole shelf as one HTML file; the latest editions
+  and everything saved read offline (service worker).
+- **D4 Themes.** The large-type reading mode formerly called "Buzurg" is **Wazeh** (واضح, clear): a mode that
+  combines with any colour palette, never described in terms of age. Palettes: classic, night, kaghaz (sepia paper),
+  sabz (soft green), chandni (moonlit blue-grey dark), shab (pure black, OLED), plus "system" (classic or night by
+  `prefers-color-scheme`). Every palette passes WCAG 2.2 AA for text; Wazeh with high contrast passes AAA.
+- **D5 Keep everything.** Every fetched item is kept forever (no 30-day retention) with metadata for trend
+  analysis, topic research and search: feed metadata on items, headline revisions, which items each run saw,
+  post metadata, story keywords, topics, countries, places, event types and entities, every Claude call's output,
+  and a log of reader searches. Postgres full-text search (English stemmed, Urdu `simple`) and trigram indexes
+  cover stories, items and entities.
+- **D6 Publisher images.** A story may show one photo, only from an item or X post it cites (primary first, then
+  other cited items; a cited post's first image); never for uncited items, never AI-generated, and never with
+  AI-written captions or alt text (alt is the publisher's og:image:alt or media description, else "Image from
+  <outlet>" / "<outlet> کی تصویر"). Every image carries "Image: <outlet>" / "تصویر: <outlet>" linking to the
+  cited article. The worker downloads it once through its Fetcher (host lock, route, SSRF guard, robots.txt, 429
+  cooldown, about 8 MB cap, image types only, no SVG), strips metadata, converts to sRGB, re-encodes WebP at 480
+  and 960 px (never upscaled) and uploads it (`POST /api/worker/images`); the site stores the files under
+  `MEDIA_DIR` and serves them only to signed-in readers (`/media/…`), never hotlinking the publisher. A cheap
+  vision check (Haiku through Claude Code) drops placeholders and logos (and images reused across a source's
+  items in a run, and ones under about 300 px wide) and flags graphic images, which are blurred behind "Sensitive
+  image — tap to show" / "حساس تصویر — دیکھنے کے لیے ٹیپ کریں" and hidden in Wazeh until tapped; a failed check
+  counts as graphic. Each check's verdict (or why there was none) is kept as a run output, stage `image`.
+  Readers choose images auto/on/off (auto is off when the device asks to save data); editors
+  can hide a story's image, on a published story too (who and when are kept; the text stays immutable), and a
+  hidden image's files are no longer served to readers.
+  Editions published before images are not back-filled; snapshots carry image metadata.
+
 Sep 23, 2026 · @Someone
 
 Build it as a Next.js web app plus admin panel, fed by a Claude worker on the Lahore laptop that publishes three English + Urdu editions a day, grown out of deskboard's existing Briefing pipeline rather than started from scratch. Comparison tables and the verified source inventory sit on Research.
@@ -20,7 +63,7 @@ The pipeline lives in the deskboard repo (`daemon/fetchers/news.py`, `daemon/fet
 | Storage | One `news.json`, overwritten each run | Postgres: editions, stories, sources, handles, runs, with a full archive |
 | Admin | `config.json` edited by hand | Web admin: sources, groups, handles, topics, briefs, review queue, run logs |
 | X/Twitter | None | Handle watchlist per group, latest relevant posts attached to stories |
-| Front end | GNOME desktop widget (WebKitGTK), six themes | Public Next.js PWA with themes, including the Buzurg elder theme |
+| Front end | GNOME desktop widget (WebKitGTK), six themes | Invite-only Next.js PWA with colour palettes and the Wazeh large-type reading mode |
 | Urdu font | Jameel Noori Nastaleeq at 26 px; Mehr and Gulzar rejected because WebKitGTK misplaced their dots | Re-test every candidate in Chrome, Safari and Firefox; the WebKitGTK bug does not apply to the web |
 
 What carries over unchanged: the editorial contract (perspective labels, clustering by `refs`, coverage and contested fields, framing angles) is the differentiating idea and should become the product's story schema. The stdlib RSS parser, the Google News RSS trick for wire services, per-topic parallel digests, the headline fallback and cost logging all carry over too.
@@ -33,19 +76,19 @@ The product is a bilingual newspaper that comes out three times a day, written b
 
 **Editions.** Three a day on Pakistan time, proposed as Subh (07:00), Dopahar (13:00) and Shaam (19:30). Each edition has a permalink such as `/2026-09-23/subh`, a front page with one lead per group, and a "since the last edition" marker so a returning reader sees what is new. An edition is immutable once published; corrections are appended, never silently edited.
 
-**Groups.** Configurable in the admin, shipped with Pakistan, India, Afghanistan, Middle East, Muslim World and World. A group owns its sources, its X handles, its topic keywords, an editor brief (what matters to this audience, what to skip) and a target story count. Groups can be reordered and hidden per theme, so the elder theme can show only three.
+**Groups.** Configurable in the admin, shipped with Pakistan, India, Afghanistan, Middle East, Muslim World and World. A group owns its sources, its X handles, its topic keywords, an editor brief (what matters to this audience, what to skip) and a target story count. Groups can be reordered and hidden in the Wazeh reading mode, so Wazeh can show only the three that matter most.
 
 **Stories.** Each story keeps the current editorial contract: neutral title, two-to-three sentence summary with attribution, why it matters, tag, coverage label, contested line, per-outlet framing angles and the full list of source links. New fields: the matching X posts (handle, text, link, time), an Urdu title and Urdu body written for Urdu readers rather than translated word for word, a story thread id so a developing story links back to its earlier appearances, and a verification status from the QA pass.
 
-**Archive.** Browse by date, then edition, then group. A story page aggregates every source and post behind it and links to the thread's history. Search comes later; date navigation ships first.
+**Archive.** Browse by date, then edition, then group. A story page aggregates every source and post behind it and links to the thread's history. Date navigation ships first; search over stories and items (Postgres full text and trigram titles) follows, and reader searches are logged for tuning and topic research (D5).
 
 **Bilingual everything.** One switch (English or Urdu) applies to UI strings, dates, digits, story text and direction. The choice is remembered. Both languages are generated in the same run so the Urdu edition is never behind.
 
 **Admin panel.** Sources (URL, kind, group, language, perspective label, active flag, health), groups and briefs, X handles per group, topic keywords, edition schedule, a review queue that can hold an edition for approval before it goes public, run logs with per-source success and cost, manual corrections, and theme defaults.
 
-**Themes.** Classic (paper, serif headlines), Night (dark) and Buzurg (elder: big type, high contrast, one column, read-aloud). More can be added as CSS token sets.
+**Themes.** Colour palettes (classic, night, kaghaz, sabz, chandni, shab, or follow the device) and, on top of any of them, the Wazeh reading mode: larger type with a three-step size control, one column, bigger buttons, underlined links; read-aloud is planned (D4). High contrast is a separate switch for any palette and mode, on by default when the device asks for more contrast (`prefers-contrast: more`). The admin sets the site's default palette and mode (Settings, `default_theme` and `default_mode`); a reader's own choices apply at once on the device and, signed in, are saved to their account so they follow them to other devices. More palettes can be added as CSS token sets (`web/scripts/contrast-check.mjs` checks each one).
 
-**Readers.** Family and community readers in Pakistan and the diaspora, including elders who read Urdu more comfortably than English. No reader accounts in v1; personalization, comments and search are deliberately out of scope until the editions themselves are excellent.
+**Readers.** Family and community readers in Pakistan and the diaspora, many of whom read Urdu more comfortably than English. Reader accounts are in v1, by invitation only (D2), with a Saved shelf, downloads and offline reading (D3); comments and a personalised feed stay out of scope until the editions themselves are excellent.
 
 **Non-negotiables.** Never invent a fact that is not in a source. Show the outlets and their leanings on every story. Disclose that the text is AI-written from listed sources. Keep the three-edition rhythm even when a breaking story tempts a fourth.
 
@@ -107,18 +150,18 @@ Do not rely on Nitter or XCancel (repository archived 11 September, service susp
 
 ## The worker
 
-Run the worker as a Python Agent SDK program under a systemd user timer on this laptop, billed to an API key, with code doing the fetching and Claude doing the judgment. Claude Code's own schedulers do not fit an always-on Fedora laptop: session cron jobs only fire while a session is open and expire after seven days, Routines run in Anthropic's cloud on a fresh clone without local files or the database, and Desktop scheduled tasks are Ubuntu and Debian only.
+Run the worker as a Python Agent SDK program under a systemd user timer on this laptop (later a laptop dedicated to it), running Claude through the Claude Code CLI signed in to the owner's Claude subscription, with code doing the fetching and Claude doing the judgment. Claude Code's own schedulers do not fit an always-on Fedora laptop: session cron jobs only fire while a session is open and expire after seven days, Routines run in Anthropic's cloud on a fresh clone without local files or the database, and Desktop scheduled tasks are Ubuntu and Debian only.
 
 | Decision | Pick | Why |
 | --- | --- | --- |
-| Scheduler | systemd user timer, `OnCalendar=*-*-* 07,13,19:00 Asia/Karachi`, `Persistent=true`, plus `loginctl enable-linger` (currently off on this machine) | Survives reboots, runs a missed slot once after sleep, validated with `systemd-analyze calendar` here |
+| Scheduler | systemd user timer every 10 minutes (`OnCalendar=*-*-* *:00/10:00 Asia/Karachi`, `Persistent=true`, plus `loginctl enable-linger`) running `teenpehr edition --scheduled`, which starts the latest slot due by the admin's edition times once | Survives reboots, runs a missed slot once after sleep, and the edition times live in one place (the admin), so changing them can never leave a slot without a run; validated with `systemd-analyze calendar` here |
 | Orchestration | Python `claude-agent-sdk` 0.2.158 (same engine as Claude Code 2.1.280) | In-process custom tools, schema-validated structured output, hooks for a per-tool audit log, `max_budget_usd`; keep `claude -p` for debugging |
 | Permissions | `permission_mode="dontAsk"` with an explicit tool allowlist; WebSearch, WebFetch and Bash disabled | Deterministic and unattended. The built-in WebFetch returns a small model's summary rather than the page, and WebSearch runs only against Anthropic's US backend, so the worker fetches with its own code |
 | Browser | The worker's own Scrapling and Patchright fetchers, headed, inheriting the GNOME session's Wayland display through `systemctl --user import-environment`; Xvfb as fallback | Claude never drives a browser in the cron path. The Claude in Chrome extension needs a visible Chrome, a claude.ai login, and pauses on CAPTCHAs |
-| Billing | Console API key for the worker; the Max plan stays for interactive work | Subscription automation is allowed today, but Anthropic changed its status three times in 2026 and paused a credit scheme on 15 June; a runaway worker would also eat the weekly cap shared with your own sessions. Anthropic's help article says production automation should use an API key |
+| Billing | The owner's Claude subscription through Claude Code, never an API key (owner decision, 28 September 2026): `claude-agent-sdk` drives the Claude Code CLI signed in on this laptop, and later on one dedicated laptop signed in the same way; `claude setup-token` gives the timer a long-lived `CLAUDE_CODE_OAUTH_TOKEN` | No per-call bill. The worker blanks `ANTHROPIC_API_KEY` for the CLI, so a stray key cannot move it to API billing, and it switches off the account's claude.ai connectors and every MCP server, which a subscription login would otherwise load as tools into calls that read untrusted articles and images. Its usage shares the account's Claude Code limits with any interactive use on the same account (a heavy interactive day can slow or stop a run), which a dedicated laptop and account separate. Run costs are logged as API-equivalent dollars and `DAILY_BUDGET_USD` caps them as a usage ceiling. Anthropic changed its rules for subscription automation three times in 2026, so this is watched (see Risks) |
 | Models | Sonnet 5 for curation, Opus 5.5 for the Urdu pass, Haiku 4.5 for QA; measure one week in dry-run mode before fixing the mix | Urdu quality is the product, so the strongest affordable model writes it; clustering and checking are cheaper judgments |
 
-Cost, API list prices on 23 September 2026 with prompt caching, code-first pipeline of about six Claude calls per run, three runs a day:
+Cost, API list prices on 23 September 2026 with prompt caching, code-first pipeline of about six Claude calls per run, three runs a day. On the subscription these are API-equivalent figures, a measure of usage rather than a bill:
 
 | Model for the whole run | Per run | Per month |
 | --- | --- | --- |
@@ -184,7 +227,7 @@ Rules that stay from today's prompt: use only what the items say, never fill gap
 
 ## Data model and admin panel
 
-Postgres holds everything the worker produces and everything the admin configures; the web app only reads published editions. Raw items are kept for 30 days so a story can always be traced back to what the agent actually saw.
+Postgres holds everything the worker produces and everything the admin configures; readers only ever see published editions. Raw items are kept forever (D5), so a story can always be traced back to what the agent actually saw and the archive doubles as a research corpus.
 
 | Entity | Key fields | Notes |
 | --- | --- | --- |
@@ -192,7 +235,7 @@ Postgres holds everything the worker produces and everything the admin configure
 | Source | group, name, kind (rss, html, x, telegram, youtube), url, lang, perspective, fetcher\_tier, active, last\_ok\_at, fail\_streak | Perspective label is shown to readers; fetcher\_tier is auto-escalated when a tier keeps failing |
 | Handle | group, platform (x, bluesky, telegram), handle, display\_name, role (journalist, official, outlet), active | Watched for latest relevant posts |
 | Topic | group, keywords\_en, keywords\_ur, boost | Steers relevance; not a hard filter |
-| Item | source, url\_canonical, title, text, published\_at, lang, content\_hash, run | Raw fetched article or post, 30-day retention |
+| Item | source, url\_canonical, title, text, published\_at, lang, content\_hash, run, feed metadata | Raw fetched article, kept forever; headline changes in item revisions |
 | Edition | date, slot (subh, dopahar, shaam), status (draft, review, published), published\_at, run, snapshot\_path | Immutable after publish |
 | Story | edition, group, thread, title\_en, title\_ur, summary\_en, summary\_ur, why\_en, why\_ur, tag, coverage, contested\_en, contested\_ur, angles (json), qa\_status, qa\_note, order | The editorial contract, bilingual |
 | StorySource / StoryPost | story, item, is\_primary | Many-to-many links to the items behind a story |
@@ -202,11 +245,11 @@ Postgres holds everything the worker produces and everything the admin configure
 | RunSource | run, source, ok, items, error, ms, tier\_used | Source health history |
 | Correction | story, text\_en, text\_ur, created\_at | Appended to a published story, never overwrites |
 | Setting | key, value | Schedule, default theme, notification targets |
-| AdminUser | email, role (owner, editor) | Passwordless email login is enough |
+| User | email, name, role (owner, editor, reader), status, password hash, prefs | Invite-only accounts with sessions (D2); replaced the planned AdminUser |
 
 Admin panel screens, in the order you will use them:
 
-- **Sources.** Table with health dots, add or edit form (URL, kind, group, language, perspective, active), a "test fetch" button that shows what the fetcher returns, and bulk import from the current deskboard config.
+- **Sources.** Table with health dots, add or edit form (URL, kind, group, language, perspective, active), a "test fetch" button that shows what the fetcher returns (public internet only: the request runs inside the host's network, so loopback, LAN and link-local addresses are refused, including after a redirect; the body is read up to 2 MB), and bulk import from the current deskboard config. A source URL must be a public host too.
 - **Groups and briefs.** Reorder groups, edit the editor brief in English, set the story count, choose which themes show the group.
 - **Handles.** Add X, Bluesky or Telegram handles to a group, see the last post fetched and when.
 - **Topics and glossary.** Keywords per group; the glossary of names with a lock so a spelling never drifts.
@@ -218,33 +261,34 @@ The admin is part of the Next.js app behind an auth check, uses route handlers w
 
 ## Web app
 
-Next.js App Router with TypeScript, the stack you already run in the World-Model and Code19 sites, rendered as static pages that revalidate when an edition is published. Between editions the site is effectively static, so it is fast on Pakistani mobile networks and nearly free to host.
+Next.js App Router with TypeScript, the stack you already run in the World-Model and Code19 sites. Behind the login wall (D2) every page renders per reader, but the published data it is built from (editions, stories, the archive, settings) is cached across requests and expired when an edition is published or the admin changes it, so between editions a page costs a session lookup and little else, and stays fast on Pakistani mobile networks.
 
-- **Routing.** `/{locale}/` front page (latest edition), `/{locale}/{date}/{slot}` edition, `/{locale}/story/{id}` story page with every source and post, `/{locale}/archive` date navigation, `/{locale}/{group}` group view, `/{locale}/about` methodology and AI disclosure. Locale is `en` or `ur`.
+- **Routing.** `/{locale}/` front page (latest edition), `/{locale}/{date}/{slot}` edition (with `/print` and `/download`), `/{locale}/story/{id}` story page with every source and post, `/{locale}/archive` date navigation, `/{locale}/section/{group}` group view, `/{locale}/search`, `/{locale}/topic/{slug}` and `/{locale}/entity/{slug}` (D5), `/{locale}/saved` (with `/download`, D3), `/{locale}/about` methodology, AI disclosure and the name, `/{locale}/account`, and the signed-out pages `/{locale}/login`, `/{locale}/invite/{token}` and `/{locale}/reset/{token}` (D2). Locale is `en` or `ur`.
 - **i18n and RTL.** `next-intl` for UI strings with `ur.json` and `en.json`, `lang` and `dir` set on the root element per locale, CSS logical properties everywhere (`margin-inline-start`, not `margin-left`), Tailwind v4 which supports logical utilities natively, and `Intl.DateTimeFormat('ur-PK')` for dates. Names inside Urdu text are wrapped in `<bdi>` so English brand names do not break direction.
 - **Fonts.** Self-hosted with `next/font/local`, subset to the ranges used, preloaded for the current locale only. The Urdu picks and CSS rules are in the typography section.
-- **Themes.** One set of CSS custom properties per theme (colour, type scale, spacing, radius, motion) switched by `data-theme` on the root, honouring `prefers-color-scheme` and `prefers-reduced-motion` by default. Buzurg is a theme plus a layout mode (one column, hidden groups, bigger controls), not just a palette.
-- **PWA.** Manifest, install prompt, service worker that caches the latest edition for offline reading, and web push for the three edition times. A native app is not needed for v1.
-- **Feeds out.** RSS and JSON Feed per locale and per group, so readers can follow in their own reader and so the deskboard widget can consume the product instead of its own pipeline.
+- **Themes.** One set of CSS custom properties per theme (colour, type scale, spacing, radius, motion) switched by `data-theme` on the root, honouring `prefers-color-scheme` and `prefers-reduced-motion` by default. Wazeh is a reading mode on top of any palette (one column, hidden groups, bigger controls), not a palette.
+- **Saving and offline (D3).** Each reader's Saved shelf (`/{locale}/saved`) holds stories and whole editions. An edition prints to PDF from `/{locale}/{date}/{slot}/print` (an A4 sheet, black on white, Nastaliq headlines, larger in Wazeh) and downloads as one self-contained HTML file from `…/download`; the whole shelf downloads as one HTML file from `/{locale}/saved/download`. The files carry no scripts and no external URLs except the source links. The service worker (`web/public/sw.js`) keeps the latest editions, their stories and everything saved, from the list `/api/offline/manifest` gives it; reader pages are network-first and fall back to the kept copy offline, on a slow network or on a server error, marked as a saved copy on the page. Sign-in, account, search, admin, API and download addresses are never kept. Signing out clears every kept copy (the logout lands on `/{locale}/login?ok=signed_out`, which the worker clears before it loads), and so does another account signing in on the same browser.
+- **PWA.** Manifest, install prompt, the service worker above, and web push for the three edition times (later). A native app is not needed for v1.
+- **Feeds out.** RSS and JSON Feed per locale, private to each account: a feed reader cannot sign in, so each reader makes a secret link with a token on their account page (`/{locale}/feed.xml?token=…`), which they can replace or turn off. Signing out everywhere, a password change or reset, an owner's sign-out and disabling the account turn it off too (it outlives a session, so it must not outlive "sign out everywhere"). Without a valid token the feeds answer 401. The deskboard widget can consume the product through an owner's link instead of its own pipeline.
 - **Share images.** Open Graph image per edition and per story generated at publish time; render Urdu ones with a headless browser rather than Satori, whose RTL and Nastaliq support is unreliable.
 - **Hosting.** Vercel or Cloudflare (OpenNext) for the app, Neon or Supabase for Postgres, Cloudflare R2 or S3 for edition snapshots and images. The laptop worker talks only to an authenticated publish API, never to the database directly, so the laptop can be replaced by a server later without touching the app.
-- **Accessibility baseline.** WCAG 2.2 AA everywhere, AAA in Buzurg. Keyboard navigation, visible focus, no hover-only controls, 44 px targets on mobile.
-- **Analytics.** Privacy-friendly (Plausible or Umami), no cookies, so the site needs no consent banner.
-- **Admin.** Same app under `/admin`, shadcn/ui components, passwordless email login, route handlers with zod.
+- **Accessibility baseline.** WCAG 2.2 AA everywhere, AAA in Wazeh with high contrast. Keyboard navigation, visible focus, no hover-only controls, 44 px targets on mobile.
+- **Analytics.** Privacy-friendly (Plausible or Umami), no tracking cookies; the only cookie is the sign-in session, which needs no consent banner.
+- **Admin.** Same app under `/admin`, for editors and owners signed in with their own accounts (D2), route handlers with zod.
 
 ## Urdu typography
 
-Set headlines in Nastaliq everywhere, set body text in Nastaliq for the Classic and Night themes, and default the Buzurg theme's body to a large Naskh with a one-tap Nastaliq switch. Every font is self-hosted and licensed for commercial use, which rules out Jameel Noori Nastaleeq, the face deskboard uses today: it derives from Monotype's proprietary Noori Nastaliq, carries no licence text, and weighs 10.8 MB.
+Set headlines in Nastaliq everywhere, set body text in Nastaliq for the Classic and Night themes, and default the Wazeh mode's body to a large Naskh with a one-tap Nastaliq switch. Every font is self-hosted and licensed for commercial use, which rules out Jameel Noori Nastaleeq, the face deskboard uses today: it derives from Monotype's proprietary Noori Nastaliq, carries no licence text, and weighs 10.8 MB.
 
 | Role | Font | Why |
 | --- | --- | --- |
 | Urdu headlines | Noto Nastaliq Urdu v4.000, self-hosted from GitHub, weights 400 to 700 | v4 fixed bari-ye and dot placement and is 30 percent smaller, but Google Fonts still serves v3.009 because the v4 pull request was closed unmerged; Gulzar (OFL, Regular only, repository archived April 2026) is the alternative |
 | Urdu body, Classic and Night | Noto Nastaliq Urdu v4 at 22 to 24 px with line height 2.4 | The newspaper feel readers expect; Mehr Nastaliq Web is the compact alternative (53 KB, line height 1.9) but its CC BY-SA licence complicates subsetting |
-| Urdu body, Buzurg default | Noto Naskh Arabic (OFL, variable, 91 KB) at 26 px with line height 1.9 | At equal size Nastaliq needs 35 percent more vertical space and its letters sit in cascades that make them effectively smaller; 9 of the 14 leading Urdu news sites, BBC Urdu included, set body in Naskh |
+| Urdu body, Wazeh default | Noto Naskh Arabic (OFL, variable, 91 KB) at 26 px with line height 1.9 | At equal size Nastaliq needs 35 percent more vertical space and its letters sit in cascades that make them effectively smaller; 9 of the 14 leading Urdu news sites, BBC Urdu included, set body in Naskh |
 | Urdu UI and small text | Vazirmatn (OFL, 45 KB variable), IBM Plex Sans Arabic as alternative | Never Nastaliq under 20 px |
 | English | Inter for body and UI, a serif such as Newsreader for Classic headlines | Inter's tall x-height sits well beside Naskh at a 95 percent size adjustment |
 
-The Buzurg default is the one typography decision to validate with five real readers over 60 before launch; if they prefer the Nastaliq look at 28 px, flip the default and keep the sizes.
+The Wazeh default is the one typography decision to validate with five real readers who find small type hard before launch; if they prefer the Nastaliq look at 28 px, flip the default and keep the sizes.
 
 Rules the CSS must follow:
 
@@ -259,17 +303,17 @@ Digits and dates: `Intl.NumberFormat('ur-PK')` produces Western digits under CLD
 
 Deskboard rejected Mehr and Gulzar because WebKitGTK misplaced their dots; that is a WebKitGTK bug, and both render correctly in Chrome, Safari and Firefox. The full font table, the CSS snippet with `size-adjust` values, and what each Urdu news site loads are on the Research tab.
 
-## Themes and the Buzurg theme
+## Themes and the Wazeh reading mode
 
-Three themes at launch, each a token set plus, for Buzurg, a layout mode. Buzurg is the theme that must be world class, so it gets a full specification here; the others follow the same token structure.
+Palettes are token sets (D4: classic, night, kaghaz, sabz, chandni, shab, or follow the device); Wazeh is a reading mode that combines with any of them. Wazeh is the mode that must be world class, so it gets a full specification here; the palettes follow the same token structure. The table is the launch plan, kept as history.
 
 | Theme | Look | Body fonts | Notes |
 | --- | --- | --- | --- |
 | Classic (Akhbar) | Warm paper, serif English headlines, Nastaliq Urdu | Newsreader and Inter; Noto Nastaliq | Default; sepia variant for long reads |
 | Night | Dark, off-white ink | Same faces | Follows `prefers-color-scheme`; never forced |
-| Buzurg | Large, high contrast, one column | Inter; Noto Naskh with Nastaliq switch | Spec below; entrance on the home page and in settings, applied on every page |
+| Wazeh (mode) | Large, high contrast, one column, over any palette | Inter; Noto Naskh with Nastaliq switch | Spec below; entrance on the home page and in settings, applied on every page |
 
-The Buzurg specification starts from WCAG 2.2 AAA where it is cheap and from China's elder-mode rules, the only regulatory spec for this (18 pt minimum, no ads or pop-ups, fewer features, larger targets, applied on every page), plus Nielsen Norman's senior findings: bigger, simpler, higher-contrast type, no hover or pull-down menus, forgiving inputs.
+The Wazeh specification starts from WCAG 2.2 AAA where it is cheap and from China's elder-mode rules, the only regulatory spec for this (18 pt minimum, no ads or pop-ups, fewer features, larger targets, applied on every page), plus Nielsen Norman's senior findings: bigger, simpler, higher-contrast type, no hover or pull-down menus, forgiving inputs.
 
 **Type.** Root size 24 px, with a text-size control always visible in the top bar offering 20, 24 and 28 px, remembered per device. Latin body 24 px with line height 1.6, headline 36 px, UI 22 px, nothing under 20 px, no all-caps, no weight under 400. Urdu Naskh body 26 px with line height 1.9, headline 40 px in Nastaliq with line height 1.6, UI 24 px in Vazirmatn, nothing under 22 px. Urdu Nastaliq body, when switched on, 28 px with line height 2.4 and never below 22 px. Measure capped at 34 rem, about 55 to 60 Urdu characters, one column, start-aligned, paragraph gap 1.2 em.
 
@@ -277,11 +321,11 @@ The Buzurg specification starts from WCAG 2.2 AAA where it is cheap and from Chi
 
 **Layout and interaction.** Sticky top bar with three big controls: text size, read aloud, contrast. Every target at least 48 by 48 CSS px with 8 px gaps; primary buttons full width and 56 px tall on mobile; a bottom navigation of at most four items at 64 px with an icon and an Urdu label; a back-to-top button after one and a half screens; a "more news" button instead of infinite scroll; no carousels, no auto-advance, no hover-only controls, no modals except confirmations. Every story shows the date and time in words plus the relative time, and a "new since your last visit" badge from a stored timestamp. Links are underlined with 6 px separation; icons always carry a label; the theme forces `animation: none` and honours reduced motion; keyboard focus is never hidden under the sticky bars.
 
-**Content changes, not just chrome.** Buzurg shows three groups by default (Pakistan, Muslim World, World), the "need to know" tier first, the Aasaan Urdu variant of each story (shorter sentences, a glossary), and the PDF and audio buttons before anything else.
+**Content changes, not just chrome.** Wazeh shows three groups by default (Pakistan, Muslim World, World), the "need to know" tier first, the Aasaan Urdu variant of each story (shorter sentences, a glossary), and the PDF and audio buttons before anything else.
 
-**Read aloud.** Pre-generate one MP3 per story at publish time and stream it with paragraph highlighting. Voice: Azure `ur-PK-AsadNeural` or `ur-PK-UzmaNeural`, the only Pakistani-accent Urdu at a major cloud, at 15 dollars per million characters and a speaking rate of 0.9. Google's `ur-IN-Chirp3-HD` voices are the most natural but Indian-accented; ElevenLabs Urdu (v3 and Multilingual v2 only) costs about six times more and is worth it only for a cloned anchor voice. Budget: audio for the 15 Buzurg-visible stories per edition, about 2 million characters a month, lands near 30 dollars. The browser's own `speechSynthesis` cannot be relied on, since Urdu voices ship only on some operating systems.
+**Read aloud.** Pre-generate one MP3 per story at publish time and stream it with paragraph highlighting. Voice: Azure `ur-PK-AsadNeural` or `ur-PK-UzmaNeural`, the only Pakistani-accent Urdu at a major cloud, at 15 dollars per million characters and a speaking rate of 0.9. Google's `ur-IN-Chirp3-HD` voices are the most natural but Indian-accented; ElevenLabs Urdu (v3 and Multilingual v2 only) costs about six times more and is worth it only for a cloned anchor voice. Budget: audio for the 15 Wazeh-visible stories per edition, about 2 million characters a month, lands near 30 dollars. The browser's own `speechSynthesis` cannot be relied on, since Urdu voices ship only on some operating systems.
 
-**Benchmarks.** WeChat Care Mode and Toutiao's large-print edition (separate large-font app with read-aloud and a stripped interface), NHK News Web Easy for the simplified-copy-plus-audio pattern, and Safari Reader mode as the mental model. BBC Urdu is the reference for font loading, not for size; its 15 px body is far too small for readers over 60.
+**Benchmarks.** WeChat Care Mode and Toutiao's large-print edition (separate large-font app with read-aloud and a stripped interface), NHK News Web Easy for the simplified-copy-plus-audio pattern, and Safari Reader mode as the mental model. BBC Urdu is the reference for font loading, not for size; its 15 px body is far too small for comfortable reading at arm's length.
 
 ## Trust and world-class patterns
 
@@ -296,7 +340,7 @@ The best digests win on format discipline and visible provenance, not on more st
 7. **A named human editor** (NYT The Morning). A "reviewed by" line with a real name. It also matters legally, see below.
 8. **Stories as entities with dated points** (Circa). A developing story keeps one URL and gains a dated point each edition; readers can follow it and resume where they left off.
 9. **Original headline shown verbatim** beside the summary, and X posts shown as quoted cards, never paraphrased (Kagi's reputation hit came from fabricated quotes).
-10. **A simplified edition** (NHK News Web Easy). "Aasaan Urdu" with shorter sentences, a glossary and slow audio, used by the Buzurg theme.
+10. **A simplified edition** (NHK News Web Easy). "Aasaan Urdu" with shorter sentences, a glossary and slow audio, used by the Wazeh mode.
 11. **Never let AI write push notifications** (Apple's January 2025 suspension after hallucinated BBC headlines). Push copy is template-based: edition name, top headline as published, nothing generated.
 12. **Scope discipline** (Artifact's shutdown). It died after diluting into links, posts and social. Stay a digest.
 
@@ -306,7 +350,7 @@ Trust and provenance checklist for launch:
 - EU AI Act Article 50 applies if diaspora readers in the EU are served: AI text published to inform the public must be disclosed unless it had human review under a named editorially responsible entity. The review queue plus the named editor line satisfies this.
 - Every claim links to a numbered source; an N-sources chip on every story; timestamps per story and per edition; a "since last edition" delta box.
 - Confidence labels where sources conflict: "single source, unconfirmed", "disputed", "confirmed by three or more independent outlets".
-- A corrections log per story, appended and dated, and a public methodology page with the full source list and every X handle watched.
+- A corrections log per story, appended and dated, and a methodology page with the full source list and every X handle watched (for every signed-in reader; since D2 nothing is public).
 - Language parity: Urdu is generated from the same fact structure and cites the same sources, never translated from the English prose.
 - Machine-readable marking (schema.org and IPTC trust indicators) and real bylines, which Google requires for Google News eligibility.
 
@@ -316,10 +360,10 @@ In Pakistan the edition will mostly be read where it is forwarded, so the channe
 
 | Channel | Fit for Pakistan | Constraints as of September 2026 | Plan |
 | --- | --- | --- | --- |
-| Web app (PWA) | Base | Offline caching of the latest edition | v1 |
+| Web app (PWA) | Base | Offline reading of the latest editions and the Saved shelf (D3) | v1 |
 | Telegram channel | High | Bot API fully automatable, scheduled posts, stats, 4,096-character posts; t.me is ISP-blocked in Pakistan, so post through the Germany route or the cloud publish hook, and treat Pakistani reach as VPN-dependent | v1, automated per edition and per group |
-| RSS and JSON Feed | Medium | None | v1, per locale and per group |
-| PDF edition | High for elders | Nastaliq must render in the PDF; generate with headless Chrome, A4 large type | v1, forwardable on WhatsApp |
+| RSS and JSON Feed | Medium | Private per account since D2 (a token in the link) | v1, per locale |
+| PDF edition | High for sharing | Nastaliq must render in the PDF; the reader's browser prints the A4 large-type page (D3); a server-made PDF with headless Chrome later | v1, forwardable on WhatsApp |
 | Email edition | High | RTL HTML email needs `dir` on tables; Outlook quirks; plain-text fallback | v1.1, reader picks 1, 2 or 3 editions a day or a weekly wrap |
 | WhatsApp Channel | Highest | No official API; scheduling only in Android beta; no built-in analytics; followers must enable notifications | v1.1, assisted manual posting three times a day: headline, five bullets, link, edition image |
 | Web push | Medium | Opt-in around 5 to 10 percent; iOS needs add-to-home-screen and a user gesture | v1.1, "edition ready" and followed-thread updates only, template copy |
@@ -334,17 +378,17 @@ Four phases over about ten weeks of solo building with Claude Code, with the fir
 
 | Phase | Weeks | Ships | Done when |
 | --- | --- | --- | --- |
-| 0, decisions and setup | 1 | Name and domain; Console API key with a monthly budget; dedicated X account and public Lists; laptop prepared (linger, lid, sleep, timers); one repository with `web/`, `worker/` and `db/`; deskboard's sources imported into the Source table; glossary seeded with 100 names; an SSH SOCKS proxy to the Hetzner server in Germany as a user service, with a per-source route for the hosts blocked from Pakistan | The timer fires a no-op run three times a day and alerts on failure |
+| 0, decisions and setup | 1 | Name and domain; Claude Code signed in on the worker laptop (or a `claude setup-token` token) with a daily usage ceiling; dedicated X account and public Lists; laptop prepared (linger, lid, sleep, timers); one repository with `web/`, `worker/` and `db/`; deskboard's sources imported into the Source table; glossary seeded with 100 names; an SSH SOCKS proxy to the Hetzner server in Germany as a user service, with a per-source route for the hosts blocked from Pakistan | The timer fires a no-op run three times a day and alerts on failure |
 | 1, worker | 2 to 3 | Deskboard's pipeline ported into the Agent SDK with edition keys; tier 0 and tier 1 fetchers; X list collector; Urdu pass; QA pass; publish API; a bare admin that lists runs and editions; one week of dry runs with cost logged | Three editions a day land in Postgres with Urdu, sources and posts, and the measured cost is under 3 dollars a day |
 | 2, web app | 4 to 6 | Edition, story, archive and group pages; English and Urdu with RTL; Classic theme; PWA with offline last edition; RSS and JSON feeds; PDF edition; Telegram channel; methodology and disclosure page; Open Graph images | First public edition published; Lighthouse accessibility 100 on the edition page in both locales |
-| 3, Buzurg and channels | 7 to 8 | Buzurg theme with text-size control, read-aloud and Aasaan Urdu; test with five readers over 60; Night theme; email edition; WhatsApp channel (manual posting); web push | Five elder readers complete "find today's Pakistan news and read one story aloud" unaided |
+| 3, Wazeh and channels | 7 to 8 | Wazeh mode with text-size control, read-aloud and Aasaan Urdu; test with five readers who find standard type hard to read; Night theme; email edition; WhatsApp channel (manual posting); web push | Five readers using Wazeh complete "find today's Pakistan news and read one story aloud" unaided |
 | 4, hardening | 9 to 10 | Review queue, source health, corrections log; tier 2 stealth fetcher for the stubborn sources; Bluesky and YouTube supplements; deskboard's Briefing widget switched to consume the product's JSON feed; cost tuning | Thirty consecutive editions without a manual fix |
 
-After that, in rough priority: audio for every story, the WhatsApp Business API tier, search across the archive, reader accounts with followed threads, and a "for you" rail that never touches the shared edition. The laptop can be replaced by the Hetzner server at any point because the worker only talks to the publish API.
+After that, in rough priority: audio for every story, the WhatsApp Business API tier, search across the archive, followed threads for the (now invite-only, D2) reader accounts, and a "for you" rail that never touches the shared edition. The laptop can be replaced by the Hetzner server at any point because the worker only talks to the publish API.
 
 ## Risks, legal notes and open questions
 
-The two risks that could stop the product are X closing its embed endpoint and Anthropic changing how automation is billed; both have a paid fallback that costs less than 60 dollars a month. Everything else is a quality or cost risk with a mitigation already in the design.
+The two risks that could stop the product are X closing its embed endpoint and Anthropic changing the rules for automation on a subscription; both have a paid fallback that costs less than 60 dollars a month (for Claude, an API key, which the owner has ruled out for now). Everything else is a quality or cost risk with a mitigation already in the design.
 
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
@@ -353,25 +397,25 @@ The two risks that could stop the product are X closing its embed endpoint and A
 | Urdu quality drifts or names are spelled inconsistently | High without controls | Locked glossary injected into every Urdu pass; QA pass; named editor reviews flagged stories; five-reader test before launch |
 | A story states something no source said | Low per story, certain over time | Reject any citation not in the input; require a source per story; QA confidence threshold; corrections log; never AI-written push copy |
 | Laptop offline (power, ISP, sleep) | High in Lahore | `Persistent=true` timers, catch-up policy, missed-heartbeat alert; the worker can move to the Hetzner server unchanged |
-| Anthropic changes subscription automation rules again | Medium; changed three times in 2026 | Worker on an API key with a monthly budget cap, isolated from the Max plan |
+| Anthropic changes subscription automation rules again | Medium; changed three times in 2026 | The worker runs on the subscription through Claude Code with a daily usage ceiling; `teenpehr health` shows whether it is signed in. If the rules change, the fallback is an API key, which today's code refuses by design, so it would be a deliberate code change |
 | Telegram blocked in Pakistan | Certain | Post from the cloud publish hook; WhatsApp channel and PDF are the Pakistani reach |
 | Font licensing | Certain if Jameel Noori is embedded | OFL fonts only; Mehr only with counsel on share-alike |
-| Legal exposure from scraping and reuse | Low at this volume | Snippets and links only, logged-out endpoints, no personal accounts, robots.txt and rate limits honoured, public methodology page |
+| Legal exposure from scraping and reuse | Low at this volume | Snippets and links only, logged-out endpoints, no personal accounts, robots.txt and rate limits honoured, a methodology page for every reader |
 | Cost creep | Medium | Daily spend ceiling in the worker, per-run cost in the admin, one dry-run week before each model change |
 | EU AI Act if diaspora readers are served | Low | Disclosure line with a named editor and human review of flagged stories |
 | Indian and some Middle East hosts unreachable from Pakistani ISPs | Certain today | Per-source SOCKS route through the Hetzner server in Germany, which also resolves DNS there; Google News site queries for Indian Express and Al Jazeera, which block datacenter IPs |
 
 Decisions only you can make:
 
-- [ ] Name: Teen Pehr (recommended), Sarnama or Nashriyat; confirm the .pk at PKNIC before anything else.
+- [x] Name: Tabayyun (تبیُّن), decided 28 September 2026 (D1). Teen Pehr, Sarnama and Nashriyat were the earlier candidates.
 - [ ] Edition times: 07:00, 13:00 and 19:30 Pakistan time are proposed.
-- [ ] Buzurg body default: Naskh (recommended by the evidence) or Nastaliq (the familiar look); decide after the five-reader test.
+- [ ] Wazeh body default: Naskh (recommended by the evidence) or Nastaliq (the familiar look); decide after the five-reader test.
 - [ ] Publishing policy: auto-publish with flagged stories held (recommended) or hold every edition for approval.
 - [ ] Groups at launch: the six proposed; keep deskboard's AI, robotics and science topics as a private "Tech" group or leave them in deskboard only.
-- [ ] Billing: API key for the worker (recommended) or the Max plan's setup token.
+- [x] Billing: the Claude subscription through Claude Code on this laptop, later a dedicated one (decided 28 September 2026); no API key. Usage limits are shared with interactive Claude Code use on the same account.
 - [ ] Hosting: Vercel or Cloudflare for the app; Neon or Supabase for Postgres.
 - [ ] The named human editor on every story's disclosure line.
-- [ ] Urdu digits: Western by default (CLDR) or Urdu digits, at least for Buzurg.
+- [ ] Urdu digits: Western by default (CLDR) or Urdu digits, at least for Wazeh (each reader can now choose, D4).
 - [ ] Landing language: Urdu first or English first for a new visitor.
 
 ## Sources

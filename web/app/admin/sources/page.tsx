@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/session";
-import { listSources, listGroups } from "@/lib/admin/data";
-import { toggleSource } from "@/lib/admin/actions";
-import { ago } from "@/lib/admin/util";
+import { listSources, listArchivedSources, listGroups } from "@/lib/admin/data";
+import { toggleSource, restoreSource } from "@/lib/admin/actions";
+import { ago, fmtDate } from "@/lib/admin/util";
 import { AdminShell } from "@/components/admin/shell";
 import { flashFrom } from "@/components/admin/flash";
 import { Table, Th, Td, Dot, Empty } from "@/components/admin/table";
@@ -16,7 +16,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: SP }
   const sp = await searchParams;
   const one = (k: string) => { const v = sp[k]; return (Array.isArray(v) ? v[0] : v) ?? ""; };
   const filter = { group: one("group"), kind: one("kind"), route: one("route"), active: one("active"), q: one("q") };
-  const [rows, groups, flash] = await Promise.all([listSources(filter), listGroups(), flashFrom(searchParams)]);
+  const [rows, archived, groups, flash] = await Promise.all([listSources(filter), listArchivedSources(), listGroups(), flashFrom(searchParams)]);
   return (
     <AdminShell title={`Sources (${rows.length})`} flash={flash} actions={<Link href="/admin/sources/new" className="chip font-semibold">+ New source</Link>}>
       <form method="get" className="mb-3 flex flex-wrap items-end gap-2">
@@ -44,6 +44,24 @@ export default async function SourcesPage({ searchParams }: { searchParams: SP }
             })}
           </tbody>
         </Table>
+      )}
+      {archived.length > 0 && (
+        <details className="mt-6" id="archived">
+          <summary className="cursor-pointer font-semibold">Archived ({archived.length})</summary>
+          <p className="meta my-2">The worker skips these. Their items stay cited in published editions.</p>
+          <Table caption="Archived sources">
+            <thead><tr><Th>Name</Th><Th>Group</Th><Th>Kind</Th><Th>Items</Th><Th>Archived</Th><Th></Th></tr></thead>
+            <tbody>
+              {archived.map(({ s, groupName, items }) => (
+                <tr key={s.id}>
+                  <Td><Link href={`/admin/sources/${s.id}`} className="font-semibold">{s.name}</Link><br /><span className="meta break-all">{s.url.slice(0, 70)}</span></Td>
+                  <Td>{groupName}</Td><Td>{s.kind}</Td><Td>{Number(items)}</Td><Td>{fmtDate(s.archivedAt)}</Td>
+                  <Td><form action={restoreSource}><input type="hidden" name="id" value={s.id} /><Button>Restore</Button></form></Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </details>
       )}
     </AdminShell>
   );

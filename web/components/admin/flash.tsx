@@ -1,3 +1,5 @@
+import { FLASH_SIG_PARAM, verifiedFlash } from "@/lib/admin/flash";
+
 export function Flash({ ok, error }: { ok?: string; error?: string }) {
   if (!ok && !error) return null;
   return (
@@ -6,8 +8,9 @@ export function Flash({ ok, error }: { ok?: string; error?: string }) {
     </div>
   );
 }
+/** The page's ?ok= / ?error= message, only when the server signed it for this session (lib/admin/flash.ts). */
 export async function flashFrom(searchParams: Promise<Record<string, string | string[] | undefined>>) {
   const sp = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-  return { ok: one(sp.ok), error: one(sp.error) };
+  return verifiedFlash(one(sp.ok), one(sp.error), one(sp[FLASH_SIG_PARAM]));
 }

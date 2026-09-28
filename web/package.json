@@ -8,11 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:push": "drizzle-kit push",
+    "db:prepare": "tsx db/prepare.ts",
+    "db:push": "npm run db:prepare && drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx --env-file=.env.local db/seed.ts",
+    "db:backfill": "tsx --env-file=.env.local db/backfill.ts",
+    "user:invite": "tsx --conditions=react-server --env-file=.env.local scripts/invite.ts",
     "fonts": "bash scripts/fonts.sh"
   },
   "dependencies": {

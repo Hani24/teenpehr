@@ -6,11 +6,12 @@
   },
   "timezone": "Asia/Karachi",
   "publish_policy": "auto",
-  "site_name_en": "Teen Pehr",
-  "site_name_ur": "تین پہر",
+  "site_name_en": "Tabayyun",
+  "site_name_ur": "تبیُّن",
   "editor_name": "",
   "disclosure_en": "Written by AI from the listed sources and reviewed by a human editor. Every claim links to its source.",
   "disclosure_ur": "یہ خبر درج ذیل ذرائع سے مصنوعی ذہانت نے تیار کی اور ایک انسانی ایڈیٹر نے اس کا جائزہ لیا۔ ہر بات کا حوالہ موجود ہے۔",
   "digits_ur": "latn",
-  "default_theme": "classic"
+  "default_theme": "system",
+  "default_mode": "standard"
 }

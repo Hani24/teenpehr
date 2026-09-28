@@ -5,6 +5,8 @@ import { updateGroup, saveTopics } from "@/lib/admin/actions";
 import { AdminShell } from "@/components/admin/shell";
 import { flashFrom } from "@/components/admin/flash";
 import { Field, Input, Textarea, Checkbox, Button } from "@/components/admin/form";
+import { HIDE_IN_MODES } from "@/lib/view";
+import en from "@/messages/en.json";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
   const [g, flash] = await Promise.all([getGroup(id), flashFrom(searchParams)]);
   if (!g) notFound();
   const topic = g.topics[0];
+  /** Ids from when palettes could hide groups; not honoured any more. */
+  const stale = g.hiddenInThemes.filter((id) => !(HIDE_IN_MODES as readonly string[]).includes(id));
   return (
     <AdminShell title={g.nameEn} flash={flash}>
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -27,10 +31,12 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
           <div className="flex items-end"><Checkbox name="active" label="Active" defaultChecked={g.active} /></div>
           <Field label="X list ids" hint="Public X List ids for this group's handles, comma-separated" className="sm:col-span-2"><Textarea name="x_list_ids" defaultValue={g.xListIds.join(", ")} className="min-h-16" /></Field>
           <fieldset className="sm:col-span-2">
-            <legend className="mb-1 text-sm font-semibold">Hidden in themes</legend>
-            <div className="flex gap-4">
-              {(["classic", "night", "buzurg"] as const).map((t) => <Checkbox key={t} name="hidden_in_themes" value={t} label={t} defaultChecked={g.hiddenInThemes.includes(t)} />)}
+            <legend className="mb-1 text-sm font-semibold">Hidden in reading mode</legend>
+            <p className="meta mb-2">Readers who turn this mode on do not see the group on edition pages; it stays in its section page and the archive.</p>
+            <div className="flex flex-wrap gap-4">
+              {HIDE_IN_MODES.map((id) => <Checkbox key={id} name="hidden_in_themes" value={id} label={`${en[id].name}: ${en[id].description}`} defaultChecked={g.hiddenInThemes.includes(id)} />)}
             </div>
+            {stale.length > 0 && <p className="meta mt-2">Also stored: {stale.join(", ")}. Palettes no longer hide groups; saving removes {stale.length === 1 ? "it" : "them"}.</p>}
           </fieldset>
           <div className="sm:col-span-2"><Button tone="primary">Save group</Button></div>
         </form>

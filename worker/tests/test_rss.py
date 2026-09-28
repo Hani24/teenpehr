@@ -38,6 +38,25 @@ def test_youtube_channel_feed():
     assert entries[0].title == "Headlines 9pm"
 
 
+def test_youtube_shorts_and_live_links_become_watch_links():
+    entries = youtube.parse_channel_feed(fixture_bytes("youtube_shorts.xml"))
+    assert [e.link for e in entries] == [
+        "https://www.youtube.com/watch?v=Sh0rtId_x-1",
+        "https://www.youtube.com/watch?v=L1veId00001",
+        "https://www.youtube.com/watch?v=W4tchId0001",
+    ]  # the community post is not a video
+    assert entries[0].title == "Karachi rain in 30 seconds"
+
+
+def test_youtube_watch_url_forms():
+    assert youtube.watch_url("https://youtu.be/abc123?si=x") == "https://www.youtube.com/watch?v=abc123"
+    assert (
+        youtube.watch_url("https://m.youtube.com/watch?feature=share&v=abc123")
+        == "https://www.youtube.com/watch?v=abc123"
+    )
+    assert youtube.watch_url("https://www.youtube.com/@DawnNews") is None
+
+
 def test_strip_html_and_bad_input():
     assert rss.strip_html("<b>Hi</b>&amp; there  ") == "Hi & there"
     assert rss.parse_feed(b"not xml at all") == []

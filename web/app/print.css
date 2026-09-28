@@ -1,0 +1,88 @@
+/* ---------------------------------------------------------------------------------------
+   The printable edition (/{locale}/{date}/{slot}/print, decision D3): an A4 sheet that the
+   browser saves as PDF. Imported by that page only, and every rule except @page is scoped to
+   .print-doc (or a page that contains it), so nothing leaks into other pages; @page only sets A4
+   and margins, which suit any page printed from the site. The sheet is always black ink on white paper,
+   whatever palette the reader uses on screen, and its type is large: 13.5pt English and 15pt
+   Urdu body (more in Wazeh), Nastaliq headlines (never letter-spaced), Naskh Urdu body, which
+   sets tighter than Nastaliq and stays clear on paper.
+--------------------------------------------------------------------------------------- */
+@page { size: A4; margin: 16mm 15mm 18mm; }
+
+.print-doc {
+  --sheet-ink: #111111;
+  --sheet-ink-2: #3d3d3d;
+  --sheet-rule: #b9b3aa;
+  --sheet-accent: #8a2419;
+  --sheet-paper: #ffffff;
+  --print-nastaliq: "Tabayyun Print Nastaliq", var(--font-nastaliq, "Noto Nastaliq Urdu"), var(--font-naskh, "Noto Naskh Arabic"), serif;
+  --print-naskh: var(--font-naskh, "Noto Naskh Arabic"), "Noto Naskh Arabic", var(--font-inter), serif;
+}
+
+/* ---- screen: a toolbar, then the sheet as a preview ---------------------------------- */
+.print-doc .print-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-block: 1rem; padding: 1rem; }
+.print-doc .print-toolbar p { margin: 0; flex: 1 1 18rem; }
+.print-doc .print-sheet {
+  max-inline-size: 210mm; margin-inline: auto; padding: clamp(1rem, 5vw, 15mm);
+  background: var(--sheet-paper); color: var(--sheet-ink); border: 1px solid var(--rule); border-radius: var(--radius);
+  font-size: 1.15rem; line-height: 1.6;
+}
+.print-doc .print-sheet a { color: var(--sheet-ink); }
+.print-doc .print-sheet:lang(ur) { font-family: var(--print-naskh); font-size: 1.3rem; line-height: 1.9; }
+.print-doc .print-sheet :where([lang]):lang(ur) { font-family: var(--print-naskh); line-height: 1.9; }
+
+.print-doc .print-mast { border-block-end: 3px solid var(--sheet-ink); padding-block-end: 0.6em; margin-block-end: 1.2em; }
+.print-doc .print-site { margin: 0; font-family: var(--font-latin-display); font-weight: 700; font-size: 1.4em; }
+.print-doc .print-title { margin: 0.2em 0 0; font-family: var(--font-latin-display); font-weight: 600; font-size: 2.1em; line-height: 1.15; }
+.print-doc .print-meta { margin: 0.25em 0 0; font-family: var(--font-latin); font-size: 0.85em; color: var(--sheet-ink-2); }
+.print-doc .print-group { margin-block-start: 1.6em; }
+.print-doc .print-group > h2 { margin: 0; border-block-start: 3px solid var(--sheet-ink); padding-block-start: 0.3em; font-family: var(--font-latin); font-weight: 700; font-size: 1.2em; }
+.print-doc .print-mast + .print-group { margin-block-start: 0; }
+.print-doc .print-mast + .print-group > h2 { border-block-start: 0; padding-block-start: 0; }
+.print-doc .print-lead { margin: 0.4em 0 0; font-family: var(--font-latin-display); font-size: 1.1em; }
+.print-doc .print-story { border-block-start: 1px solid var(--sheet-rule); padding-block: 0.9em; }
+.print-doc .print-story > h3 { margin: 0.2em 0 0.3em; font-family: var(--font-latin-display); font-weight: 600; font-size: 1.35em; line-height: 1.2; }
+.print-doc .print-story p { margin: 0.35em 0; }
+.print-doc .print-story h4 { margin: 0.8em 0 0.2em; font-family: var(--font-latin); font-size: 0.8em; font-weight: 700; color: var(--sheet-accent); }
+.print-doc .print-tags { font-family: var(--font-latin); font-size: 0.8em; color: var(--sheet-ink-2); }
+.print-doc .print-pill { font-weight: 700; color: var(--sheet-accent); }
+.print-doc .print-list { margin: 0.2em 0; padding-inline-start: 1.3em; }
+.print-doc .print-list li { margin-block: 0.35em; }
+.print-doc .print-contested { border-inline-start: 3px solid var(--sheet-rule); padding-inline-start: 0.8em; }
+.print-doc .print-post { margin: 0.4em 0; border-inline-start: 3px solid var(--sheet-rule); padding-inline-start: 0.8em; }
+.print-doc .print-post p { white-space: pre-line; }
+.print-doc .print-url { font-family: var(--font-latin); font-size: 0.72em; color: var(--sheet-ink-2); overflow-wrap: anywhere; unicode-bidi: isolate; }
+.print-doc .print-small { font-family: var(--font-latin); font-size: 0.8em; color: var(--sheet-ink-2); }
+.print-doc .print-colophon { margin-block-start: 2em; border-block-start: 1px solid var(--sheet-rule); padding-block-start: 0.8em; font-size: 0.85em; color: var(--sheet-ink-2); }
+.print-doc .print-colophon p { margin: 0.3em 0; }
+
+/* Publisher images (D6, components/story-image.tsx): beside the story at the inline end, with the
+   credit under them, in the sheet's own colours whatever the palette (never dimmed on white paper). */
+.print-doc { --img-dim: brightness(1); --img-edge: rgb(0 0 0 / 0.14); --img-radius: 2px; }
+.print-doc .print-story { display: flow-root; }
+.print-doc .story-fig-print { float: inline-end; inline-size: 38%; margin-block: 0.3em 0.6em; margin-inline-start: 1em; }
+.print-doc .story-fig-credit { font-family: var(--font-latin); font-size: 0.72em; line-height: 1.4; color: var(--sheet-ink-2); }
+.print-doc .story-fig-credit:lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.8; letter-spacing: 0; }
+.print-doc .story-fig-credit .latin { font-family: var(--font-latin); }
+
+/* Urdu: Nastaliq headlines at Nastaliq line heights, Vazirmatn for labels; never letter-spaced. */
+.print-doc :is(.print-title, .print-story > h3, .print-lead, .print-site):lang(ur) { font-family: var(--print-nastaliq); line-height: 2; padding-block: 0.1em; letter-spacing: 0; }
+.print-doc :is(.print-group > h2, .print-story h4, .print-tags, .print-meta, .print-small):lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.8; letter-spacing: 0; }
+.print-doc :is(.print-meta, .print-small, .print-tags, .print-colophon) .latin { font-family: var(--font-latin); }
+
+/* ---- paper ------------------------------------------------------------------------------ */
+@media print {
+  /* Only while the print page is shown: this stylesheet stays loaded after a client-side navigation away. */
+  html:has(.print-doc), html:has(.print-doc) body { background: #fff !important; color: #000 !important; }
+  .print-doc { padding: 0 !important; margin: 0 !important; max-inline-size: none !important; }
+  /* rem: the print root is 13pt, so this is 13.5pt English and 15pt Urdu; Wazeh keeps its larger
+     root in print (globals.css), so a Wazeh reader's sheet is larger still. */
+  .print-doc .print-sheet { max-inline-size: none; padding: 0; border: 0; border-radius: 0; font-size: 1.04rem; line-height: 1.55; }
+  .print-doc .print-sheet:lang(ur) { font-size: 1.15rem; line-height: 1.9; }
+  .print-doc .print-sheet a { text-decoration: none; }
+  .print-doc :is(h1, h2, h3, h4) { break-after: avoid; }
+  .print-doc .print-mast, .print-doc .print-story > h3, .print-doc .print-tags { break-inside: avoid; }
+  .print-doc .print-post, .print-doc .print-list li { break-inside: avoid; }
+  .print-doc .story-fig-print { break-inside: avoid; inline-size: 36%; }
+  .print-doc p { orphans: 3; widows: 3; }
+}

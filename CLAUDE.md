@@ -1,4 +1,4 @@
-# Teen Pehr — project instructions for Claude Code
+# Tabayyun (تبیُّن) — project instructions for Claude Code
 
 Read `docs/PLAN.md` first: it holds every product, architecture and typography decision.
 `docs/RESEARCH.md` holds the comparison tables and the verified source pack. `docs/API.md` is

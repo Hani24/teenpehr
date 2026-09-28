@@ -1,8 +1,11 @@
+import type { NextRequest } from "next/server";
 import { buildFeed, toJsonFeed } from "@/lib/feed";
+import { feedAccess } from "@/lib/auth/feed-access";
 
-export const revalidate = 300;
-
-export async function GET(_req: Request, ctx: { params: Promise<{ locale: string }> }) {
+/** JSON Feed for one account's feed reader: /{locale}/feed.json?token=… (the link on /{locale}/account). */
+export async function GET(req: NextRequest, ctx: { params: Promise<{ locale: string }> }) {
   const { locale } = await ctx.params;
-  return Response.json(toJsonFeed(await buildFeed(locale)), { headers: { "Content-Type": "application/feed+json; charset=utf-8", "Cache-Control": "public, max-age=300" } });
+  const denied = await feedAccess(req, locale);
+  if (denied) return denied;
+  return Response.json(toJsonFeed(await buildFeed(locale)), { headers: { "Content-Type": "application/feed+json; charset=utf-8", "Cache-Control": "private, max-age=300", "X-Robots-Tag": "noindex" } });
 }

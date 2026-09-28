@@ -1,11 +1,21 @@
 [Unit]
-Description=Teen Pehr edition worker, 3x/day (Asia/Karachi)
+Description=Tabayyun edition worker: checks every 10 minutes for a due slot (Asia/Karachi)
 
+# The edition times live in the admin (Settings > edition times), not here. Each firing runs
+# `teenpehr edition --scheduled`: it reads those times, and runs the latest slot that is due unless
+# this timer already started it (out/state/schedule.json in worker/), so a firing between slots costs
+# one GET /config and makes no run row. Every slot therefore starts within 10 minutes of its time,
+# and changing the times in the admin needs no change here.
+#
+# Catch-up: Persistent=true fires once when the laptop wakes, which runs the latest slot that came due
+# while it slept (a backfill, without notifications, when it is more than 2 h late). systemd never
+# starts news-worker.service while a run is still active; the worker covers firings dropped that way
+# by re-resolving the slot after each edition (at most two extra slots per run). A slot that is
+# already published or held in review is skipped without calling Claude.
 [Timer]
-OnCalendar=*-*-* 07,13:00 Asia/Karachi
-OnCalendar=*-*-* 19:30 Asia/Karachi
+OnCalendar=*-*-* *:00/10:00 Asia/Karachi
 Persistent=true
-RandomizedDelaySec=120
+RandomizedDelaySec=30
 AccuracySec=1min
 
 [Install]

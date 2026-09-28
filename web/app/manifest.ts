@@ -1,14 +1,17 @@
 import type { MetadataRoute } from "next";
+import { paletteBg, SYSTEM_LIGHT } from "@/lib/view";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Teen Pehr · تین پہر",
-    short_name: "Teen Pehr",
-    description: "Three editions a day. Every story traced to its sources.",
+    name: "Tabayyun · تبیُّن",
+    short_name: "Tabayyun",
+    description: "Verify before you believe. Three editions a day, in English and Urdu, every story traced to its sources.",
     start_url: "/en",
     display: "standalone",
-    background_color: "#f7f3ec",
-    theme_color: "#9a2f22",
+    // The "system" palette's day paper (lib/view.ts); once a page loads, its theme-color meta follows
+    // the reader's palette (components/theme-controls.tsx), so the splash and bar start on the same paper.
+    background_color: paletteBg(SYSTEM_LIGHT),
+    theme_color: paletteBg(SYSTEM_LIGHT),
     lang: "en",
     dir: "auto",
     icons: [

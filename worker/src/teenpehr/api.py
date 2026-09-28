@@ -1,5 +1,6 @@
 """HTTP client for the web app's worker API (docs/API.md). Retries transport errors and 5xx with
-backoff; a 4xx is a programming or data error and is raised as ApiError immediately."""
+backoff; a 4xx is a programming or data error and is raised as ApiError immediately. POST /runs is
+the one call the server does not deduplicate, so it is replayed only when the request never left."""
 
 from __future__ import annotations
 
@@ -14,6 +15,9 @@ from .models import (
     Config,
     EditionIn,
     EditionOut,
+    EditionState,
+    ImageIn,
+    ImageOut,
     ItemIn,
     ItemOut,
     ItemRecord,
@@ -22,6 +26,7 @@ from .models import (
     PostRecord,
     PublishOut,
     RunFinish,
+    RunOutputIn,
 )
 
 logger = log.get("api")
@@ -39,6 +44,24 @@ def _jsonable(model) -> dict[str, Any]:
     return model.model_dump(mode="json", exclude_none=False)
 
 
+def _sparse(model) -> dict[str, Any]:
+    """Items and posts leave out what they do not know: the server keeps an absent field as stored,
+    and several of its metadata fields accept a value or nothing, never null."""
+    return model.model_dump(mode="json", exclude_none=True)
+
+
+# Transport errors raised before the request reached the server, so a replay cannot repeat it.
+_NOT_SENT = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
+
+
+def unknown_sources(e: ApiError) -> set[int]:
+    """Source ids a 400 names in `issues.sources`: removed in the admin since the run read its config.
+    The server stores nothing from such a request, so the caller drops them and sends it again."""
+    issues = e.issues if e.status == 400 and isinstance(e.issues, dict) else {}
+    ids = issues.get("sources")
+    return {i for i in ids if isinstance(i, int)} if isinstance(ids, list) else set()
+
+
 class WorkerApi:
     def __init__(self, site_url: str, token: str, *, timeout: float = 60.0, retries: int = 3, backoff: float = 1.0):
         self.base = site_url.rstrip("/")
@@ -54,7 +77,11 @@ class WorkerApi:
         self._client.close()
 
     # ---- transport ----------------------------------------------------------------------------
-    def _request(self, method: str, path: str, *, json: Any = None, params: dict[str, Any] | None = None) -> Any:
+    def _request(
+        self, method: str, path: str, *, json: Any = None, params: dict[str, Any] | None = None, replay: bool = True
+    ) -> Any:
+        """`replay=False` for a call the server does not deduplicate: after a read timeout or a dropped
+        connection it may have acted already, and a second attempt would do it twice."""
         last: Exception | None = None
         for attempt in range(1, self.retries + 1):
             try:
@@ -62,6 +89,8 @@ class WorkerApi:
             except httpx.TransportError as e:
                 last = e
                 logger.warning("%s %s transport error (attempt %d): %s", method, path, attempt, e)
+                if not replay and not isinstance(e, _NOT_SENT):
+                    raise
             else:
                 if r.status_code >= 500:
                     last = ApiError(r.status_code, r.text[:300])
@@ -91,26 +120,67 @@ class WorkerApi:
             body["date"] = date
         if slot:
             body["slot"] = slot
-        return int(self._request("POST", "/api/worker/runs", json=body)["id"])
+        # Each POST inserts a run row, so a replay after a timeout would leave an orphan "running" one.
+        return int(self._request("POST", "/api/worker/runs", json=body, replay=False)["id"])
 
     def finish_run(self, run_id: int, result: RunFinish) -> None:
+        """Idempotent on the server, so retrying is safe. Per-source results for sources that no
+        longer exist are dropped and the rest sent again, so the run is still recorded."""
+        for _ in range(3):
+            try:
+                self._request("PATCH", f"/api/worker/runs/{run_id}", json=_jsonable(result))
+                return
+            except ApiError as e:
+                gone = unknown_sources(e)
+                if not gone:
+                    raise
+                logger.warning("run %d: sources %s no longer exist; recording it without them", run_id, sorted(gone))
+                kept = [r for r in result.sources if r.source_id not in gone]
+                result = result.model_copy(update={"sources": kept})
         self._request("PATCH", f"/api/worker/runs/{run_id}", json=_jsonable(result))
 
     def post_items(self, run_id: int | None, items: list[ItemIn], chunk: int = 500) -> list[ItemOut]:
+        """Items of a source removed in the admin since the run read its config are dropped (the
+        server refuses the whole request over them), so they get no id and the run skips them."""
         out: list[ItemOut] = []
         for i in range(0, len(items), chunk):
-            body = {"run_id": run_id, "items": [_jsonable(x) for x in items[i : i + chunk]]}
-            res = self._request("POST", "/api/worker/items", json=body)
+            batch = items[i : i + chunk]
+            for _ in range(3):
+                try:
+                    body = {"run_id": run_id, "items": [_sparse(x) for x in batch]}
+                    res = self._request("POST", "/api/worker/items", json=body)
+                    break
+                except ApiError as e:
+                    gone = unknown_sources(e)
+                    if not gone:
+                        raise
+                    logger.warning("sources %s no longer exist; their items are left out", sorted(gone))
+                    batch = [x for x in batch if x.source_id not in gone]
+                    if not batch:
+                        res = {}
+                        break
+            else:
+                raise ApiError(400, "items kept naming unknown sources")
             out.extend(ItemOut.model_validate(x) for x in res.get("items", []))
         return out
 
     def post_posts(self, run_id: int | None, posts: list[PostIn], chunk: int = 500) -> list[PostOut]:
         out: list[PostOut] = []
         for i in range(0, len(posts), chunk):
-            body = {"run_id": run_id, "posts": [_jsonable(x) for x in posts[i : i + chunk]]}
+            body = {"run_id": run_id, "posts": [_sparse(x) for x in posts[i : i + chunk]]}
             res = self._request("POST", "/api/worker/posts", json=body)
             out.extend(PostOut.model_validate(x) for x in res.get("posts", []))
         return out
+
+    def post_run_outputs(self, run_id: int, outputs: list[RunOutputIn], chunk: int = 100) -> list[int]:
+        """Each Claude call's structured output, kept for audits. The server does not deduplicate these,
+        so like POST /runs a request is replayed only when it never reached the server."""
+        ids: list[int] = []
+        for i in range(0, len(outputs), chunk):
+            body = {"outputs": [_jsonable(o) for o in outputs[i : i + chunk]]}
+            res = self._request("POST", f"/api/worker/runs/{run_id}/outputs", json=body, replay=False)
+            ids.extend(int(x) for x in res.get("ids", []))
+        return ids
 
     def get_posts(self, since: datetime, group: str | None = None, handle: str | None = None) -> list[PostRecord]:
         params: dict[str, Any] = {"since": since.isoformat()}
@@ -128,6 +198,20 @@ class WorkerApi:
         res = self._request("GET", "/api/worker/items", params=params)
         return [ItemRecord.model_validate(x) for x in res.get("items", [])]
 
+    def get_edition(self, date: str, slot: str) -> EditionState | None:
+        """The edition's current state, or None when it does not exist yet. A 405 means a web app
+        older than this route; that is treated as unknown (with a warning) rather than failing the run."""
+        try:
+            res = self._request("GET", f"/api/worker/editions/{date}/{slot}")
+        except ApiError as e:
+            if e.status == 404:
+                return None
+            if e.status == 405:
+                logger.warning("the web app has no GET /editions/{date}/{slot} yet; rebuild it to enable the check")
+                return None
+            raise
+        return EditionState.model_validate(res)
+
     def put_edition(self, date: str, slot: str, edition: EditionIn) -> EditionOut:
         res = self._request("PUT", f"/api/worker/editions/{date}/{slot}", json=_jsonable(edition))
         return EditionOut.model_validate(res)
@@ -137,6 +221,11 @@ class WorkerApi:
             "POST", f"/api/worker/editions/{date}/{slot}/publish", json={"force": force, "notify": notify}
         )
         return PublishOut.model_validate(res)
+
+    def post_image(self, image: ImageIn) -> ImageOut:
+        """Upload one publisher image (D6). Idempotent per (sha256, item or post) on the server, so a
+        retry is safe: a repeat answers 200 with the first row's id. A 400 or 413 raises ApiError."""
+        return ImageOut.model_validate(self._request("POST", "/api/worker/images", json=_jsonable(image)))
 
     def add_glossary(self, entries: list[dict[str, str]]) -> dict[str, Any]:
         if not entries:

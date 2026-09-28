@@ -1,14 +1,28 @@
 [Unit]
-Description=Teen Pehr web (Next.js standalone server)
-After=network-online.target docker.service
+Description=Tabayyun web (Next.js standalone server)
+# The database: compose's db service (restart: unless-stopped) is brought back after a reboot by
+# podman-restart.service (podman) or the Docker daemon. Ordering only; harmless when absent.
+After=network-online.target podman-restart.service
+Wants=network-online.target
+# Restart=always never enters "failed" on its own, so OnFailure would never fire: five failed starts
+# within 10 minutes (a missing build, the port taken, no answer within 60 s) stop the restarts and
+# alert. The next worker run (Wants=) or `systemctl --user restart teenpehr-web` tries again.
+StartLimitIntervalSec=10min
+StartLimitBurst=5
+OnFailure=news-alert@%n.service
 
 [Service]
 WorkingDirectory=%h/dev/teenpehr/web
 EnvironmentFile=%h/dev/teenpehr/web/.env.local
-Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
+# Snapshots and publisher images live outside the build: the standalone server chdirs into
+# .next/standalone, which every `next build` wipes. EDITION_SNAPSHOT_DIR and MEDIA_DIR in .env.local override these.
+Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1 EDITION_SNAPSHOT_DIR=%h/.local/share/teenpehr/snapshots MEDIA_DIR=%h/.local/share/teenpehr/media
 # Build first: cd web && npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
 # node is installed via fnm, so use a login shell to resolve it
 ExecStart=/bin/bash -lc 'exec node .next/standalone/server.js'
+# Active only once it answers, so units ordered After= it (the worker, the X collector) never hit
+# a server that is still booting.
+ExecStartPost=/bin/sh -c 'for i in $$(seq 60); do curl -fsS -o /dev/null "http://127.0.0.1:$${PORT}/robots.txt" && exit 0; sleep 1; done; echo "web did not answer on port $${PORT}" >&2; exit 1'
 Restart=always
 RestartSec=5
 KillSignal=SIGINT

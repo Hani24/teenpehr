@@ -18,11 +18,36 @@ function unauthorized() {
   return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 
-/** Parse and validate a JSON body; returns a 400 response on failure. */
-export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<{ data: T } | { error: NextResponse }> {
+/**
+ * The body as text, or null when it is over `maxBytes` (by Content-Length, or counted while reading, so a
+ * missing or false length cannot get more past it).
+ */
+async function readCapped(req: Request, maxBytes: number): Promise<string | null> {
+  const declared = Number(req.headers.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > maxBytes) return null;
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) { await reader.cancel().catch(() => {}); return null; }
+    parts.push(value);
+  }
+  return Buffer.concat(parts).toString("utf8");
+}
+
+/**
+ * Parse and validate a JSON body; returns a 400 response on failure. With `maxBytes`, a larger body is a
+ * 413 and is never read in full.
+ */
+export async function parseBody<T>(req: Request, schema: ZodType<T>, opts: { maxBytes?: number } = {}): Promise<{ data: T } | { error: NextResponse }> {
   let json: unknown;
   try {
-    const text = await req.text();
+    const text = opts.maxBytes ? await readCapped(req, opts.maxBytes) : await req.text();
+    if (text === null) return { error: NextResponse.json({ error: `body over ${opts.maxBytes} bytes` }, { status: 413 }) };
     json = text.trim() ? JSON.parse(text) : {};
   } catch { return { error: NextResponse.json({ error: "invalid JSON" }, { status: 400 }) }; }
   const result = schema.safeParse(json);

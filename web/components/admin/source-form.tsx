@@ -1,14 +1,17 @@
-import { saveSource, deleteSource, testFetch } from "@/lib/admin/actions";
+import { saveSource, archiveSource, restoreSource, deleteSource, testFetch } from "@/lib/admin/actions";
 import { Field, Input, Select, Textarea, Checkbox, Button } from "@/components/admin/form";
 import { ActionForm } from "@/components/admin/action-form";
 import { ConfirmButton } from "@/components/admin/confirm-button";
+import { fmtDate } from "@/lib/admin/util";
 import type { schema } from "@/db";
 
 type Source = typeof schema.sources.$inferSelect;
 type Group = typeof schema.groups.$inferSelect;
+type Usage = { items: number; runs: number; stories: number };
 
-export function SourceForm({ source, groups }: { source: Source | null; groups: Group[] }) {
+export function SourceForm({ source, groups, usage }: { source: Source | null; groups: Group[]; usage?: Usage }) {
   const s = source;
+  const neverFetched = !!usage && usage.items === 0 && usage.runs === 0;
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <form action={saveSource} className="card grid gap-3 p-4 sm:grid-cols-2">
@@ -22,7 +25,7 @@ export function SourceForm({ source, groups }: { source: Source | null; groups: 
         <Field label="Route" hint="germany = via the Hetzner SOCKS proxy for hosts blocked from Pakistan"><Select name="route" defaultValue={s?.route ?? "direct"} options={[["direct", "direct"], ["germany", "germany"]]} /></Field>
         <Field label="Fetcher tier" hint="0 feed · 1 impersonating HTTP · 2 stealth browser · 3 hosted"><Input name="fetcher_tier" type="number" min={0} max={3} defaultValue={s?.fetcherTier ?? 0} /></Field>
         <Field label="Max items per run"><Input name="max_items" type="number" min={1} max={100} defaultValue={s?.maxItems ?? 8} /></Field>
-        <div className="flex items-end"><Checkbox name="active" label="Active" defaultChecked={s?.active ?? true} /></div>
+        <div className="flex items-end"><Checkbox name="active" label={s?.archivedAt ? "Active (restore first)" : "Active"} defaultChecked={s?.active ?? true} disabled={!!s?.archivedAt} /></div>
         <Field label="Notes" className="sm:col-span-2"><Textarea name="notes" defaultValue={s?.notes ?? ""} /></Field>
         <div className="sm:col-span-2"><Button tone="primary">{s ? "Save changes" : "Create source"}</Button></div>
       </form>
@@ -34,10 +37,26 @@ export function SourceForm({ source, groups }: { source: Source | null; groups: 
           </ActionForm>
         </div>
         {s && (
-          <div className="card p-4">
-            <h2 className="mb-2 font-semibold">Danger zone</h2>
-            <p className="meta mb-2">Deleting removes the source and every item fetched from it.</p>
-            <form action={deleteSource}><input type="hidden" name="id" value={s.id} /><ConfirmButton>Delete source</ConfirmButton></form>
+          <div className="card space-y-3 p-4">
+            <h2 className="font-semibold">{s.archivedAt ? "Archived" : "Retire this source"}</h2>
+            {usage && <p className="meta">{usage.items} items fetched · cited in {usage.stories} stories · {usage.runs} fetch records</p>}
+            {s.archivedAt ? (
+              <>
+                <p className="text-sm">Archived {fmtDate(s.archivedAt)}. The worker skips it; its items stay cited in past editions.</p>
+                <form action={restoreSource}><input type="hidden" name="id" value={s.id} /><Button>Restore source</Button></form>
+              </>
+            ) : (
+              <>
+                <p className="text-sm">Archiving stops fetching and hides it from the list. Its items and every citation in published editions stay.</p>
+                <form action={archiveSource}><input type="hidden" name="id" value={s.id} /><Button tone="danger">Archive source</Button></form>
+              </>
+            )}
+            {neverFetched ? (
+              <form action={deleteSource} className="border-t border-rule pt-3">
+                <p className="meta mb-2">Never fetched, so it can be deleted outright.</p>
+                <input type="hidden" name="id" value={s.id} /><ConfirmButton>Delete source</ConfirmButton>
+              </form>
+            ) : <p className="meta border-t border-rule pt-3">Delete is only possible before the first fetch; archive keeps the history intact.</p>}
           </div>
         )}
       </div>

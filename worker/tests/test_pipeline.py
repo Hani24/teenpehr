@@ -14,6 +14,7 @@ from teenpehr.llm import FakeLLM, LLMError
 from teenpehr.pipeline import EditionRun, resolve_slot
 
 BASE = "http://web.test"
+ED = f"{BASE}/api/worker/editions"
 KHI = ZoneInfo("Asia/Karachi")
 TIMES = {"subh": "07:00", "dopahar": "13:00", "shaam": "19:30"}
 
@@ -40,8 +41,14 @@ def test_resolve_slot_subh_window_covers_the_night():
 def test_resolve_slot_override_and_backfill():
     info = resolve_slot(datetime(2026, 9, 23, 16, 0, tzinfo=KHI), TIMES, slot="dopahar", date="2026-09-23")
     assert info.run_id == "2026-09-23-dopahar" and info.backfill
+    assert info.until == datetime(2026, 9, 23, 13, 0, tzinfo=KHI)  # a backfill stops at its slot time
     info2 = resolve_slot(datetime(2026, 9, 23, 13, 30, tzinfo=KHI), TIMES, lookback_override=24)
-    assert info2.lookback_hours == 24 and not info2.backfill
+    assert info2.lookback_hours == 24 and not info2.backfill and info2.until is None
+
+
+def test_resolve_slot_refuses_a_date_without_a_slot():
+    with pytest.raises(ValueError, match="needs a slot"):
+        resolve_slot(datetime(2026, 9, 23, 13, 5, tzinfo=KHI), TIMES, date="2026-09-22")
 
 
 # ---- fake fetcher ------------------------------------------------------------------------------
@@ -124,7 +131,7 @@ def _fake_llm(with_bad_ref=True):
                         "summary_ur": "وزیراعظم نے اجلاس كی صدارت كی۔",
                         "angles_ur": ["بارش نمایاں"],
                     },
-                    {"idx": 2, "title_ur": "دوسری خبر", "summary_ur": "مختصر۔"},
+                    {"idx": 2, "title_ur": "دوسری خبر", "summary_ur": "مختصر۔", "thread_title_ur": "کراچی کا مون سون۔"},
                 ],
                 "glossary_additions": [{"term_en": "Karachi", "term_ur": "کراچی", "kind": "place"}],
             },
@@ -185,6 +192,7 @@ def _mock_api():
     glos = respx.post(f"{BASE}/api/worker/glossary").mock(
         return_value=httpx.Response(200, json={"added": 1, "skipped": 0})
     )
+    respx.get(f"{ED}/2026-09-23/dopahar").mock(return_value=httpx.Response(404, json={"error": "not found"}))
     return runs, fin, items, put, pub, glos
 
 
@@ -234,11 +242,20 @@ def test_live_run_puts_publishes_and_validates(settings):
     ids = {r["item_id"] for r in s1["sources"]}
     assert len(ids) == 2 and s1["posts"] == [501]
     assert sum(1 for r in s1["sources"] if r["is_primary"]) == 1
+    # the existing thread has no Urdu title yet, so its English title goes to the Urdu pass
+    assert s1["thread_title_en"] == "IMF review" and s1["thread_title_ur"] == ""
     s2 = pk["stories"][1]
     assert (
         s2["thread"] == "karachi-monsoon-2026-09"
         and s2["thread_title_en"] == "Karachi monsoon"
+        and s2["thread_title_ur"] == "کراچی کا مون سون"  # the thread's own Urdu title, not the story headline
         and s2["qa_status"] == "flagged"
+    )
+    assert body["partial"] is False
+    # india: curation failed → raw headlines, all flagged so the edition cannot publish unchecked
+    india = next(g for g in body["groups"] if g["group"] == "india")
+    assert india["stories"] and all(
+        st["qa_status"] == "flagged" and "headline fallback" in st["qa_note"] for st in india["stories"]
     )
     # the old Geo item (21 Sep) is outside the window; broken source reported as failed
     fin_body = json.loads(fin.calls[0].request.content)
@@ -343,8 +360,9 @@ def test_resubmit_no_publish_and_409(settings, tmp_path):
         "glossary_additions": [],
     }
     f.write_text(json.dumps(payload))
+    respx.get(f"{ED}/2026-09-23/subh").mock(return_value=httpx.Response(404, json={"error": "not found"}))
     put = respx.put(f"{BASE}/api/worker/editions/2026-09-23/subh").mock(
-        return_value=httpx.Response(409, json={"error": "published"})
+        return_value=httpx.Response(409, json={"error": "edition is published"})
     )
     pub = respx.post(f"{BASE}/api/worker/editions/2026-09-23/subh/publish").mock(
         return_value=httpx.Response(200, json={"status": "published"})
@@ -399,3 +417,47 @@ def test_report_has_per_pass_totals(settings):
         + report.passes["curate"]["cache_write"]
         == 1000
     )
+
+
+def _saved(tmp_path, slot="subh"):
+    f = tmp_path / f"failed-2026-09-23-{slot}.json"
+    edition = {
+        "groups": [
+            {
+                "group": "pakistan",
+                "stories": [{"order": 0, "title_en": "T", "summary_en": "S", "sources": [{"item_id": 9001}]}],
+            }
+        ]
+    }
+    f.write_text(json.dumps({"run_id": f"2026-09-23-{slot}", "date": "2026-09-23", "slot": slot, "edition": edition}))
+    return f
+
+
+@respx.mock
+def test_resubmit_refuses_an_edition_held_for_review(tmp_path):
+    from teenpehr.pipeline import resubmit
+
+    respx.get(f"{ED}/2026-09-23/subh").mock(
+        return_value=httpx.Response(200, json={"edition_id": 7, "status": "review"})
+    )
+    put = respx.put(f"{ED}/2026-09-23/subh").mock(return_value=httpx.Response(200, json={}))
+    pub = respx.post(f"{ED}/2026-09-23/subh/publish").mock(
+        return_value=httpx.Response(200, json={"status": "published"})
+    )
+    f = _saved(tmp_path)
+    with pytest.raises(ValueError, match="held for review"):
+        resubmit(WorkerApi(BASE, "tok", backoff=0), f)
+    assert not put.called and not pub.called and f.exists()
+
+
+@respx.mock
+def test_resubmit_of_a_published_edition_skips_the_put(tmp_path):
+    from teenpehr.pipeline import resubmit
+
+    respx.get(f"{ED}/2026-09-23/subh").mock(
+        return_value=httpx.Response(200, json={"edition_id": 7, "status": "published"})
+    )
+    put = respx.put(f"{ED}/2026-09-23/subh").mock(return_value=httpx.Response(200, json={}))
+    respx.post(f"{ED}/2026-09-23/subh/publish").mock(return_value=httpx.Response(200, json={"status": "published"}))
+    r = resubmit(WorkerApi(BASE, "tok", backoff=0), _saved(tmp_path))
+    assert r["put"] == "already-published" and r["publish"] == "published" and not put.called

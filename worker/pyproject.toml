@@ -1,7 +1,7 @@
 [project]
 name = "teenpehr"
 version = "0.1.0"
-description = "Teen Pehr news worker: collect, curate, write Urdu, check, publish"
+description = "Tabayyun news worker: collect, curate, write Urdu, check, publish"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
   "python-dateutil>=2.9",
   "typer>=0.27,<1",
   "googlenewsdecoder>=0.2.1,<0.3",
+  "pillow>=11,<13",
 ]
 
 [project.scripts]

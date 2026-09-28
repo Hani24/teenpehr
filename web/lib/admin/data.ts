@@ -1,17 +1,17 @@
 import "server-only";
-import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getEditionFull } from "@/lib/queries";
-import type { Slot } from "@/lib/urdu";
+import { normalizeUrdu, type Slot } from "@/lib/urdu";
 
-const { groups, sources, handles, topics, glossary, editions, editionGroups, runs, runSources, stories } = schema;
+const { groups, sources, handles, topics, glossary, editions, editionGroups, runs, runSources, stories, items, storySources } = schema;
 
 export async function dashboard() {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
   const [todaysEditions, recentRuns, srcStats, edCount] = await Promise.all([
     db.select().from(editions).where(eq(editions.date, today)),
     db.select().from(runs).orderBy(desc(runs.startedAt)).limit(10),
-    db.select({ active: sql<number>`count(*) filter (where ${sources.active})`, failing: sql<number>`count(*) filter (where ${sources.active} and ${sources.failStreak} >= 3)`, total: sql<number>`count(*)` }).from(sources),
+    db.select({ active: sql<number>`count(*) filter (where ${sources.active})`, failing: sql<number>`count(*) filter (where ${sources.active} and ${sources.failStreak} >= 3)`, total: sql<number>`count(*)` }).from(sources).where(isNull(sources.archivedAt)),
     db.select({ n: sql<number>`count(*)` }).from(editions).where(eq(editions.status, "published")),
   ]);
   const itemsByRun = new Map<number, number>();
@@ -33,8 +33,9 @@ export async function getGroup(id: number) {
 }
 
 export type SourceFilter = { group?: string; kind?: string; route?: string; active?: string; q?: string };
+/** Live (non-archived) sources; archived ones are listed separately by listArchivedSources. */
 export async function listSources(f: SourceFilter) {
-  const conds = [];
+  const conds = [isNull(sources.archivedAt)];
   if (f.group) conds.push(eq(groups.slug, f.group));
   if (f.kind) conds.push(eq(sources.kind, f.kind as typeof sources.kind.enumValues[number]));
   if (f.route) conds.push(eq(sources.route, f.route as typeof sources.route.enumValues[number]));
@@ -42,7 +43,20 @@ export async function listSources(f: SourceFilter) {
   if (f.active === "0") conds.push(eq(sources.active, false));
   if (f.q) conds.push(or(ilike(sources.name, `%${f.q}%`), ilike(sources.url, `%${f.q}%`))!);
   return db.select({ s: sources, groupSlug: groups.slug, groupName: groups.nameEn }).from(sources).innerJoin(groups, eq(groups.id, sources.groupId))
-    .where(conds.length ? and(...conds) : undefined).orderBy(groups.order, sources.active, sources.name);
+    .where(and(...conds)).orderBy(groups.order, sources.active, sources.name);
+}
+export async function listArchivedSources() {
+  return db.select({ s: sources, groupName: groups.nameEn, items: sql<number>`(select count(*) from ${items} where ${items.sourceId} = ${sources.id})` })
+    .from(sources).innerJoin(groups, eq(groups.id, sources.groupId)).where(isNotNull(sources.archivedAt)).orderBy(desc(sources.archivedAt));
+}
+/** What depends on a source: fetched items, per-run fetch records, and the stories that cite its items. */
+export async function sourceUsage(id: number) {
+  const [itemCount, runCount, [cited]] = await Promise.all([
+    db.$count(items, eq(items.sourceId, id)),
+    db.$count(runSources, eq(runSources.sourceId, id)),
+    db.select({ n: sql<number>`count(distinct ${storySources.storyId})` }).from(storySources).innerJoin(items, eq(items.id, storySources.itemId)).where(eq(items.sourceId, id)),
+  ]);
+  return { items: itemCount, runs: runCount, stories: Number(cited.n) };
 }
 export async function getSource(id: number) {
   const [row] = await db.select().from(sources).where(eq(sources.id, id));
@@ -55,6 +69,7 @@ export async function listHandles(group?: string) {
 }
 
 export async function listGlossary(q?: string) {
+  if (q) q = normalizeUrdu(q);
   return db.select().from(glossary).where(q ? or(ilike(glossary.termEn, `%${q}%`), ilike(glossary.termUr, `%${q}%`)) : undefined).orderBy(glossary.kind, glossary.termEn);
 }
 

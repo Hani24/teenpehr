@@ -112,3 +112,60 @@ def normalize_urdu(text: str, digits: str = "keep") -> str:
 def slugify(text: str, max_len: int = 60) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return s[:max_len].rstrip("-") or "story"
+
+
+# ---- research metadata --------------------------------------------------------------------------
+def word_count(text: str) -> int:
+    return len(text.split())
+
+
+# Letters Urdu writes and Arabic and Persian do not (ٹ ڈ ڑ ں ے ۓ ھ ہ ۃ), and Persian letters Arabic lacks.
+_URDU_ONLY = set("ٹڈڑںےۓھہۃ")
+_PERSIAN = set("پچژگکی")
+_SCRIPTS: list[tuple[str, tuple[tuple[int, int], ...]]] = [
+    ("arab", ((0x0600, 0x06FF), (0x0750, 0x077F), (0xFB50, 0xFDFF), (0xFE70, 0xFEFF))),
+    ("hi", ((0x0900, 0x097F),)),
+    ("bn", ((0x0980, 0x09FF),)),
+    ("pa", ((0x0A00, 0x0A7F),)),
+    ("ru", ((0x0400, 0x04FF),)),
+    ("he", ((0x0590, 0x05FF),)),
+    ("zh", ((0x4E00, 0x9FFF),)),
+]
+_EN_WORDS = {
+    *("the", "an", "of", "to", "in", "on", "for", "and", "or", "is", "are", "was", "were", "be", "has", "have"),
+    *("had", "with", "from", "by", "at", "as", "that", "this", "it", "its", "after", "over", "says", "said"),
+    *("will", "not", "but", "new"),
+}
+
+
+def detect_lang(text: str) -> str | None:
+    """A cheap language guess from the script the letters are in: "ur", "fa" or "ar" for Arabic script
+    (by the letters only Urdu, or only Persian, uses), "en" for Latin text with common English words,
+    "und-Latn" for other Latin text, a few other scripts by name, None when there is too little text."""
+    counts: dict[str, int] = {}
+    latin = 0
+    for ch in text:
+        if not ch.isalpha():
+            continue
+        cp = ord(ch)
+        if cp < 0x250:
+            latin += 1
+            continue
+        for name, ranges in _SCRIPTS:
+            if any(lo <= cp <= hi for lo, hi in ranges):
+                counts[name] = counts.get(name, 0) + 1
+                break
+    total = latin + sum(counts.values())
+    if total < 3:
+        return None
+    script, n = max(counts.items(), key=lambda kv: kv[1], default=("latn", 0))
+    if latin >= n:
+        words = re.findall(r"[a-z]+", text.lower())
+        hits = sum(1 for w in words if w in _EN_WORDS)
+        return "en" if hits and hits * 25 >= len(words) else "und-Latn"
+    if script == "arab":
+        letters = set(text)
+        if letters & _URDU_ONLY:
+            return "ur"
+        return "fa" if letters & _PERSIAN else "ar"
+    return script

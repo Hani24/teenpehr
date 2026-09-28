@@ -1,8 +1,13 @@
-# Local Postgres for development. Production uses Neon or Supabase (see docs/PLAN.md).
+# Local Postgres, for development and for the laptop deployment (infra/README.md). A hosted
+# deployment would use Neon or Supabase instead (see docs/PLAN.md).
 services:
   db:
     image: postgres:17-alpine
     container_name: teenpehr-db
+    # Back after a reboot, so timer runs don't fail at the health preflight: Docker restarts it
+    # when the daemon starts; rootless podman needs `systemctl --user enable podman-restart.service`.
+    # Not restarted after an explicit `docker compose stop`.
+    restart: unless-stopped
     environment:
       POSTGRES_USER: teenpehr
       POSTGRES_PASSWORD: teenpehr

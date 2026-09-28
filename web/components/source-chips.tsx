@@ -1,7 +1,8 @@
 import type { Outlet } from "@/lib/view";
+import { formatNumber, type Locale, type UrduDigits } from "@/lib/urdu";
 
 /** Outlet chips. In Urdu, names come from the glossary when available; otherwise the Latin name is isolated. */
-export function SourceChips({ outlets, max = 4, labels }: { outlets: Outlet[]; max?: number; labels?: Map<string, string> }) {
+export function SourceChips({ outlets, max = 4, labels, locale, digits }: { outlets: Outlet[]; max?: number; labels?: Map<string, string>; locale: Locale; digits?: UrduDigits }) {
   const shown = outlets.slice(0, max);
   const rest = outlets.length - shown.length;
   return (
@@ -15,7 +16,7 @@ export function SourceChips({ outlets, max = 4, labels }: { outlets: Outlet[]; m
           </a>
         );
       })}
-      {rest > 0 && <span className="chip">+{rest}</span>}
+      {rest > 0 && <span className="chip">+{formatNumber(rest, locale, digits)}</span>}
     </span>
   );
 }

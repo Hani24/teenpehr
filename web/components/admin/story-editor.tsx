@@ -1,9 +1,13 @@
-import { updateStory, addCorrection } from "@/lib/admin/actions";
+import { updateStory, addCorrection, hideStoryImage } from "@/lib/admin/actions";
 import { Field, Input, Textarea, Select, Button } from "@/components/admin/form";
 import type { StoryFull } from "@/lib/queries";
 import { fmtDate } from "@/lib/admin/util";
+import { mediaUrl, sortedVariants } from "@/lib/media";
 
-export function StoryEditor({ story, editionId, editable }: { story: StoryFull; editionId: number; editable: boolean }) {
+/**
+ * One story in the edition editor. `hiderName`: who hid its image, when it is hidden (a published story).
+ */
+export function StoryEditor({ story, editionId, editable, hiderName }: { story: StoryFull; editionId: number; editable: boolean; hiderName?: string | null }) {
   const s = story;
   return (
     <article id={`story-${s.id}`} className="card p-4">
@@ -37,17 +41,18 @@ export function StoryEditor({ story, editionId, editable }: { story: StoryFull; 
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           <div><h3 className="font-semibold">{s.titleEn}</h3><p className="mt-1 text-sm">{s.summaryEn}</p>{s.whyEn && <p className="meta mt-1">Why: {s.whyEn}</p>}{s.contestedEn && <p className="meta mt-1">Contested: {s.contestedEn}</p>}</div>
-          <div lang="ur" dir="rtl"><h3 className="font-semibold">{s.titleUr}</h3><p className="mt-1 text-sm">{s.summaryUr}</p></div>
+          <div lang="ur" dir="rtl"><h3 className="font-semibold leading-[2]">{s.titleUr}</h3><p className="mt-1 text-sm leading-[2.2]">{s.summaryUr}</p></div>
         </div>
       )}
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-semibold">Sources ({s.sources.length}) · posts ({s.posts.length}) · angles ({s.angles.length})</summary>
         <ul className="mt-2 space-y-1 text-sm">
-          {s.sources.map((x) => <li key={x.item.id}>{x.isPrimary && <span className="pill pill-soft mr-1">primary</span>}<span className="font-semibold">{x.item.source.name}</span> · <a href={x.item.url} target="_blank" rel="noreferrer">{x.item.title}</a> <span className="meta">{fmtDate(x.item.publishedAt)}</span></li>)}
-          {s.posts.map((p) => <li key={p.post.id}><span className="pill pill-soft mr-1">post</span>@{p.post.authorHandle}: {p.post.text.slice(0, 160)} <a href={p.post.url} target="_blank" rel="noreferrer">↗</a></li>)}
-          {s.angles.map((a, i) => <li key={i}><span className="pill pill-soft mr-1">angle</span>item {a.itemId}: {a.noteEn}</li>)}
+          {s.sources.map((x) => <li key={x.item.id}>{x.isPrimary && <span className="pill pill-soft me-1">primary</span>}<span className="font-semibold">{x.item.source.name}</span> · <a href={x.item.url} target="_blank" rel="noreferrer">{x.item.title}</a> <span className="meta">{fmtDate(x.item.publishedAt)}</span></li>)}
+          {s.posts.map((p) => <li key={p.post.id}><span className="pill pill-soft me-1">post</span>@{p.post.authorHandle}: {p.post.text.slice(0, 160)} <a href={p.post.url} target="_blank" rel="noreferrer">↗</a></li>)}
+          {s.angles.map((a, i) => <li key={i}><span className="pill pill-soft me-1">angle</span>item {a.itemId}: {a.noteEn}</li>)}
         </ul>
       </details>
+      <StoryImageAdmin story={s} editionId={editionId} published={!editable} hiderName={hiderName} />
       {s.corrections.length > 0 && (
         <ul className="mt-2 text-sm">{s.corrections.map((c) => <li key={c.id}><span className="meta">{fmtDate(c.createdAt)}</span> · {c.textEn}</li>)}</ul>
       )}
@@ -60,5 +65,62 @@ export function StoryEditor({ story, editionId, editable }: { story: StoryFull; 
         </form>
       )}
     </article>
+  );
+}
+
+/**
+ * The story's publisher image (D6), as readers get it, with Hide image. A draft loses the image; on a
+ * published story it is hidden from readers and the hide is kept with who and when (lib/admin/actions.ts
+ * hideStoryImage). Sensitive images stay closed until opened here too.
+ */
+function StoryImageAdmin({ story: s, editionId, published, hiderName }: { story: StoryFull; editionId: number; published: boolean; hiderName?: string | null }) {
+  const img = s.image;
+  if (!img) return null;
+  const v = sortedVariants(img)[0];
+  const owner = img.itemId != null ? s.sources.find((x) => x.itemId === img.itemId)?.item : null;
+  const post = img.postId != null ? s.posts.find((x) => x.postId === img.postId)?.post : null;
+  const from = owner ? { label: `item #${owner.id}: ${owner.title}`, url: owner.url } : post ? { label: `post by @${post.authorHandle}`, url: post.url } : null;
+  const picture = v && (
+    // Sized inline: globals.css sets img { block-size: auto } outside any layer, which beats Tailwind's h-*.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={mediaUrl(v.file)} alt={img.alt ?? `Image from ${img.credit}`} width={v.w} height={v.h} loading="lazy" decoding="async"
+      className="block rounded object-cover" style={{ background: img.color, blockSize: "6rem", inlineSize: "auto", maxInlineSize: "10rem" }} />
+  );
+  return (
+    <section className="mt-3 flex flex-wrap items-start gap-3 rounded border border-rule p-3 text-sm" aria-label={`Image of story ${s.id}`}>
+      <div className={s.imageHiddenAt ? "opacity-50" : undefined}>
+        {img.graphic
+          ? <details><summary className="cursor-pointer font-semibold text-accent">Sensitive: show</summary><div className="mt-1">{picture}</div></details>
+          : picture}
+      </div>
+      <div className="min-w-0 flex-1 space-y-1">
+        <p>
+          <span className="font-semibold">Image</span> · credit <span className="font-semibold">{img.credit}</span> · {img.width}×{img.height}
+          {img.graphic && <span className="pill pill-soft ms-1 text-accent" title="The vision check flagged it, or could not check it: readers see it blurred.">sensitive</span>}
+          {from && <> · from <a href={from.url} target="_blank" rel="noreferrer">{from.label}</a></>}
+        </p>
+        <p className="meta">Alt text: {img.alt ?? `none from the publisher (readers get "Image from ${img.credit}")`}</p>
+        {s.imageHiddenAt ? (
+          <p><span className="pill pill-soft text-warn">hidden</span> Hidden from readers {fmtDate(s.imageHiddenAt)} by {hiderName ?? (s.imageHiddenBy ? `user #${s.imageHiddenBy}` : "an account since deleted")}. The story text is as published.</p>
+        ) : published ? (
+          // Two steps without client state: open, read what it does, confirm. (Not ConfirmButton: its first
+          // click already submits, because React re-renders it as type="submit" inside that click.)
+          <details>
+            <summary className="chip inline-flex cursor-pointer font-semibold text-accent">Hide image…</summary>
+            <form action={hideStoryImage} className="mt-2 flex flex-wrap items-center gap-2">
+              <input type="hidden" name="story_id" value={s.id} /><input type="hidden" name="edition_id" value={editionId} />
+              <p className="meta basis-full">The story text stays as published. Readers stop seeing this image on every page, in downloads and in offline copies as they refresh; your name and the time are recorded here. There is no undo.</p>
+              <Button tone="danger">Confirm: hide from readers</Button>
+            </form>
+          </details>
+        ) : (
+          <form action={hideStoryImage} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="story_id" value={s.id} /><input type="hidden" name="edition_id" value={editionId} />
+            <Button>Hide image</Button>
+            <span className="meta">Removes the image from this draft story; the text is not touched. A worker rerun of this slot may choose an image again.</span>
+          </form>
+        )}
+      </div>
+    </section>
   );
 }

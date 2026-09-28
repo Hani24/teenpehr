@@ -1,18 +1,30 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------------------
-   Teen Pehr design tokens. Three themes (classic, night, buzurg) switch by [data-theme] on
-   <html>; text size for Buzurg by [data-size]. Every colour is defined on :root first so no
-   theme is ever missing a token. See docs/PLAN.md § Themes and § Urdu typography.
+   Tabayyun design tokens (decision D4 in docs/PLAN.md). Two independent switches on <html>:
+   - data-theme: the colour palette (classic, night, kaghaz, sabz, chandni, shab, or "system":
+     Classic, or Night when the device prefers dark). The list lives in THEMES in lib/view.ts.
+   - data-mode="wazeh": the Wazeh (واضح, clear) reading mode, over any palette: larger text,
+     one column, bigger buttons; with data-size (sm/md/lg) and data-nastaliq (on/off).
+   data-contrast="high" puts a palette's AAA overrides on top of it.
+   Every colour is defined on :root (Classic) first, so no palette is ever missing a token.
+   Contrast: every text token passes WCAG AA (4.5:1) on --bg, --surface and --surface-2 in every
+   palette, and AAA (7:1) with high contrast; scripts/contrast-check.mjs checks each pair in use.
+   The tokens are set by the boot script and the server render (app/[locale]/layout.tsx) before
+   paint, and by components/theme-controls.tsx. See also docs/PLAN.md § Urdu typography.
 --------------------------------------------------------------------------------------- */
-:root {
+
+/* ---- palettes ----------------------------------------------------------------------------
+   A palette is colours only. [data-swatch="<id>"] gives the picker's swatches the palette's own
+   tokens wherever they sit. */
+:root, [data-swatch="classic"] {
   color-scheme: light;
   --bg: #f7f3ec;         /* paper */
   --surface: #fffdf9;
   --surface-2: #f1ebe0;
   --ink: #1c1917;
   --ink-2: #57534e;
-  --ink-3: #78716c;
+  --ink-3: #6b645e;      /* 4.9:1 on --surface-2 */
   --rule: #d9d1c4;
   --rule-strong: #1c1917;
   --accent: #9a2f22;     /* deep red: edition name, must-read */
@@ -20,38 +32,17 @@
   --link: #1c1917;
   --focus: #1d4ed8;
   --ok: #2f6b3a;
-  --warn: #9a6b1e;
-  --radius: 6px;
-  --measure: 66ch;
-  --gutter: clamp(1rem, 4vw, 2rem);
-
-  --font-latin: var(--font-inter), system-ui, sans-serif;
-  --font-latin-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-urdu-body: var(--font-nastaliq), var(--font-naskh), "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif;
-  --font-urdu-display: var(--font-nastaliq), var(--font-naskh), "Noto Nastaliq Urdu", serif;
-  --font-urdu-ui: var(--font-vazir), var(--font-naskh), "Vazirmatn", system-ui, sans-serif;
-
-  /* fluid type scale (Latin); Urdu sizes are derived per script below */
-  --step--1: clamp(0.83rem, 0.8rem + 0.2vw, 0.9rem);
-  --step-0: clamp(1.05rem, 1rem + 0.3vw, 1.15rem);
-  --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.45rem);
-  --step-2: clamp(1.6rem, 1.4rem + 1vw, 2.1rem);
-  --step-3: clamp(2.1rem, 1.7rem + 2vw, 3.2rem);
-  --lh-body: 1.6;
-  --lh-tight: 1.15;
-  --urdu-body-scale: 1.12;   /* Nastaliq needs to be a touch larger than Latin at the same step */
-  --urdu-lh-body: 2.2;       /* Nastaliq body */
-  --urdu-lh-display: 2.0;
+  --warn: #845a18;       /* also text ("Where outlets disagree"): 5.1:1 on --surface-2 */
 }
 
-:root[data-theme="night"] {
+:root[data-theme="night"], [data-swatch="night"] {
   color-scheme: dark;
   --bg: #0f1115;
   --surface: #171a21;
   --surface-2: #1f232c;
   --ink: #ece7de;
   --ink-2: #b4ada3;
-  --ink-3: #8a847b;
+  --ink-3: #969088;      /* 5.0:1 on --surface-2 */
   --rule: #2a2f3a;
   --rule-strong: #ece7de;
   --accent: #e0b46a;
@@ -62,27 +53,181 @@
   --warn: #e0b46a;
 }
 
-/* Buzurg: large, warm, high contrast, one column. Body Urdu defaults to Naskh. */
-:root[data-theme="buzurg"] {
+/* Kaghaz (کاغذ): sepia paper for long reads. */
+:root[data-theme="kaghaz"], [data-swatch="kaghaz"] {
   color-scheme: light;
-  --bg: #faf8f5;
-  --surface: #ffffff;
-  --surface-2: #f2efea;
-  --ink: #1a1a1a;
-  --ink-2: #3d3d3d;
-  --ink-3: #4a4a4a;
-  --rule: #c9c4bd;
-  --rule-strong: #1a1a1a;
-  --accent: #b3261e;
+  --bg: #f3e8d0;
+  --surface: #faf3e3;
+  --surface-2: #eaddc0;
+  --ink: #2b1f14;
+  --ink-2: #5a4532;
+  --ink-3: #68513c;      /* 5.5:1 on --surface-2 */
+  --rule: #d6c49f;
+  --rule-strong: #2b1f14;
+  --accent: #8c2a1b;
   --accent-ink: #ffffff;
-  --link: #0a4a8f;
-  --focus: #0a4a8f;
+  --link: #2b1f14;
+  --focus: #1d4ed8;
+  --ok: #2d5a28;
+  --warn: #744a0f;
+}
+
+/* Sabz (سبز): soft green. */
+:root[data-theme="sabz"], [data-swatch="sabz"] {
+  color-scheme: light;
+  --bg: #ebf2e8;
+  --surface: #f7faf5;
+  --surface-2: #dde8d9;
+  --ink: #13201a;
+  --ink-2: #3e5346;
+  --ink-3: #4d6255;      /* 5.2:1 on --surface-2 */
+  --rule: #c2d3bd;
+  --rule-strong: #13201a;
+  --accent: #1b5a42;
+  --accent-ink: #ffffff;
+  --link: #13201a;
+  --focus: #1d4ed8;
+  --ok: #285f2d;
+  --warn: #7a5012;
+}
+
+/* Chandni (چاندنی): moonlit blue-grey, dark. */
+:root[data-theme="chandni"], [data-swatch="chandni"] {
+  color-scheme: dark;
+  --bg: #1a212b;
+  --surface: #212935;
+  --surface-2: #29323f;
+  --ink: #e3e9f1;
+  --ink-2: #b3bfcd;
+  --ink-3: #9aa7b8;      /* 5.3:1 on --surface-2 */
+  --rule: #384352;
+  --rule-strong: #e3e9f1;
+  --accent: #b4cbf3;
+  --accent-ink: #111822;
+  --link: #e3e9f1;
+  --focus: #ffd27a;
+  --ok: #8fd0a0;
+  --warn: #e8c27a;
+}
+
+/* Shab (شب): pure black for OLED screens; ink stays off-white to avoid halation. */
+:root[data-theme="shab"], [data-swatch="shab"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0b0b0b;
+  --surface-2: #161616;
+  --ink: #e6e6e6;
+  --ink-2: #b3b3b3;
+  --ink-3: #8f8f8f;      /* 5.6:1 on --surface-2 */
+  --rule: #2e2e2e;
+  --rule-strong: #e6e6e6;
+  --accent: #f2a38f;
+  --accent-ink: #000000;
+  --link: #e6e6e6;
+  --focus: #8fc1ff;
+  --ok: #7fc98f;
+  --warn: #e5b567;
+}
+
+/* ---- high contrast (AAA, 7:1) ------------------------------------------------------------
+   Over the chosen palette: the backgrounds stay, every ink goes to 7:1 or more. Each block sets the
+   same tokens, so no palette's value leaks into another. */
+:root[data-theme="classic"][data-contrast="high"], :root[data-theme="system"][data-contrast="high"] {
+  --ink: #0d0c0b; --ink-2: #2b2724; --ink-3: #3a3531; --rule: #9a9084; --rule-strong: #0d0c0b;
+  --accent: #7a1e14; --accent-ink: #ffffff; --link: #0d0c0b; --focus: #1d4ed8; --ok: #1f4b27; --warn: #5a3c0b;
+}
+:root[data-theme="night"][data-contrast="high"] {
+  --ink: #ffffff; --ink-2: #ece7de; --ink-3: #d6d0c6; --rule: #5a606c; --rule-strong: #ffffff;
+  --accent: #f3cf92; --accent-ink: #14110a; --link: #ffffff; --focus: #a8d0ff; --ok: #a3dcae; --warn: #f3cf92;
+}
+:root[data-theme="kaghaz"][data-contrast="high"] {
+  --ink: #140d06; --ink-2: #34271b; --ink-3: #3f3022; --rule: #9c8a68; --rule-strong: #140d06;
+  --accent: #6e1d11; --accent-ink: #ffffff; --link: #140d06; --focus: #1d4ed8; --ok: #1c3f19; --warn: #4f3208;
+}
+:root[data-theme="sabz"][data-contrast="high"] {
+  --ink: #07110c; --ink-2: #223329; --ink-3: #2c3e33; --rule: #82977f; --rule-strong: #07110c;
+  --accent: #0f3f2d; --accent-ink: #ffffff; --link: #07110c; --focus: #1d4ed8; --ok: #17421c; --warn: #50340a;
+}
+:root[data-theme="chandni"][data-contrast="high"] {
+  --ink: #ffffff; --ink-2: #e3e9f1; --ink-3: #cdd6e2; --rule: #66748a; --rule-strong: #ffffff;
+  --accent: #d3e2fb; --accent-ink: #111822; --link: #ffffff; --focus: #ffd27a; --ok: #b3e3bf; --warn: #f4d9a5;
+}
+:root[data-theme="shab"][data-contrast="high"] {
+  --ink: #ffffff; --ink-2: #e6e6e6; --ink-3: #cccccc; --rule: #5c5c5c; --rule-strong: #ffffff;
+  --accent: #f9c4b6; --accent-ink: #000000; --link: #ffffff; --focus: #8fc1ff; --ok: #a6dcb1; --warn: #f1cf93;
+}
+
+/* "system" is Classic (the :root tokens) by day and Night on a dark device. These repeat the Night
+   blocks above; scripts/contrast-check.mjs fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1f232c;
+    --ink: #ece7de;
+    --ink-2: #b4ada3;
+    --ink-3: #969088;
+    --rule: #2a2f3a;
+    --rule-strong: #ece7de;
+    --accent: #e0b46a;
+    --accent-ink: #14110a;
+    --link: #ece7de;
+    --focus: #8fc1ff;
+    --ok: #7cc48a;
+    --warn: #e0b46a;
+  }
+  :root[data-theme="system"][data-contrast="high"] {
+    --ink: #ffffff; --ink-2: #ece7de; --ink-3: #d6d0c6; --rule: #5a606c; --rule-strong: #ffffff;
+    --accent: #f3cf92; --accent-ink: #14110a; --link: #ffffff; --focus: #a8d0ff; --ok: #a3dcae; --warn: #f3cf92;
+  }
+}
+
+/* ---- type, measure and faces ------------------------------------------------------------- */
+:root {
+  --radius: 6px;
+  --measure: 66ch;
+  --gutter: clamp(1rem, 4vw, 2rem);
+
+  /* Face stacks. --font-inter/--font-newsreader come from next/font; --font-nastaliq/-naskh/-vazir
+     from urduFontCss (lib/fonts.ts). The Urdu faces carry Arabic plus space, digits and ASCII
+     punctuation, so only Latin letters inside Urdu text reach Inter. Local Urdu fonts come before
+     Inter so Arabic never lands in Inter's Arial fallback while the web faces load. */
+  --font-latin: var(--font-inter), system-ui, sans-serif;
+  --font-latin-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-urdu-body: var(--font-nastaliq, "Noto Nastaliq Urdu"), var(--font-naskh, "Noto Naskh Arabic"), "Noto Nastaliq Urdu", "Noto Naskh Arabic", var(--font-inter), serif;
+  --font-urdu-display: var(--font-nastaliq, "Noto Nastaliq Urdu"), var(--font-naskh, "Noto Naskh Arabic"), "Noto Nastaliq Urdu", "Noto Naskh Arabic", var(--font-inter), serif;
+  --font-urdu-ui: var(--font-vazir, "Vazirmatn"), var(--font-naskh, "Noto Naskh Arabic"), "Vazirmatn", "Noto Naskh Arabic", var(--font-inter), system-ui, sans-serif;
+
+  /* fluid type scale (Latin); Urdu sizes are derived per script below */
+  --step--1: clamp(0.83rem, 0.8rem + 0.2vw, 0.9rem);
+  --step-0: clamp(1.05rem, 1rem + 0.3vw, 1.15rem);
+  --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.45rem);
+  --step-2: clamp(1.6rem, 1.4rem + 1vw, 2.1rem);
+  --step-3: clamp(2.1rem, 1.7rem + 2vw, 3.2rem);
+  --lh-body: 1.6;
+  --lh-tight: 1.15;
+  --urdu-body-scale: 1.2;    /* Nastaliq body 20-22px across the fluid --step-0 range (PLAN: 22-24px, never under 20px) */
+  --urdu-lh-body: 2.4;       /* Nastaliq body (PLAN: 2.4; real Urdu ink spans 2.03em above to 0.60em below the baseline) */
+  --urdu-lh-display: 2.0;
+  /* Smallest text per script; only the Wazeh mode sets them (20px Latin, 22px Urdu). */
+  --latin-floor: 0px;
+  --urdu-floor: 0px;
+}
+
+/* ---- Wazeh (واضح): the large-type reading mode --------------------------------------------
+   Over any palette. Root 24px, with the text-size control's 20/24/28px (data-size sm/md/lg). Floors
+   from the plan, at every size: nothing under 20px in Latin, nothing under 22px in Urdu. Body Urdu is
+   Naskh; data-nastaliq="on" switches it to Nastaliq (never under 22px either). */
+:root[data-mode="wazeh"] {
+  --latin-floor: 20px;
+  --urdu-floor: 22px;
   --radius: 10px;
   --measure: 34rem;
   --font-latin-display: var(--font-inter), system-ui, sans-serif;
-  --font-urdu-body: var(--font-naskh), "Noto Naskh Arabic", serif;
-  --step--1: 0.92rem;
-  --step-0: 1rem;
+  --font-urdu-body: var(--font-naskh, "Noto Naskh Arabic"), "Noto Naskh Arabic", var(--font-inter), serif;
+  --step--1: max(var(--latin-floor), 0.92rem);
+  --step-0: max(var(--latin-floor), 1rem);
   --step-1: 1.15rem;
   --step-2: 1.35rem;
   --step-3: 1.7rem;
@@ -93,14 +238,12 @@
   --urdu-lh-display: 1.7;
   font-size: 24px;
 }
-:root[data-theme="buzurg"][data-size="sm"] { font-size: 20px; }
-:root[data-theme="buzurg"][data-size="lg"] { font-size: 28px; }
-:root[data-theme="buzurg"].nastaliq { --font-urdu-body: var(--font-nastaliq), var(--font-naskh), serif; --urdu-lh-body: 2.4; --urdu-body-scale: 1.15; }
-:root[data-theme="buzurg"][data-contrast="high"] {
-  color-scheme: dark;
-  --bg: #121417; --surface: #171a1f; --surface-2: #20242b; --ink: #ffffff; --ink-2: #ece7de; --ink-3: #d6d0c6;
-  --rule: #3a3f48; --rule-strong: #ffffff; --link: #8fc1ff; --focus: #8fc1ff; --accent: #ffb4ab; --accent-ink: #1a1a1a;
-}
+:root[data-mode="wazeh"][data-size="sm"] { font-size: 20px; }
+:root[data-mode="wazeh"][data-size="lg"] { font-size: 28px; }
+/* Urdu floor: the small steps are redeclared wherever Urdu starts (the root of an Urdu page, or an
+   Urdu run inside an English page), since a custom property inherits already resolved. */
+:root[data-mode="wazeh"]:lang(ur), :root[data-mode="wazeh"] [lang]:lang(ur) { --step--1: max(var(--urdu-floor), 0.92rem); --step-0: max(var(--urdu-floor), 1rem); }
+:root[data-mode="wazeh"][data-nastaliq="on"] { --font-urdu-body: var(--font-nastaliq, "Noto Nastaliq Urdu"), var(--font-naskh, "Noto Naskh Arabic"), "Noto Nastaliq Urdu", var(--font-inter), serif; --urdu-lh-body: 2.4; --urdu-body-scale: 1.15; }
 
 @theme inline {
   --color-paper: var(--bg);
@@ -123,17 +266,29 @@
 }
 
 @custom-variant ur (&:where(:lang(ur), :lang(ur) *));
-@custom-variant buzurg (&:where([data-theme="buzurg"], [data-theme="buzurg"] *));
+@custom-variant wazeh (&:where([data-mode="wazeh"], [data-mode="wazeh"] *));
 
 /* ---- base ------------------------------------------------------------------------------ */
-html { background: var(--bg); color: var(--ink); -webkit-text-size-adjust: 100%; scroll-padding-block-start: 5rem; }
-body { margin: 0; font-family: var(--font-latin); font-size: var(--step-0); line-height: var(--lh-body); font-synthesis: none; text-rendering: optimizeSpeed; }
+/* The face is set on <html> and inherited; body sets none, or it would override the Urdu face. */
+html { background: var(--bg); color: var(--ink); font-family: var(--font-latin); -webkit-text-size-adjust: 100%; scroll-padding-block-start: 5rem; }
+body { margin: 0; font-size: var(--step-0); line-height: var(--lh-body); font-synthesis: none; text-rendering: optimizeSpeed; }
 a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 ::selection { background: color-mix(in oklab, var(--accent) 25%, transparent); }
-hr { border: 0; border-top: 1px solid var(--rule); }
-img { max-width: 100%; height: auto; }
+hr { border: 0; border-block-start: 1px solid var(--rule); }
+img { max-inline-size: 100%; block-size: auto; }
 button { font: inherit; color: inherit; }
+
+/* ---- script switching --------------------------------------------------------------------
+   The face follows the language of the element, not of the page: <html lang> and every element
+   that declares lang= reset it, so an English fallback on an Urdu page (and an Urdu headline on an
+   English page) gets its own script's face. At (0,1,0) these sit below the role classes below
+   (.display, .headline, .latin), which come later and win. */
+:where([lang]):lang(en) { font-family: var(--font-latin); }
+:where([lang]):lang(ur) { font-family: var(--font-urdu-body); }
+/* Arabic (the Quranic verse on the About page) is always Naskh, never Nastaliq, and never letter-spaced. */
+:where([lang]):lang(ar) { font-family: var(--font-naskh, "Noto Naskh Arabic"), "Noto Naskh Arabic", serif; letter-spacing: 0 !important; text-align: start; }
+.verse:lang(ar) { margin: 0; font-size: calc(var(--step-1) * 1.1); line-height: 2.1; }
 
 /* Latin display and text roles */
 .display { font-family: var(--font-latin-display); font-weight: 600; line-height: var(--lh-tight); letter-spacing: -0.012em; font-variation-settings: "opsz" 72; }
@@ -142,8 +297,9 @@ button { font: inherit; color: inherit; }
 .measure { max-inline-size: var(--measure); }
 .prose p + p { margin-block-start: 0.85em; }
 
-/* ---- Urdu: script-specific rules (never letter-spacing, never justify) ------------------ */
-html:lang(ur) { font-family: var(--font-urdu-body); }
+/* ---- Urdu: script-specific rules (never letter-spacing, never justify) ------------------
+   Written as `.x:lang(ur)`, which tests the element's own language, so they apply on Urdu pages
+   and to Urdu runs on English pages, and never to English runs on Urdu pages. */
 :lang(ur) {
   letter-spacing: 0 !important;
   hyphens: none;
@@ -152,47 +308,193 @@ html:lang(ur) { font-family: var(--font-urdu-body); }
   word-spacing: 0.04em;
   font-kerning: normal;
 }
-:lang(ur) body { font-size: calc(var(--step-0) * var(--urdu-body-scale)); line-height: var(--urdu-lh-body); }
-:lang(ur) .display, :lang(ur) .headline { font-family: var(--font-urdu-display); font-weight: 600; line-height: var(--urdu-lh-display); letter-spacing: 0; padding-block: 0.12em; overflow: visible; text-wrap: pretty; }
-:lang(ur) :is(.ui, nav, button, select, .meta, .chip, .pill) { font-family: var(--font-urdu-ui); line-height: 1.8; }
-:lang(ur) :is(time, .num) { unicode-bidi: isolate; }
-:lang(ur) .meta { font-size: calc(var(--step--1) * 1.05); }
-:lang(ur) .clamp { padding-block: 0.25em; }
-:lang(ur) .prose p + p { margin-block-start: 1em; }
-:lang(ur) .display { font-variation-settings: normal; }
+body:lang(ur) { font-size: calc(var(--step-0) * var(--urdu-body-scale)); line-height: var(--urdu-lh-body); }
+/* A run in the other script takes that script's size and leading: an Urdu run on an English page is
+   set larger, an English fallback on an Urdu page goes back to the Latin size. The floors keep a run
+   inside small text at its script's minimum (in Wazeh, an Urdu run in 20px Latin text would
+   otherwise be 21.6px). In the base layer, so the role classes below and any size utility on the
+   element still win; form controls keep their own metrics. */
+@layer base {
+  :where(:root:lang(en) [lang]:lang(ur):not(input, textarea, select)) { font-size: max(var(--urdu-floor), calc(1em * var(--urdu-body-scale))); line-height: var(--urdu-lh-body); }
+  :where(:root:lang(ur) [lang]:lang(en):not(input, textarea, select)) { font-size: max(var(--latin-floor), calc(1em / var(--urdu-body-scale))); line-height: var(--lh-body); }
+}
+/* Urdu typed into a field (admin) uses the UI face: Nastaliq clips inside a single-line control. */
+:is(input, textarea):lang(ur) { font-family: var(--font-urdu-ui); }
+.display:lang(ur), .headline:lang(ur) { font-family: var(--font-urdu-display); font-weight: 600; line-height: var(--urdu-lh-display); letter-spacing: 0; padding-block: 0.12em; overflow: visible; text-wrap: pretty; }
+:is(.ui, nav, button, select, .meta, .chip, .pill):lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.8; }
+:is(time, .num):lang(ur) { unicode-bidi: isolate; }
+.meta:lang(ur) { font-size: calc(var(--step--1) * 1.05); }
+/* Clamped summaries clip at the padding box: at line height 2.4 Nastaliq ink overshoots the first
+   line box by ~0.18em and the last by ~0.05em (measured, see --urdu-lh-body). */
+.clamp-3:lang(ur) { padding-block: 0.2em 0.1em; }
+.prose p + p:lang(ur) { margin-block-start: 1em; }
+.display:lang(ur) { font-variation-settings: normal; }
 bdi, [dir="ltr"] { unicode-bidi: isolate; }
-.latin { font-family: var(--font-latin); unicode-bidi: isolate; }
+/* Latin names, handles and perspectives: Inter even inside Urdu UI text (beats .meta:lang(ur) by order). */
+.latin, .latin:lang(ur) { font-family: var(--font-latin); unicode-bidi: isolate; }
 
 /* ---- shared components -------------------------------------------------------------- */
-.chip { display: inline-flex; align-items: center; gap: 0.35em; min-height: 1.9em; padding: 0.1em 0.6em; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: var(--step--1); text-decoration: none; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 0.35em; min-block-size: 1.9em; padding: 0.1em 0.6em; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: var(--step--1); text-decoration: none; white-space: nowrap; }
 .chip:hover { border-color: var(--rule-strong); color: var(--ink); }
 .pill { display: inline-block; padding: 0.1em 0.55em; border-radius: 999px; font-size: var(--step--1); font-weight: 600; letter-spacing: 0.01em; }
 .pill-accent { background: var(--accent); color: var(--accent-ink); }
 .pill-soft { background: var(--surface-2); color: var(--ink-2); }
-.rule-top { border-top: 1px solid var(--rule); }
-.rule-strong { border-top: 3px solid var(--rule-strong); }
+.rule-top { border-block-start: 1px solid var(--rule); }
+.rule-strong { border-block-start: 3px solid var(--rule-strong); }
 .card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
 .cov { display: inline-block; inline-size: 0.6em; block-size: 0.6em; border-radius: 999px; background: var(--ink-3); margin-inline-end: 0.35em; vertical-align: middle; }
 .cov-broad { background: var(--ok); } .cov-partisan { background: var(--warn); } .cov-single { background: var(--ink-3); }
 .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .masthead-title { font-family: var(--font-latin-display); font-weight: 700; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; }
-:lang(ur) .masthead-title { font-family: var(--font-urdu-display); font-weight: 700; letter-spacing: 0; padding-block: 0.1em; }
+.masthead-title:lang(ur) { font-family: var(--font-urdu-display); font-weight: 700; letter-spacing: 0; padding-block: 0.1em; }
 
-/* ---- Buzurg layout rules ---------------------------------------------------------------- */
-[data-theme="buzurg"] body { line-height: 1.6; }
-[data-theme="buzurg"] a:not(.chip):not(.pill) { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
-[data-theme="buzurg"] .page { max-inline-size: 46rem; }
-[data-theme="buzurg"] :is(.edition-grid, .ntk-grid) { grid-template-columns: 1fr; }
-[data-theme="buzurg"] .chip { min-height: 2.4em; padding: 0.3em 0.9em; font-size: var(--step-0); border-width: 2px; }
-[data-theme="buzurg"] button, [data-theme="buzurg"] .btn { min-block-size: 3rem; min-inline-size: 3rem; }
-[data-theme="buzurg"] .clamp-3 { display: block; -webkit-line-clamp: unset; overflow: visible; }
-[data-theme="buzurg"] * { animation: none !important; transition: none !important; }
-[data-theme="buzurg"] .cov { inline-size: 0.8em; block-size: 0.8em; }
+/* ---- display preferences (components/theme-controls.tsx) -------------------------------------
+   .opt: one choice of a radio group or a checkbox, the native control kept visible. */
+.opt { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6em; min-block-size: 44px; padding: 0.4em 0.75em; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); cursor: pointer; }
+/* The words of a choice: beside the control and swatch, or on a line of their own when too narrow
+   (a phone in Wazeh at the largest size), never squeezed into a column a few letters wide. */
+.opt-text { flex: 1 1 6em; min-inline-size: 0; }
+.opt:hover { border-color: var(--rule-strong); }
+.opt:has(input:checked) { border-color: var(--rule-strong); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.opt input { flex: none; margin: 0; accent-color: var(--ink); }
+.opt input:focus-visible { outline: none; }
+/* A palette swatch: its paper, a line of its ink and a dot of its accent. */
+.swatch { position: relative; display: inline-block; flex: none; inline-size: 2.6em; block-size: 1.7em; border-radius: 6px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--rule-strong); overflow: hidden; }
+.swatch::before { content: ""; position: absolute; inset-inline-start: 16%; inset-block-start: 32%; inline-size: 44%; block-size: 14%; border-radius: 2px; background: var(--ink); }
+.swatch::after { content: ""; position: absolute; inset-inline-end: 14%; inset-block-end: 22%; inline-size: 0.45em; block-size: 0.45em; border-radius: 999px; background: var(--accent); }
+.swatch-pair { display: inline-flex; flex: none; border-radius: 6px; overflow: hidden; }
+.swatch-pair > .swatch { inline-size: 1.3em; border-radius: 0; }
+.swatch-pair > .swatch::before { inline-size: 60%; }
+.swatch-pair > .swatch::after { display: none; }
+/* The Urdu-script choice shows each script in itself (only offered in Wazeh, so never under 22px). */
+.sample-naskh { font-family: var(--font-naskh, "Noto Naskh Arabic"), "Noto Naskh Arabic", serif; }
+.sample-nastaliq { font-family: var(--font-nastaliq, "Noto Nastaliq Urdu"), "Noto Nastaliq Urdu", var(--font-naskh, "Noto Naskh Arabic"), serif; line-height: 2.2; }
+
+/* ---- Wazeh layout and interaction -------------------------------------------------------------
+   One column, 48px targets, underlined links, no all-caps, no motion. Groups the admin hides in
+   Wazeh carry data-hidden-in (hiddenGroupCss in lib/view.ts). */
+[data-mode="wazeh"] a:not(.chip, .pill, .masthead-title) { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 0.25em; }
+[data-mode="wazeh"] .page { max-inline-size: 46rem; }
+[data-mode="wazeh"] :is(.edition-grid, .ntk-grid) { grid-template-columns: 1fr; }
+/* Any other grid that gains columns on wider screens (sm:/md:/lg:/xl:grid-cols-*) stays one column too,
+   so new pages keep the promise without opting in. */
+[data-mode="wazeh"] :is([class*="sm:grid-cols-"], [class*="md:grid-cols-"], [class*="lg:grid-cols-"], [class*="xl:grid-cols-"]) { grid-template-columns: minmax(0, 1fr); }
+[data-mode="wazeh"] .chip { min-block-size: max(48px, 2.4em); max-inline-size: 100%; padding: 0.3em 0.9em; font-size: var(--step-0); border-width: 2px; white-space: normal; }
+/* At these sizes a row of chips (slot switcher, story actions) must wrap rather than run off a phone screen. */
+[data-mode="wazeh"] :is(.flex, .inline-flex):has(> .chip) { flex-wrap: wrap; }
+/* Long handles, addresses and links break rather than widen the page. Latin only: Urdu keeps
+   overflow-wrap: normal (above), so an Urdu word is never split. */
+[data-mode="wazeh"] :is(body:lang(en), .latin, bdi, [dir="ltr"]) { overflow-wrap: anywhere; }
+[data-mode="wazeh"] .opt { min-block-size: 48px; border-width: 2px; }
+[data-mode="wazeh"] :is(button, .btn, select, input:not([type="checkbox"], [type="radio"])):not(.sr-only) { min-block-size: 48px; min-inline-size: 48px; }
+[data-mode="wazeh"] :is(input[type="checkbox"], input[type="radio"]) { inline-size: 1.2em; block-size: 1.2em; }
+[data-mode="wazeh"] :is(input, select, textarea) { font-size: max(var(--step-0), 1em); }
+[data-mode="wazeh"] nav a { display: inline-flex; align-items: center; min-block-size: 48px; }
+/* Sizes that can fall under the floor (text-xs/-sm, fractional em utilities such as text-[0.8em])
+   go to the smallest step, which carries the floors. */
+[data-mode="wazeh"] :is(.text-xs, .text-sm, small, sub, sup, [class*="text-\[0."], [class*="text-\[."]) { font-size: var(--step--1); }
+[data-mode="wazeh"] .uppercase { text-transform: none; letter-spacing: 0; }
+[data-mode="wazeh"] .prose p + p { margin-block-start: 1.2em; }
+[data-mode="wazeh"] .clamp-3 { display: block; -webkit-line-clamp: unset; overflow: visible; padding-block: 0; }
+[data-mode="wazeh"] .cov { inline-size: 0.8em; block-size: 0.8em; }
+[data-mode="wazeh"] *, [data-mode="wazeh"] ::before, [data-mode="wazeh"] ::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* ---- publisher images (components/story-image.tsx, story-image-view.tsx; decision D6) ----------------
+   A figure: a frame at the image's shape in its dominant colour (--fig-bg, --fig-ratio), the photo cropped
+   into it, and the credit "Image: <outlet>" under it. Must-read cards show it large above the headline
+   (.story-fig-lead), other cards as a small picture at the inline end (.story-fig-thumb, a float: it moves
+   to the other side in Urdu by itself), the story page under the headline (.story-fig-hero). */
+:root {
+  --img-radius: var(--radius);
+  --img-edge: color-mix(in oklab, var(--ink) 14%, transparent);
+  /* Dark palettes dim photos a little (a bright photo glares on a dark page); hover, focus or a tap lifts it.
+     Always a filter function, never `none`: it is combined with the blur of a sensitive image below. */
+  --img-dim: brightness(1);
+}
+:root:is([data-theme="night"], [data-theme="chandni"]) { --img-dim: brightness(0.86) contrast(1.04); }
+:root[data-theme="shab"] { --img-dim: brightness(0.8) contrast(1.05); }
+@media (prefers-color-scheme: dark) { :root[data-theme="system"] { --img-dim: brightness(0.86) contrast(1.04); } }
+
+/* Images off, or "auto" on a device saving data (navigator.connection.saveData, or the request's Save-Data
+   header on the figure): no figure at all from the first paint (and the view renders no <img>, so nothing
+   is downloaded). */
+:root:is([data-images="off"], [data-images="auto"][data-save-data="on"]) .story-fig,
+:root[data-images="auto"] .story-fig[data-save-data="on"] { display: none; }
+
+.story-fig { margin: 0; }
+.story-fig:focus { outline: none; }
+.story-fig:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.story-fig-frame { position: relative; overflow: hidden; aspect-ratio: var(--fig-ratio, 16 / 9); border-radius: var(--img-radius); background: var(--fig-bg, var(--surface-2)); }
+/* A hairline edge over the photo, so a pale picture does not melt into the paper. */
+.story-fig-frame::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--img-edge); pointer-events: none; }
+.story-fig-img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; max-inline-size: none; object-fit: cover; filter: var(--img-dim); transition: filter 0.2s ease; }
+.story-fig:is(:hover, :focus-within, [data-lit]) .story-fig-img { filter: none; }
+/* A sensitive image, until the reader asks: blurred past recognition and darkened under the button.
+   After the rule above, so hover or a tap never unblurs it. */
+.story-fig[data-covered] .story-fig-img { filter: blur(28px) brightness(0.7); transform: scale(1.15); }
+.story-fig-reveal {
+  position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4em;
+  inline-size: 100%; padding: 0.75em; border: 0; border-radius: inherit; background: rgb(0 0 0 / 0.6); color: #fff;
+  font-size: var(--step-0); font-weight: 600; line-height: 1.35; text-align: center; text-shadow: 0 1px 2px rgb(0 0 0 / 0.6); cursor: pointer;
+}
+.story-fig-reveal:hover { background: rgb(0 0 0 / 0.7); }
+.story-fig-reveal:focus-visible { outline: 3px solid #fff; outline-offset: -6px; box-shadow: inset 0 0 0 7px var(--focus); }
+.story-fig-thumb .story-fig-reveal { gap: 0.2em; padding: 0.35em; font-size: var(--step--1); line-height: 1.25; }
+.story-fig-reveal:lang(ur) { line-height: 1.8; }
+/* Wazeh: a sensitive image is not loaded until tapped (the view withholds the <img>); the frame is just the
+   button. Keyed on the mode, not on the view's data-withheld, so the server render already has this shape. */
+[data-mode="wazeh"] .story-fig[data-covered] .story-fig-frame { aspect-ratio: auto; background: var(--surface-2); }
+[data-mode="wazeh"] .story-fig[data-covered] .story-fig-frame::after { display: none; }
+[data-mode="wazeh"] .story-fig[data-covered] .story-fig-reveal { position: static; flex-direction: row; min-block-size: 48px; padding: 0.5em 0.9em; border: 2px solid var(--rule-strong); background: var(--surface-2); color: var(--ink); text-shadow: none; }
+.story-fig-credit { margin-block-start: 0.35em; overflow-wrap: anywhere; }
+.story-fig-credit:lang(ur) { overflow-wrap: normal; }
+.story-fig-credit a { color: inherit; }
+
+.story-fig-lead { margin-block: 0.75rem 0.25rem; }
+.story-fig-hero { margin-block: 1.25rem 0; }
+/* The thumbnail floats at the inline end: the headline and summary run beside it; the card's last row
+   (sources, time, Save) goes below it, and the card contains it. */
+.story-card { display: flow-root; }
+.story-card > :last-child { clear: both; }
+.story-fig-thumb { float: inline-end; inline-size: clamp(5.5rem, 28%, 9rem); margin-block: 0.5rem 0.5rem; margin-inline-start: 1rem; }
+.story-fig-thumb .story-fig-credit { line-height: 1.35; }
+
+/* Wazeh: one column and large type, so every picture goes below its headline (it never pushes a headline
+   down the screen), at a height that leaves the text in view. */
+[data-mode="wazeh"] .story-card { display: flex; flex-direction: column; }
+[data-mode="wazeh"] .story-card > .story-fig { order: 1; margin-block: 0.75rem 0.25rem; }
+[data-mode="wazeh"] .story-card > h3 ~ * { order: 2; }
+[data-mode="wazeh"] .story-fig-thumb { float: none; inline-size: min(100%, 16rem); margin-inline-start: 0; }
+[data-mode="wazeh"] .story-fig-thumb .story-fig-frame { aspect-ratio: 16 / 9; }
+[data-mode="wazeh"] .story-fig:is(.story-fig-lead, .story-fig-hero) .story-fig-frame { max-block-size: min(45vh, 24rem); }
+[data-mode="wazeh"] .story-fig[data-covered] { inline-size: 100%; }
+
+@media print {
+  :root { --img-dim: brightness(1) !important; }
+  .story-fig { break-inside: avoid; }
+  /* A sensitive image the reader has not opened is not printed. */
+  .story-fig[data-covered] { display: none !important; }
+}
+
+/* Forced colours (Windows contrast themes) replace backgrounds, which would make a pressed or current
+   chip look like the others and blank the swatches: both keep their own colours. */
+@media (forced-colors: active) {
+  .chip:is([aria-pressed="true"], [aria-expanded="true"], [aria-current]), .swatch { forced-color-adjust: none; }
+}
 
 /* ---- motion & print ------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Print in black on white whatever the palette (!important beats the palette and contrast blocks).
+   Wazeh keeps its larger root size, so a Wazeh reader's printout is large print too. */
 @media print {
-  :root { --bg: #fff; --surface: #fff; --ink: #000; --ink-2: #222; --rule: #999; font-size: 13pt; }
+  :root {
+    color-scheme: light !important;
+    --bg: #fff !important; --surface: #fff !important; --surface-2: #fff !important;
+    --ink: #000 !important; --ink-2: #222 !important; --ink-3: #333 !important; --rule: #999 !important; --rule-strong: #000 !important;
+    --accent: #9a2f22 !important; --accent-ink: #fff !important; --link: #000 !important; --ok: #2f6b3a !important; --warn: #845a18 !important;
+    font-size: 13pt;
+  }
   nav, .no-print { display: none !important; }
   a { color: inherit; text-decoration: none; }
   .card { break-inside: avoid; }

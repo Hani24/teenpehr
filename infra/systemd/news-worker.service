@@ -1,13 +1,25 @@
 [Unit]
-Description=Teen Pehr edition run
+Description=Tabayyun edition run
 OnFailure=news-alert@%n.service
+# The worker only talks to the web app's API: start it if it is not running (a no-op when the app
+# is hosted elsewhere and teenpehr-web.service is not installed).
+Wants=teenpehr-web.service
+After=network-online.target teenpehr-web.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=%h/dev/teenpehr/worker
 EnvironmentFile=%h/dev/teenpehr/worker/.env
-Environment=DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_CRON=1 TZ=Asia/Karachi
-ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle --who=news-worker --why=edition /usr/bin/flock -n %t/news-worker.lock /usr/bin/uv run teenpehr edition
+# Claude runs through the Claude Code CLI signed in as this user (~/.claude: the Claude subscription), or
+# CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token` in worker/.env. HOME is where the CLI finds its login.
+# No API key: a stray one in worker/.env is dropped here, and the worker hides it from the CLI as well.
+Environment=HOME=%h DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_CRON=1 TZ=Asia/Karachi
+UnsetEnvironment=ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
+# --scheduled: the slot comes from the admin's edition times, and each slot is started once (see
+# news-worker.timer). A firing with nothing due exits 0 at once.
+ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle --who=news-worker --why=edition /usr/bin/flock -n %t/news-worker.lock /usr/bin/uv run teenpehr edition --scheduled
+# One run may publish up to three slots (a catch-up plus the slots that fell due meanwhile, see
+# news-worker.timer), hence the long start timeout.
 TimeoutStartSec=100min
 KillSignal=SIGINT
 TimeoutStopSec=90

@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Teen Pehr">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tabayyun">
+  <!-- The Urdu letter te (ت) with a pen's thick and thin strokes, drawn as paths so it needs no font -->
   <rect width="64" height="64" rx="14" fill="#f7f3ec"/>
   <g fill="#9a2f22">
-    <rect x="12" y="18" width="8" height="28" rx="2"/>
-    <rect x="28" y="12" width="8" height="40" rx="2"/>
-    <rect x="44" y="24" width="8" height="22" rx="2"/>
+    <path d="M53 27.5c1.2 12-7.5 20-21.5 20S7.6 40.5 8.4 22.5l3.4 1.6c.4 10 8.3 15.4 19.9 15.4 11.4 0 18-4.6 18.4-12.4z"/>
+    <path d="M22.5 19.5l4-4.8 4.6 2.9-4 4.8z"/>
+    <path d="M33.5 19.5l4-4.8 4.6 2.9-4 4.8z"/>
   </g>
 </svg>

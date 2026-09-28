@@ -28,6 +28,7 @@ def settings(tmp_path: Path) -> Settings:
         out_dir=tmp_path / "out",
         ntfy_topic="",
         article_fetch_limit=5,
+        images=False,  # the image step has its own tests (test_images*.py), which turn it on
     )
     s.out_dir.mkdir(parents=True, exist_ok=True)
     s.state_dir.mkdir(parents=True, exist_ok=True)
@@ -41,7 +42,7 @@ CONFIG = {
         "edition_times": {"subh": "07:00", "dopahar": "13:00", "shaam": "19:30"},
         "timezone": "Asia/Karachi",
         "publish_policy": "auto",
-        "site_name_en": "Teen Pehr",
+        "site_name_en": "Tabayyun",
         "digits_ur": "latn",
         "editor_name": "",
     },

@@ -1,5 +1,5 @@
 [Unit]
-Description=Teen Pehr X list collector, every 30 minutes
+Description=Tabayyun X list collector, every 30 minutes
 
 [Timer]
 OnCalendar=*-*-* *:00,30:00

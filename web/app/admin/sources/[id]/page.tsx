@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/session";
-import { getSource, listGroups } from "@/lib/admin/data";
+import { getSource, listGroups, sourceUsage } from "@/lib/admin/data";
 import { AdminShell } from "@/components/admin/shell";
 import { flashFrom } from "@/components/admin/flash";
 import { SourceForm } from "@/components/admin/source-form";
@@ -12,11 +12,11 @@ export default async function SourcePage({ params, searchParams }: { params: Pro
   await requireAdmin();
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
-  const [source, groups, flash] = await Promise.all([getSource(id), listGroups(), flashFrom(searchParams)]);
+  const [source, groups, usage, flash] = await Promise.all([getSource(id), listGroups(), sourceUsage(id), flashFrom(searchParams)]);
   if (!source) notFound();
   return (
-    <AdminShell title={source.name} flash={flash} actions={<span className="meta">last ok {ago(source.lastOkAt)} · fail streak {source.failStreak}</span>}>
-      <SourceForm source={source} groups={groups} />
+    <AdminShell title={source.name} flash={flash} actions={<span className="meta">{source.archivedAt && <span className="pill pill-soft me-2">archived</span>}last ok {ago(source.lastOkAt)} · fail streak {source.failStreak}</span>}>
+      <SourceForm source={source} groups={groups} usage={usage} />
     </AdminShell>
   );
 }
