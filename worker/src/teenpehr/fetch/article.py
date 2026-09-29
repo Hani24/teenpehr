@@ -149,6 +149,16 @@ class ArticleFetcher:
         with self._lock(origin):
             return self._robots_for(origin, route).allowed(url, self.agent)
 
+    def robots_verdict(self, url: str, route: str = "direct") -> str:
+        """ "allowed", "disallowed" or "unreachable" (robots.txt could not be read, so nothing is
+        allowed), whatever any 429 cooldown says; for reports such as the source audit."""
+        origin = _origin(url)
+        with self._lock(origin):
+            robots = self._robots_for(origin, route)
+        if robots.allow_nothing:
+            return "unreachable"
+        return "allowed" if robots.allowed(url, self.agent) else "disallowed"
+
     def fetch_text(self, url: str, *, route: str = "direct", max_chars: int = MAX_CHARS) -> str:
         """The page's article text, or "" when robots.txt disallows it, its Crawl-delay would stall
         the run, or the fetch or extraction fails."""

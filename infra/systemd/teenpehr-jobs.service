@@ -1,0 +1,37 @@
+[Unit]
+Description=Tabayyun job runner (readers' full-article Urdu translations, manual stories' missing language and image)
+# The runner only talks to the web app's API: start it if it is not running (a no-op when the app is
+# hosted elsewhere and teenpehr-web.service is not installed).
+Wants=teenpehr-web.service
+After=network-online.target teenpehr-web.service
+# Restart=on-failure brings it back after a crash; five failed starts within ten minutes stop the
+# restarts and alert (OnFailure fires only once the unit gives up and enters "failed").
+StartLimitIntervalSec=10min
+StartLimitBurst=5
+OnFailure=news-alert@%n.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/dev/teenpehr/worker
+EnvironmentFile=%h/dev/teenpehr/worker/.env
+# Claude runs through the Claude Code CLI signed in as this user (~/.claude: the Claude subscription), or
+# CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token` in worker/.env. No API key: a stray one in worker/.env
+# is dropped here, and the worker hides it from the CLI as well.
+Environment=HOME=%h DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_CRON=1 TZ=Asia/Karachi PYTHONUNBUFFERED=1
+UnsetEnvironment=ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
+ExecStart=/usr/bin/uv run teenpehr jobs
+Restart=on-failure
+RestartSec=30
+# The first SIGINT stops claiming and lets the current job finish (JOBS_STOP_GRACE_S, 120 s by default);
+# after that the job is cancelled and queued again. The runner then exits 0.
+# KillMode=mixed sends that SIGINT to the main process only (uv, which passes it on to the runner): with
+# the default control-group mode the Claude Code CLI the job is waiting on would get it too and abort the
+# call at once, so the job could never finish. Whatever is left when TimeoutStopSec runs out is killed.
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=150
+SyslogIdentifier=teenpehr-jobs
+Nice=5
+
+[Install]
+WantedBy=default.target

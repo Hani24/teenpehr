@@ -109,18 +109,20 @@ def edition(
 
 @app.command("collect-x")
 def collect_x(dry_run: bool = typer.Option(False, "--dry-run")):
-    """Read every group's public X Lists and store the posts."""
+    """Read every group's public X Lists and watched Bluesky accounts, and store the posts."""
     from .collect_x import run_collect_x
     from .fetch.http import Fetcher
+    from .social.bluesky import fetch_json
     from .social.x_list import XListClient, fetch_html
 
     s = cfg.load()
     api = _api(s)
+    fetcher = Fetcher(s)
     # fetch_html raises XRateLimited on a 429 (or a host still cooling down), so the run stops early
     # and says so instead of reporting every list as broken.
-    client = XListClient(fetch_html(Fetcher(s)), spacing_s=s.x_list_spacing_s)
+    client = XListClient(fetch_html(fetcher), spacing_s=s.x_list_spacing_s)
     try:
-        report = run_collect_x(s, api, client, dry_run=dry_run or None)
+        report = run_collect_x(s, api, client, dry_run=dry_run or None, bluesky_get=fetch_json(fetcher))
     except ApiError as e:
         typer.echo(f"API error {e.status}: {e.message} {json.dumps(e.issues) if e.issues else ''}", err=True)
         raise typer.Exit(1) from None
@@ -256,6 +258,164 @@ def health():
     typer.echo(json.dumps(report, indent=2))
     if not ok:
         raise typer.Exit(1)
+
+
+_JOB_KINDS = ("translate_article", "fill_language", "story_image")
+
+
+@app.command()
+def jobs(
+    once: bool = typer.Option(False, "--once", help="Claim and do at most one job, then exit"),
+    kinds: str | None = typer.Option(
+        None, help="Comma-separated job kinds: translate_article, fill_language, story_image (default: all)"
+    ),
+    concurrency: int | None = typer.Option(None, help="Jobs at a time (default JOBS_CONCURRENCY, 1; at most 4)"),
+    max_jobs: int | None = typer.Option(None, "--max-jobs", help="Stop after this many jobs"),
+):
+    """Do the jobs the site queues between editions (docs/API.md § Jobs): full-article Urdu translations
+    readers ask for, and a manual story's missing language and image. Runs until SIGINT/SIGTERM (the first
+    lets the current job finish; a second stops it now and it is queued again). Exit codes: 0, or with
+    --once 1 when the job failed or the web app did not answer; 2 for bad arguments or configuration."""
+    import asyncio
+
+    from .fetch.http import Fetcher
+    from .jobs import JobRunner
+    from .llm import ClaudeLLM
+
+    picked = [k.strip() for k in kinds.split(",") if k.strip()] if kinds else list(_JOB_KINDS)
+    unknown = [k for k in picked if k not in _JOB_KINDS]
+    if unknown or not picked:
+        given = ", ".join(unknown) or "(none given)"
+        typer.echo(f"unknown job kind(s): {given}; use {', '.join(_JOB_KINDS)}", err=True)
+        raise typer.Exit(2)
+    if concurrency is not None and not 1 <= concurrency <= 4:
+        typer.echo("--concurrency must be 1 to 4", err=True)
+        raise typer.Exit(2)
+    s = cfg.load()
+    _warn_stray_key(s)
+    api = _api(s)
+    runner = JobRunner(
+        s,
+        api,
+        ClaudeLLM(oauth_token=_oauth_token(s), cwd=s.out_dir),
+        Fetcher(s),
+        kinds=picked,  # type: ignore[arg-type]
+        concurrency=concurrency,
+    )
+    try:
+        report = asyncio.run(runner.run(once=once, max_jobs=max_jobs, install_signals=True))
+    finally:
+        api.close()
+    if once or max_jobs:
+        typer.echo(json.dumps(report.as_dict(), ensure_ascii=False, indent=2, default=str))
+    if once and (report.status == "api_error" or any(j.status in ("failed", "lost") for j in report.jobs)):
+        raise typer.Exit(1)
+
+
+@app.command("translate-url")
+def translate_url(
+    url: str = typer.Argument(..., help="An article's http(s) address"),
+    route: str = typer.Option("direct", help="direct | germany (the route its source uses)"),
+    title: str = typer.Option("", help="The headline to translate (default: the page's own)"),
+    fetch_only: bool = typer.Option(False, "--fetch-only", help="Only fetch and extract the text: no Claude call"),
+    out: Path | None = typer.Option(None, help="Where to write the JSON (default: out/translate-<hash>.json)"),  # noqa: B008
+):
+    """Fetch and translate one article into Urdu exactly as a translate_article job would, but locally:
+    nothing is sent to the web app and the result is written to a JSON file. The fetch keeps every rule
+    (robots.txt, 429 cooldowns, paywalls never bypassed); the Claude calls count toward the daily ceiling.
+    The locked glossary is read from the web app when WORKER_TOKEN is set."""
+    import asyncio
+
+    from .fetch.http import Fetcher
+    from .jobs import budget
+    from .jobs.base import BudgetReached, Usage
+    from .jobs.fulltext import FullTextFetcher, TryLater, Unavailable
+    from .jobs.translate_article import LANG_NAMES
+    from .llm import ClaudeLLM, LLMError
+    from .translate import ArticleTranslator, TranslationFailed
+
+    if route not in ("direct", "germany"):
+        typer.echo("--route must be direct or germany", err=True)
+        raise typer.Exit(2)
+    s = cfg.load()
+    fetcher = Fetcher(s)
+    try:
+        full = FullTextFetcher(fetcher, s).fetch(url, route=route, last_attempt=True, title_hint=title)
+    except Unavailable as e:
+        typer.echo(json.dumps({"url": url, "blocked": {"reason": e.reason, "note": e.note}}, ensure_ascii=False))
+        return
+    except TryLater as e:  # never raised with last_attempt, kept for safety
+        typer.echo(json.dumps({"url": url, "try_later": e.note}, ensure_ascii=False))
+        raise typer.Exit(1) from None
+    finally:
+        fetcher.save_state()
+    record: dict = {
+        "url": url,
+        "final_url": full.final_url,
+        "route": full.route,
+        "lang": full.lang,
+        "words": full.words,
+        "source_text_hash": full.text_hash,
+        "source_title": full.title,
+        "source_paragraphs": full.paragraphs,
+    }
+    path = out or s.out_dir / f"translate-{full.text_hash[:12]}.json"
+    if not fetch_only:
+        glossary = []
+        if s.worker_token:
+            api = WorkerApi(s.site_url, s.worker_token)
+            try:
+                glossary = api.config().glossary
+            except Exception as e:  # noqa: BLE001 - the glossary is a nicety here
+                typer.echo(f"(no glossary: {type(e).__name__}: {str(e)[:120]})", err=True)
+            finally:
+                api.close()
+        _warn_stray_key(s)
+        llm = ClaudeLLM(oauth_token=_oauth_token(s), cwd=s.out_dir)
+        problem = llm.auth_problem()
+        if problem:
+            typer.echo(problem, err=True)
+            raise typer.Exit(2)
+        usage = Usage()
+        translator = ArticleTranslator(
+            s,
+            llm,
+            account=usage.add,
+            account_failure=usage.add_failure,
+            budget_ok=lambda: budget.spent_today(s) + usage.cost_usd < s.daily_budget_usd,
+            over_budget=lambda: BudgetReached("the daily usage ceiling was reached"),
+            spent=lambda: usage.cost_usd,
+        )
+        lang = full.lang or "en"
+        try:
+            tr = asyncio.run(
+                translator.translate(
+                    key="url",
+                    title=full.title,
+                    paragraphs=full.paragraphs,
+                    outlet=full.site_name or "",
+                    source_lang=LANG_NAMES.get(lang, lang),
+                    glossary=glossary,
+                )
+            )
+        except (LLMError, TranslationFailed, BudgetReached) as e:
+            typer.echo(f"translation failed: {e}", err=True)
+            raise typer.Exit(1) from None
+        finally:
+            budget.add_spend(s, usage.cost_usd)
+        record.update(
+            title=tr.title,
+            body=tr.body,
+            check_ok=tr.check_ok,
+            check_note=tr.check_note,
+            repaired=tr.repaired,
+            **usage.fields(tr.model),
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+    summary = {k: v for k, v in record.items() if k not in ("source_paragraphs", "body")}
+    summary["file"] = str(path)
+    typer.echo(json.dumps(summary, ensure_ascii=False, indent=2))
 
 
 def main() -> None:

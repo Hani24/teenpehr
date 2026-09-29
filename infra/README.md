@@ -25,7 +25,7 @@ claude setup-token                            # prints a token: CLAUDE_CODE_OAUT
 cd worker && uv sync && uv run teenpehr health && cd ..   # web API reachable and "logged_in": true; spends nothing
 
 # 4. Worker timers and the SOCKS proxy to Germany.
-systemctl --user enable --now germany-proxy.service x-collector.timer news-worker.timer
+systemctl --user enable --now germany-proxy.service x-collector.timer news-worker.timer teenpehr-jobs.service
 systemctl --user list-timers
 ```
 
@@ -34,7 +34,7 @@ Claude access. The worker uses the owner's Claude subscription through Claude Co
 anywhere. The units drop one if `worker/.env` still has it, and the worker blanks it for the CLI too,
 so a stray key can never move the bill to the API. Usage counts against the same account's Claude Code
 limits as interactive sessions on it; the dollar figures in run logs and the admin are API-equivalent
-(the CLI prices the tokens at API list prices) and `DAILY_BUDGET_USD` caps them per day. A token from
+(the CLI prices the tokens at API list prices) and `DAILY_BUDGET_USD` caps them per day (default 12, decision D13). A token from
 `claude setup-token` is long-lived and independent of the interactive login (signing out of `claude`
 does not stop the timer). When the CLI is signed out, the next due slot fails once (an ntfy alert) and
 runs as soon as `uv run teenpehr health` shows `"logged_in": true` again.
@@ -69,17 +69,48 @@ the admin to let the worker redo it.
 If the web app does not answer when a slot falls due, that firing fails (one alert per slot), and
 later firings keep trying quietly until it is back; the slot then runs late, as above.
 
+## Jobs: readers' translations and manual stories
+
+`teenpehr-jobs.service` runs `teenpehr jobs` all the time (a long-running service, not a timer): it
+does the work the site queues between editions (`docs/API.md` § Jobs): a reader's request for a cited
+article in full in Urdu (D9), and a manual story's missing language and image (D12). It asks for work
+every 3 seconds when idle (`JOBS_POLL_S`), one job at a time (`JOBS_CONCURRENCY`, at most 4), and backs
+off to five minutes while the web app does not answer. A translation fetches the article once within
+the usual rules (robots.txt for `teenpehr` and for `Claude-User`, Crawl-delay, 429 cooldowns, one
+request per host, the source's route; no paywall ever bypassed, no page that opts out of AI use), then
+the Urdu model translates it in full and Haiku checks it; the result and its check note go back to the
+site. A long article takes a few minutes; a lease of 30 minutes (`JOBS_LEASE_S`) covers it, and a job
+still running 90 seconds before its lease ends is stopped and queued again (the site cannot extend a
+lease, and a second claim must never do the same work twice).
+
+What waits instead of failing: translations and fills once today's usage reached `DAILY_BUDGET_USD`
+(they resume after midnight, Pakistan time; the edition runs share the same ceiling and state file),
+or while the Claude Code CLI is signed out (checked again every five minutes); translations and images
+while `news-worker.service` is active (`JOBS_PAUSE_DURING_EDITIONS=1`), so an edition run and a job
+never read the same publisher at once and the edition goes first.
+
+Stopping (`systemctl --user stop teenpehr-jobs`, a reboot, a restart after an update) sends SIGINT: the
+current job may finish for up to two minutes (`JOBS_STOP_GRACE_S`), after which it is cancelled and
+queued again for a minute later. Results the web app could not take because it was down wait in
+`worker/out/state/job-outbox/` and are sent before the next claim. Restart the service after a worker
+update: `systemctl --user restart teenpehr-jobs`.
+
+By hand: `uv run teenpehr jobs --once` does at most one job and prints what happened;
+`uv run teenpehr translate-url <url> [--fetch-only]` tries the fetch rules and the translation on any
+article without the web app (the result goes to a JSON file; its Claude calls count toward the ceiling).
+
 ## Alerts and logs
 
-Failures of `news-worker`, `x-collector` and `teenpehr-web` (five failed starts within ten
-minutes, after which it stops restarting until the next worker run pulls it in) post the last 40
+Failures of `news-worker`, `x-collector`, `teenpehr-web` and `teenpehr-jobs` (for the last two: five
+failed starts within ten minutes, after which they stop restarting; `teenpehr-web` comes back when the
+next worker run pulls it in, `teenpehr-jobs` with `systemctl --user restart teenpehr-jobs`) post the last 40
 log lines to ntfy
 (`news-alert@.service`, topic `NTFY_TOPIC` in `worker/.env`; nothing is sent while it is empty).
 Edition runs skipped for the daily budget, and runs that collected nothing, exit non-zero, so they
 alert too (alongside the worker's own ntfy note); timer firings with no slot due exit 0; so does an X collector run in which no configured List returned a post (the sign that X
 closed the endpoint). The collector also posts its own ntfy note when a single List looks stale.
 
-Logs: `journalctl --user -u news-worker -f` (or `x-collector`, `teenpehr-web`).
+Logs: `journalctl --user -u news-worker -f` (or `x-collector`, `teenpehr-web`, `teenpehr-jobs`).
 
 Edition snapshots (the JSON written at publish) go to `~/.local/share/teenpehr/snapshots`, set by
 `EDITION_SNAPSHOT_DIR` in `teenpehr-web.service`; never inside `web/.next/`, which each build wipes.
