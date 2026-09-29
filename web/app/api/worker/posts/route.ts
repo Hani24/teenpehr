@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, or, sql, type SQL } from "drizzle-orm";
 import { checkWorkerAuth, parseBody, noStore } from "@/lib/worker-auth";
 import { postsIn, type PostIn } from "@/lib/contracts";
 import { db, schema } from "@/db";
@@ -64,6 +64,9 @@ export async function POST(req: Request) {
         authorName: sql`case when ${cited} then ${posts.authorName} else excluded.author_name end`,
         handleId: sql`coalesce(excluded.handle_id, ${posts.handleId})`,
         lastSeenAt: sql`excluded.last_seen_at`,
+        // The X List a post came through (D10) is kept when the same post is seen again, so a post by an
+        // author nobody watches stays filed under the group whose approved list carried it.
+        raw: sql`case when excluded.raw ->> 'x_list_id' is not null then coalesce(${posts.raw}, '{}'::jsonb) || jsonb_build_object('x_list_id', excluded.raw -> 'x_list_id') else ${posts.raw} end`,
       };
       for (const f of present) set[META[f].key] = sql.raw(`excluded."${META[f].column}"`);
       const rows = await db.insert(posts).values(chunk).onConflictDoUpdate({ target: [posts.platform, posts.platformId], set })
@@ -87,7 +90,8 @@ export async function GET(req: Request) {
   if (group) {
     const g = await db.query.groups.findFirst({ where: eq(schema.groups.slug, group) });
     if (!g) return NextResponse.json({ error: "unknown group" }, { status: 404 });
-    conds.push(eq(handles.groupId, g.id));
+    // The group's watched handles, and posts its approved X Lists carried (raw.x_list_id, D10).
+    conds.push(or(eq(handles.groupId, g.id), sql`exists (select 1 from groups gl where gl.id = ${g.id} and (${posts.raw} ->> 'x_list_id') = any(gl.x_list_ids))`)!);
   }
   if (handle) conds.push(sql`lower(${posts.authorHandle}) = ${handle.toLowerCase()}`);
   const rows = await db.select({ id: posts.id, handle_id: posts.handleId, author_handle: posts.authorHandle, author_name: posts.authorName, text: posts.text, url: posts.url, posted_at: posts.postedAt, is_repost: posts.isRepost, platform: posts.platform,

@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import * as schema from "./schema";
 
 const url = process.env.DATABASE_URL;
@@ -17,7 +17,11 @@ const dir = join(process.cwd(), "db", "seed");
 const load = <T>(name: string): T | null => existsSync(join(dir, name)) ? (JSON.parse(readFileSync(join(dir, name), "utf8")) as T) : null;
 
 type GroupSeed = { slug: string; name_en: string; name_ur: string; order: number; brief: string; story_count: number };
-type SourceSeed = { group: string; name: string; kind: "rss" | "gnews" | "youtube" | "html" | "telegram"; url: string; lang: string; perspective?: string; route?: "direct" | "germany"; max_items?: number; active?: boolean; notes?: string };
+type SourceSeed = {
+  group: string; name: string; kind: "rss" | "gnews" | "youtube" | "html" | "telegram" | "sitemap" | "gdelt"; url: string; lang: string;
+  perspective?: string; route?: "direct" | "germany"; max_items?: number; active?: boolean; notes?: string;
+  previous_urls?: string[]; check?: { status?: string };
+};
 type HandleSeed = { group: string; platform: "x" | "bluesky" | "telegram" | "youtube"; handle: string; display_name?: string; role?: "outlet" | "journalist" | "official" | "analyst"; active?: boolean };
 type GlossarySeed = { term_en: string; term_ur: string; kind?: "person" | "place" | "org" | "other" };
 
@@ -36,9 +40,15 @@ async function main() {
   for (const s of sourcesSeed) {
     const groupId = groupIds.get(s.group);
     if (!groupId) { skipped++; console.warn(`source ${s.name}: unknown group ${s.group}`); continue; }
-    const row = { groupId, name: s.name, kind: s.kind, url: s.url, lang: s.lang, perspective: s.perspective ?? "", route: s.route ?? "direct", maxItems: s.max_items ?? 8, active: s.active ?? true, notes: s.notes ?? "" };
-    const existing = await db.select({ id: schema.sources.id }).from(schema.sources).where(and(eq(schema.sources.groupId, groupId), eq(schema.sources.url, s.url)));
-    if (existing.length) await db.update(schema.sources).set({ name: row.name, kind: row.kind, lang: row.lang, perspective: row.perspective, route: row.route, maxItems: row.maxItems, notes: row.notes }).where(eq(schema.sources.id, existing[0].id));
+    // D11: a seed row is switched on only when its recorded live check passed (the same rule as
+    // `npm run sources:apply`, which remains the way to change `active` on an existing database).
+    const active = (s.active ?? true) && (!s.check || s.check.status === "ok");
+    const row = { groupId, name: s.name, kind: s.kind, url: s.url, lang: s.lang, perspective: s.perspective ?? "", route: s.route ?? "direct", maxItems: s.max_items ?? 8, active, notes: s.notes ?? "" };
+    // A feed that moved (previous_urls) updates its old row instead of adding a second one.
+    const urls = [s.url, ...(s.previous_urls ?? [])];
+    const found = await db.select({ id: schema.sources.id, url: schema.sources.url }).from(schema.sources).where(and(eq(schema.sources.groupId, groupId), inArray(schema.sources.url, urls)));
+    const existing = found.find((r) => r.url === s.url) ?? found[0]; // the current URL's row wins (unique per group)
+    if (existing) await db.update(schema.sources).set({ name: row.name, kind: row.kind, url: row.url, lang: row.lang, perspective: row.perspective, route: row.route, maxItems: row.maxItems, notes: row.notes }).where(eq(schema.sources.id, existing.id));
     else await db.insert(schema.sources).values(row);
   }
   counts.sources = sourcesSeed.length - skipped;

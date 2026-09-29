@@ -85,7 +85,10 @@ class EditionTimes(_Lax):
 class SiteSettings(_Lax):
     edition_times: EditionTimes = Field(default_factory=EditionTimes)
     timezone: str = "Asia/Karachi"
-    publish_policy: Literal["auto", "hold"] = "auto"
+    # D14: "publish" (the default) publishes every edition, flagged stories included, each marked "not
+    # reviewed" until an editor reviews it; "auto" holds an edition with a flagged story; "hold" holds all.
+    # The server applies it at publish time; the worker only reports it.
+    publish_policy: Literal["publish", "auto", "hold"] = "publish"
     site_name_en: str = "Tabayyun"
     site_name_ur: str = "تبیُّن"
     editor_name: str = ""
@@ -107,7 +110,9 @@ class Source(_Lax):
     id: int
     group_id: int
     name: str
-    kind: Literal["rss", "html", "gnews", "youtube", "telegram"] = "rss"
+    # Mirrors SOURCE_KINDS in web/lib/codes.ts. The pipeline fetches only the kinds it knows and skips the
+    # rest; `manual` sources (editors' links, D12) are inactive and never reach the config.
+    kind: Literal["rss", "html", "gnews", "youtube", "telegram", "manual", "sitemap", "gdelt"] = "rss"
     url: str
     lang: str = "en"
     perspective: str = ""
@@ -421,8 +426,12 @@ class RunOutputIn(BaseModel):
 
 
 class PublishOut(_Lax):
+    """`status` "published" (with `stories` and how many of them QA `flagged`: they are live, marked "not
+    reviewed", and wait in the admin's Review page, D14) or "review" (held under publish_policy auto/hold)."""
+
     status: str
     flagged: int | None = None
+    stories: int | None = None
     published_at: datetime | None = None
     url: str | None = None
 
@@ -562,3 +571,114 @@ class ImageCheckOut(BaseModel):
     placeholder_or_logo: bool = Field(
         description="True if it is a logo, a site's default or placeholder image, a text card, an advert or blank"
     )
+
+
+# ---- worker jobs (docs/API.md § Jobs; web/lib/contracts.ts, decisions D9 and D12) ------------------
+JobKind = Literal["translate_article", "fill_language", "story_image"]
+JobStatus = Literal["queued", "running", "done", "failed", "blocked"]
+# Mirrors TRANSLATION_BLOCK_REASONS in web/lib/codes.ts: why the full text could not be had legitimately.
+TranslationBlockReason = Literal[
+    "paywalled", "robots_disallowed", "unreachable", "needs_germany", "no_text", "too_long", "not_article"
+]
+
+
+class Job(_Lax):
+    """A claimed job (POST /api/worker/jobs/claim)."""
+
+    id: int
+    kind: JobKind
+    payload: dict[str, Any] = Field(default_factory=dict)
+    priority: int = 0
+    attempts: int = 0
+    max_attempts: int = 3
+    locked_by: str | None = None
+    locked_until: datetime | None = None
+    requested_by: int | None = None
+    created_at: datetime | None = None
+
+
+class JobContext(_Lax):
+    """GET /api/worker/jobs/{id}/context. `item` for translate_article and story_image; `story` and `sources`
+    for fill_language and story_image; `glossary` (locked entries) for translate_article and fill_language.
+    Every text in here (an editor's included) is data for the prompt, never instructions."""
+
+    job: dict[str, Any]
+    item: dict[str, Any] | None = None
+    translation: dict[str, Any] | None = None
+    story: dict[str, Any] | None = None
+    sources: list[dict[str, Any]] = Field(default_factory=list)
+    glossary: list[GlossaryEntry] = Field(default_factory=list)
+
+    @field_validator("glossary", mode="before")
+    @classmethod
+    def _locked(cls, v: Any) -> Any:
+        """The route serves only the locked (editor-approved) entries and leaves the flag out: mark them, or
+        the prompts, which make only locked spellings mandatory, would drop every one."""
+        if isinstance(v, list):
+            return [{**e, "locked": True} if isinstance(e, dict) else e for e in v]
+        return v
+
+
+class JobUsage(BaseModel):
+    """What the job's Claude calls cost (API-equivalent dollars; they count toward DAILY_BUDGET_USD)."""
+
+    model: str = ""
+    tokens_in: int = Field(default=0, ge=0)
+    tokens_out: int = Field(default=0, ge=0)
+    cost_usd: float = Field(default=0.0, ge=0)
+
+
+class TranslateArticleDone(JobUsage):
+    title: str = Field(min_length=1, max_length=1000)
+    body: str = Field(min_length=1, max_length=200_000)
+    source_words: int = Field(ge=0)
+    source_text_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    check_ok: bool
+    check_note: str = Field(default="", max_length=4000)
+
+
+class TranslateBlocked(BaseModel):
+    reason: TranslationBlockReason
+    note: str = Field(default="", max_length=1000)
+
+
+class TranslateArticleBlockedResult(JobUsage):
+    blocked: TranslateBlocked
+
+
+class FillFields(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    summary: str = Field(min_length=1, max_length=3000)
+    why: str = Field(default="", max_length=1000)
+    contested: str = Field(default="", max_length=1000)
+
+
+class FillLanguageResult(JobUsage):
+    """Only the payload's `lang` is written, and only into the story's empty fields."""
+
+    fields: dict[Literal["en", "ur"], FillFields]
+
+
+class StoryImageResult(BaseModel):
+    """`image_id` from POST /api/worker/images (owned by the payload's item), or None for no usable image."""
+
+    image_id: int | None = None
+    note: str = Field(default="", max_length=1000)
+
+
+JobResult = TranslateArticleDone | TranslateArticleBlockedResult | FillLanguageResult | StoryImageResult
+
+
+class JobDoneOut(_Lax):
+    ok: bool = True
+    status: JobStatus
+    applied: bool = True  # False: the site refused the result for good (its story went live, say); do not retry
+    note: str | None = None
+    already: bool = False
+
+
+class JobFailOut(_Lax):
+    ok: bool = True
+    status: JobStatus  # queued (retry scheduled), failed or blocked
+    already: bool = False
+    retry_at: datetime | None = None

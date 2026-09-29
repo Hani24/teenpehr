@@ -13,4 +13,6 @@ if (process.env.NODE_ENV !== "production") g.__teenpehrSql = sql;
 
 export const db = drizzle(sql, { schema });
 export type Db = typeof db;
+/** A transaction handle (db.transaction's callback argument). */
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 export { schema };

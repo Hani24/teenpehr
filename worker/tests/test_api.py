@@ -67,7 +67,14 @@ def test_all_routes(api):
     )
     pub = respx.post(f"{BASE}/api/worker/editions/2026-09-23/subh/publish").mock(
         return_value=httpx.Response(
-            200, json={"status": "published", "published_at": "2026-09-23T02:00:00+00:00", "url": "/en/2026-09-23/subh"}
+            200,
+            json={
+                "status": "published",
+                "published_at": "2026-09-23T02:00:00+00:00",
+                "url": "/en/2026-09-23/subh",
+                "stories": 12,
+                "flagged": 2,
+            },
         )
     )
     glos = respx.post(f"{BASE}/api/worker/glossary").mock(
@@ -118,6 +125,7 @@ def test_all_routes(api):
     )
     assert api.put_edition("2026-09-23", "subh", ed).edition_id == 7 and put.called
     r = api.publish("2026-09-23", "subh", notify=False)
+    assert r.stories == 12 and r.flagged == 2  # D14: published with its flagged count
     assert (
         r.status == "published"
         and b'"notify": false' in pub.calls[0].request.content.replace(b" ", b"")
@@ -341,3 +349,99 @@ def test_a_run_less_edition_sends_a_null_run_id_the_server_accepts(api):
     )
     api.put_edition("2000-01-01", "subh", EditionIn(groups=[]))
     assert json.loads(put.calls[0].request.content)["run_id"] is None
+
+
+@respx.mock
+def test_job_routes(api):
+    from teenpehr.models import FillFields, FillLanguageResult, StoryImageResult, TranslateArticleDone
+
+    claim = respx.post(f"{BASE}/api/worker/jobs/claim").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "job": {
+                        "id": 7,
+                        "kind": "translate_article",
+                        "payload": {"item_id": 9001, "lang": "ur"},
+                        "priority": 10,
+                        "attempts": 1,
+                        "max_attempts": 3,
+                        "locked_by": "w1",
+                        "locked_until": "2026-09-29T01:00:00.000Z",
+                        "requested_by": 3,
+                        "created_at": "2026-09-29T00:50:00.000Z",
+                    }
+                },
+            ),
+            httpx.Response(200, json={"job": None}),
+        ]
+    )
+    ctx = respx.get(f"{BASE}/api/worker/jobs/7/context").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "job": {"id": 7, "kind": "translate_article"},
+                "item": {"id": 9001, "url": "https://www.dawn.com/news/1", "source": {"route": "direct"}},
+                "translation": {"status": "running"},
+                "glossary": [{"term_en": "Shehbaz Sharif", "term_ur": "شہباز شریف", "kind": "person"}],
+            },
+        )
+    )
+    done = respx.post(f"{BASE}/api/worker/jobs/7/done").mock(
+        return_value=httpx.Response(200, json={"ok": True, "status": "done", "applied": True})
+    )
+    fail = respx.post(f"{BASE}/api/worker/jobs/8/fail").mock(
+        return_value=httpx.Response(200, json={"ok": True, "status": "blocked"})
+    )
+
+    job = api.claim_job(["translate_article"], "w1", lease_s=900)
+    assert job and job.id == 7 and job.payload["item_id"] == 9001 and job.attempts == 1
+    assert json.loads(claim.calls[0].request.content) == {
+        "kinds": ["translate_article"],
+        "worker_id": "w1",
+        "lease_s": 900,
+    }
+    assert api.claim_job(["fill_language", "story_image"], "w1") is None
+
+    c = api.job_context(7)
+    assert c.item and c.item["source"]["route"] == "direct" and c.glossary[0].term_ur == "شہباز شریف" and ctx.called
+
+    out = api.job_done(
+        7,
+        TranslateArticleDone(title="عنوان", body="متن", source_words=640, check_ok=True, model="m", cost_usd=0.5),
+        worker_id="w1",
+    )
+    assert out.status == "done" and out.applied
+    sent = json.loads(done.calls[0].request.content)
+    assert sent["worker_id"] == "w1" and sent["result"]["source_words"] == 640 and sent["result"]["cost_usd"] == 0.5
+
+    fr = api.job_fail(8, "metered wall", blocked=True, reason="paywalled")
+    assert fr.status == "blocked"
+    assert json.loads(fail.calls[0].request.content) == {
+        "error": "metered wall",
+        "retry": False,
+        "blocked": True,
+        "reason": "paywalled",
+    }
+
+    # The other result shapes serialise as the web contract expects.
+    fill = FillLanguageResult(fields={"ur": FillFields(title="ع", summary="خ")}).model_dump(mode="json")
+    assert fill["fields"]["ur"] == {"title": "ع", "summary": "خ", "why": "", "contested": ""}
+    assert StoryImageResult().model_dump(mode="json") == {"image_id": None, "note": ""}
+
+
+@respx.mock
+def test_claim_is_not_replayed_after_a_read_timeout(api):
+    route = respx.post(f"{BASE}/api/worker/jobs/claim").mock(side_effect=httpx.ReadTimeout("slow"))
+    with pytest.raises(httpx.ReadTimeout):
+        api.claim_job(["translate_article"], "w1")
+    assert route.call_count == 1
+
+
+def test_site_settings_publish_policy_defaults_to_publish_and_accepts_every_policy():
+    from teenpehr.models import SiteSettings
+
+    assert SiteSettings().publish_policy == "publish"  # D14
+    for policy in ("publish", "auto", "hold"):
+        assert SiteSettings.model_validate({"publish_policy": policy}).publish_policy == policy

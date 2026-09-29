@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { EVENT_TYPES, TOPICS } from "./taxonomy";
 import { IMAGE_MAX_SOURCE_PX, IMAGE_MAX_VARIANTS, IMAGE_MAX_VARIANT_BYTES, IMAGE_MAX_VARIANT_H, IMAGE_MAX_VARIANT_W, IMAGE_MIN_VARIANT_W } from "./media";
+import { JOB_KINDS, STORY_LANGS, TRANSLATION_BLOCK_REASONS, type JobKind } from "./codes";
 
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 export const slot = z.enum(["subh", "dopahar", "shaam"]);
@@ -261,6 +262,107 @@ export const imageIn = z.object({
   });
 });
 
+/*
+ * Worker jobs (docs/API.md § Jobs; decisions D9 and D12). The site enqueues (lib/jobs.ts), the worker
+ * claims one, reads its context, and reports done or fail. Payloads are written by the site and results
+ * by the worker; each is validated per kind here, and lib/jobs.ts applies a result to its target.
+ */
+const positiveId = z.number().int().positive();
+export const jobKindSchema = z.enum(JOB_KINDS);
+/** A worker's name for its leases: host plus pid, say. Letters, digits and . _ : @ - only. */
+export const workerIdSchema = z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9._:@-]+$/, "letters, digits and . _ : @ - only");
+
+/** POST /api/worker/jobs/claim */
+export const jobClaimIn = z.object({
+  kinds: z.array(jobKindSchema).min(1).max(JOB_KINDS.length).transform((k) => [...new Set(k)]),
+  worker_id: workerIdSchema,
+  // How long the lease lasts; an unfinished job whose lease ran out can be claimed again (one more attempt).
+  lease_s: z.number().int().min(60).max(3600).default(600),
+});
+
+/** translate_article: translate a cited item's full article into Urdu (D9). */
+export const translateArticlePayload = z.object({ item_id: positiveId, lang: z.literal("ur").default("ur") });
+/** fill_language: write a manual story's missing side (`lang`) from the editor's text only (D12). */
+export const fillLanguagePayload = z.object({ story_id: positiveId, lang: z.enum(STORY_LANGS) });
+/** story_image: download the manual story's linked article's lead image through the worker's Fetcher (D12). */
+export const storyImagePayload = z.object({ story_id: positiveId, item_id: positiveId });
+export const jobPayloadSchemas = {
+  translate_article: translateArticlePayload,
+  fill_language: fillLanguagePayload,
+  story_image: storyImagePayload,
+} as const satisfies Record<JobKind, z.ZodType>;
+export type JobPayload<K extends JobKind> = z.infer<(typeof jobPayloadSchemas)[K]>;
+export type JobPayloadIn<K extends JobKind> = z.input<(typeof jobPayloadSchemas)[K]>;
+
+/** What a model call cost, as the worker logs it (API-equivalent dollars; counts toward DAILY_BUDGET_USD). */
+const usage = {
+  model: z.string().max(100).default(""),
+  tokens_in: z.number().int().nonnegative().default(0),
+  tokens_out: z.number().int().nonnegative().default(0),
+  cost_usd: z.number().nonnegative().max(1000).default(0),
+};
+export const TRANSLATION_BODY_MAX = 200_000;
+/** A finished translation: the whole article, faithfully, in Urdu (normalised to Urdu code points on store). */
+export const translateArticleDone = z.object({
+  title: z.string().trim().min(1).max(1000),
+  body: z.string().trim().min(1).max(TRANSLATION_BODY_MAX),
+  source_words: z.number().int().nonnegative(),
+  // sha256 hex of the extracted source text, so a later request can tell whether the article changed.
+  source_text_hash: z.string().regex(/^[0-9a-f]{64}$/, "64 lower-case hex digits").nullable().optional(),
+  ...usage,
+  check_ok: z.boolean(),
+  check_note: z.string().max(4000).default(""),
+});
+/** The full text could not be had legitimately (paywall, robots.txt, unreachable, …): final, never retried harder. */
+export const translateArticleBlocked = z.object({
+  blocked: z.object({ reason: z.enum(TRANSLATION_BLOCK_REASONS), note: z.string().max(1000).default("") }),
+  ...usage,
+});
+export const translateArticleResult = z.union([translateArticleBlocked, translateArticleDone]);
+/** One language's story fields. Title and summary are required for the side being filled. */
+const fillFields = z.object({
+  title: z.string().trim().min(1).max(300),
+  summary: z.string().trim().min(1).max(3000),
+  why: z.string().trim().max(1000).default(""),
+  contested: z.string().trim().max(1000).default(""),
+});
+export const fillLanguageResult = z.object({
+  fields: z.object({ en: fillFields.optional(), ur: fillFields.optional() })
+    .refine((f) => !!(f.en || f.ur), "fields: at least one language"),
+  ...usage,
+});
+/** The uploaded image (POST /api/worker/images, owned by the payload's item), or null when there was no usable one. */
+export const storyImageResult = z.object({ image_id: positiveId.nullable(), note: z.string().max(1000).default("") });
+export const jobResultSchemas = {
+  translate_article: translateArticleResult,
+  fill_language: fillLanguageResult,
+  story_image: storyImageResult,
+} as const satisfies Record<JobKind, z.ZodType>;
+export type JobResult<K extends JobKind> = z.infer<(typeof jobResultSchemas)[K]>;
+/** Validate a job result for its kind; a translation is checked against the branch it claims (blocked or done), so issues name real fields. */
+export function parseJobResult<K extends JobKind>(kind: K, raw: unknown) {
+  if (kind === "translate_article") {
+    const blocked = !!raw && typeof raw === "object" && "blocked" in raw;
+    return (blocked ? translateArticleBlocked : translateArticleDone).safeParse(raw) as z.ZodSafeParseResult<JobResult<K>>;
+  }
+  return jobResultSchemas[kind].safeParse(raw) as z.ZodSafeParseResult<JobResult<K>>;
+}
+
+/** POST /api/worker/jobs/{id}/done. `result` is checked against the job's kind (jobResultSchemas). */
+export const jobDoneIn = z.object({ worker_id: workerIdSchema.optional(), result: z.unknown() });
+/**
+ * POST /api/worker/jobs/{id}/fail. `retry`: queue it again after a backoff while attempts remain.
+ * `blocked`: final, the job cannot be done legitimately (a translation's `reason` says why).
+ */
+export const jobFailIn = z.object({
+  worker_id: workerIdSchema.optional(),
+  error: z.string().trim().min(1).max(4000),
+  retry: z.boolean().default(false),
+  blocked: z.boolean().default(false),
+  reason: z.enum(TRANSLATION_BLOCK_REASONS).optional(),
+  retry_after_s: z.number().int().min(0).max(86_400).optional(),
+}).refine((v) => !(v.blocked && v.retry), { path: ["retry"], message: "a blocked job is final: retry must be false" });
+
 export type RunStart = z.infer<typeof runStart>;
 export type RunFinish = z.infer<typeof runFinish>;
 export type ItemsIn = z.infer<typeof itemsIn>;
@@ -272,3 +374,6 @@ export type PostIn = z.infer<typeof postIn>;
 export type EntityIn = z.infer<typeof entityIn>;
 export type RunOutputsIn = z.infer<typeof runOutputsIn>;
 export type ImageIn = z.infer<typeof imageIn>;
+export type JobClaimIn = z.infer<typeof jobClaimIn>;
+export type JobDoneIn = z.infer<typeof jobDoneIn>;
+export type JobFailIn = z.infer<typeof jobFailIn>;

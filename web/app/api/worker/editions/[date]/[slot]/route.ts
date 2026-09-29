@@ -4,6 +4,7 @@ import { checkWorkerAuth, parseBody, noStore } from "@/lib/worker-auth";
 import { editionIn, isoDate, slot as slotSchema } from "@/lib/contracts";
 import { db, schema } from "@/db";
 import { entityKey, upsertEntities } from "../../../_entities";
+import { ensureEditionGroups } from "@/lib/desk";
 
 const { editions, editionGroups, stories, storySources, storyPosts, storyEntities, threads, groups, items, posts, images } = schema;
 
@@ -29,13 +30,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ date: string; s
   const p = await ctx.params;
   const date = isoDate.safeParse(p.date), slot = slotSchema.safeParse(p.slot);
   if (!date.success || !slot.success) return NextResponse.json({ error: "bad date or slot" }, { status: 400 });
-  const ed = await db.query.editions.findFirst({
-    where: and(eq(editions.date, date.data), eq(editions.slot, slot.data)),
-    columns: { id: true, status: true },
-    with: { groups: { columns: {}, with: { group: { columns: { slug: true } } }, orderBy: (g) => [asc(g.order)] } },
-  });
+  const [ed] = await db.select({ id: editions.id, status: editions.status }).from(editions)
+    .where(and(eq(editions.date, date.data), eq(editions.slot, slot.data)));
   if (!ed) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
-  return NextResponse.json({ edition_id: ed.id, status: ed.status, groups: ed.groups.map((g) => g.group.slug) }, noStore);
+  // Only groups the worker wrote: a row kept for editors' manual stories alone (D12) has no lead and no
+  // 'ai' story, and must not make a --groups run think that group is done.
+  const written = await db.select({ slug: groups.slug }).from(editionGroups).innerJoin(groups, eq(groups.id, editionGroups.groupId))
+    .where(and(eq(editionGroups.editionId, ed.id), sql`(${editionGroups.leadEn} <> '' or exists (select 1 from ${stories} where ${stories.editionId} = ${ed.id} and ${stories.groupId} = ${editionGroups.groupId} and ${stories.origin} = 'ai'))`))
+    .orderBy(asc(editionGroups.order));
+  return NextResponse.json({ edition_id: ed.id, status: ed.status, groups: written.map((g) => g.slug) }, noStore);
 }
 
 export async function PUT(req: Request, ctx: { params: Promise<{ date: string; slot: string }> }) {
@@ -103,8 +106,10 @@ export async function PUT(req: Request, ctx: { params: Promise<{ date: string; s
     // Entities first (one upsert for the whole payload); a replaced story's links go with it (cascade).
     const entityId = await upsertEntities(tx, data.groups.flatMap((g) => g.stories.flatMap((s) => s.entities)));
     // partial: replace only the groups in this payload; the draft's other groups and stories stay.
+    // An editor's manual stories (D12, lib/desk.ts) are never replaced: only the worker's own ('ai') go.
     const replaced = data.partial ? data.groups.map((g) => groupId.get(g.group)!) : null;
-    await tx.delete(stories).where(replaced ? and(eq(stories.editionId, ed.id), inArray(stories.groupId, replaced)) : eq(stories.editionId, ed.id));
+    const own = and(eq(stories.editionId, ed.id), eq(stories.origin, "ai"));
+    await tx.delete(stories).where(replaced ? and(own, inArray(stories.groupId, replaced)) : own);
     await tx.delete(editionGroups).where(replaced ? and(eq(editionGroups.editionId, ed.id), inArray(editionGroups.groupId, replaced)) : eq(editionGroups.editionId, ed.id));
 
     const threadId = new Map<string, number>();
@@ -150,7 +155,10 @@ export async function PUT(req: Request, ctx: { params: Promise<{ date: string; s
         out.push({ order: s.order, group: g.group, id: row.id });
       }
     }
-    if (replaced) {
+    // A group that now has only manual stories keeps a row (empty lead); adding one lays the groups out in
+    // the configured order, as a partial PUT does.
+    const addedForManual = await ensureEditionGroups(tx, ed.id);
+    if (replaced && !addedForManual) {
       // Kept and replaced groups interleave, so lay them out in the configured group order.
       const rows = await tx.select({ id: editionGroups.id }).from(editionGroups).innerJoin(groups, eq(groups.id, editionGroups.groupId))
         .where(eq(editionGroups.editionId, ed.id)).orderBy(asc(groups.order), asc(groups.id));

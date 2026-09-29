@@ -41,7 +41,7 @@ CONFIG = {
     "settings": {
         "edition_times": {"subh": "07:00", "dopahar": "13:00", "shaam": "19:30"},
         "timezone": "Asia/Karachi",
-        "publish_policy": "auto",
+        "publish_policy": "publish",
         "site_name_en": "Tabayyun",
         "digits_ur": "latn",
         "editor_name": "",

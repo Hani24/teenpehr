@@ -15,12 +15,19 @@
  * 5. Decision D4: a default_theme saved before Settings had a default mode (no default_mode row) never
  *    took effect (the old boot script followed the device), so it becomes "system", and the old
  *    large-type theme becomes the Wazeh mode. Migrated databases: db/migrations/0003_default_palette.sql.
+ * 6. Decision D14: editions publish without waiting for an editor. The shipped publish policy "auto" becomes
+ *    "publish" ("hold" is an explicit choice and stays), and the shipped site-wide disclosure, which claimed
+ *    every story was written by AI and reviewed by an editor, becomes the new one, only where the stored text is
+ *    still the old shipped text. Nothing about stories changes: existing stories stay "not reviewed".
+ *    Migrated databases: db/migrations/0006_review_state.sql.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import * as schema from "./schema";
 import { normalizeUrdu } from "../lib/urdu";
+import en from "../messages/en.json";
+import ur from "../messages/ur.json";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set");
@@ -29,6 +36,10 @@ const db = drizzle(client, { schema });
 const { items, itemSources, glossary, groups, topics, settings, editions, editionGroups, stories } = schema;
 
 const changed = (a: string, b: string) => a !== b;
+
+/** The disclosure shipped before D14, which claimed human review for every story (step 6). */
+const OLD_DISCLOSURE_EN = "Written by AI from the listed sources and reviewed by a human editor. Every claim links to its source.";
+const OLD_DISCLOSURE_UR = "یہ خبر درج ذیل ذرائع سے مصنوعی ذہانت نے تیار کی اور ایک انسانی ایڈیٹر نے اس کا جائزہ لیا۔ ہر بات کا حوالہ موجود ہے۔";
 
 async function main() {
   const counts: Record<string, number> = {};
@@ -111,6 +122,21 @@ async function main() {
       await tx.update(settings).set({ value: "system" }).where(eq(settings.key, "default_theme"));
     });
     counts.default_palette = 1;
+  }
+
+  // 6. Only the shipped values move; a value the admin chose stays.
+  counts.d14_settings = 0;
+  const d14: Array<[string, (v: unknown) => boolean, string]> = [
+    ["publish_policy", (v) => v === "auto", "publish"],
+    ["disclosure_en", (v) => typeof v === "string" && v.trim() === OLD_DISCLOSURE_EN, en.site.disclosure],
+    ["disclosure_ur", (v) => typeof v === "string" && normalizeUrdu(v.trim()) === normalizeUrdu(OLD_DISCLOSURE_UR), ur.site.disclosure],
+  ];
+  for (const [key, isOld, value] of d14) {
+    const [row] = await db.select().from(settings).where(eq(settings.key, key));
+    if (row && isOld(row.value)) {
+      await db.update(settings).set({ value }).where(and(eq(settings.key, key), eq(settings.value, row.value)));
+      counts.d14_settings++;
+    }
   }
 
   console.log("backfill:", JSON.stringify(counts));

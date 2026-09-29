@@ -21,6 +21,12 @@ from .models import (
     ItemIn,
     ItemOut,
     ItemRecord,
+    Job,
+    JobContext,
+    JobDoneOut,
+    JobFailOut,
+    JobKind,
+    JobResult,
     PostIn,
     PostOut,
     PostRecord,
@@ -237,3 +243,45 @@ class WorkerApi:
         if last_post_at:
             body["last_post_at"] = last_post_at.isoformat()
         self._request("POST", f"/api/worker/handles/{handle_id}/seen", json=body)
+
+    # ---- jobs (docs/API.md § Jobs) ------------------------------------------------------------
+    def claim_job(self, kinds: list[JobKind], worker_id: str, lease_s: int = 600) -> Job | None:
+        """The next job of one of `kinds`, leased to `worker_id` for `lease_s` seconds, or None. Each claim
+        counts an attempt; not replayed after a read timeout (a lost answer would leave the job leased until
+        its lease runs out, after which it is claimable again)."""
+        body = {"kinds": list(kinds), "worker_id": worker_id, "lease_s": lease_s}
+        res = self._request("POST", "/api/worker/jobs/claim", json=body, replay=False)
+        job = res.get("job")
+        return Job.model_validate(job) if job else None
+
+    def job_context(self, job_id: int) -> JobContext:
+        return JobContext.model_validate(self._request("GET", f"/api/worker/jobs/{job_id}/context"))
+
+    def job_done(self, job_id: int, result: JobResult, worker_id: str | None = None) -> JobDoneOut:
+        """Report a result. Idempotent: a repeat for a job already done answers `already`."""
+        body: dict[str, Any] = {"result": result.model_dump(mode="json")}
+        if worker_id:
+            body["worker_id"] = worker_id
+        return JobDoneOut.model_validate(self._request("POST", f"/api/worker/jobs/{job_id}/done", json=body))
+
+    def job_fail(
+        self,
+        job_id: int,
+        error: str,
+        *,
+        retry: bool = False,
+        blocked: bool = False,
+        reason: str | None = None,
+        retry_after_s: int | None = None,
+        worker_id: str | None = None,
+    ) -> JobFailOut:
+        """Report a failure. `retry`: queue it again (backoff) while attempts remain. `blocked`: final, the work
+        cannot be done legitimately (for a translation, `reason` is one of TranslationBlockReason)."""
+        body: dict[str, Any] = {"error": error[:4000] or "failed", "retry": retry, "blocked": blocked}
+        if reason:
+            body["reason"] = reason
+        if retry_after_s is not None:
+            body["retry_after_s"] = retry_after_s
+        if worker_id:
+            body["worker_id"] = worker_id
+        return JobFailOut.model_validate(self._request("POST", f"/api/worker/jobs/{job_id}/fail", json=body))

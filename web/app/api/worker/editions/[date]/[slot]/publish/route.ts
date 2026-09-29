@@ -24,8 +24,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ date: string; 
   if (r.status === "review") return NextResponse.json({ status: "review", flagged: r.flagged }, noStore);
   // publishEdition moved the entity mention counts; a repeat publish only makes sure they are current.
   if (r.already) await syncEntityStats().catch((e) => console.error("entity stats:", (e as Error).message));
-  if (!r.already && parsed.data.notify) void notify(`Edition published: ${date.data} ${slot.data} (${r.stories} stories)`);
-  return NextResponse.json({ status: "published", published_at: r.publishedAt.toISOString(), url: `/en/${date.data}/${slot.data}` }, noStore);
+  // D14: every story goes out marked "not reviewed"; the flagged ones are the editors' first look.
+  if (!r.already && parsed.data.notify) {
+    const flagged = r.flagged ? `, ${r.flagged} flagged by QA awaiting review` : ", none flagged";
+    void notify(`Edition published: ${date.data} ${slot.data} (${r.stories} stories${flagged}; review them in the admin)`);
+  }
+  return NextResponse.json({ status: "published", published_at: r.publishedAt.toISOString(), url: `/en/${date.data}/${slot.data}`, stories: r.stories, flagged: r.flagged }, noStore);
 }
 
 async function notify(message: string) {

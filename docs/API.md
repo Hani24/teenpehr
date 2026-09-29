@@ -23,13 +23,17 @@ The Python worker never touches Postgres. It talks to the Next.js app (Tabayyun)
 | POST | `/api/worker/editions/{date}/{slot}/publish` | Publish (immutable afterwards), revalidate pages, notify |
 | POST | `/api/worker/glossary` | Propose new glossary entries (unlocked; editor may lock) |
 | POST | `/api/worker/handles/{id}/seen` | Record last post time / fallback use for a handle |
+| POST | `/api/worker/jobs/claim` | Lease the next queued job of the given kinds → `{ job }` or `{ job: null }` (§ Jobs) |
+| GET | `/api/worker/jobs/{id}/context` | Everything the worker needs for one job (item, story, locked glossary) |
+| POST | `/api/worker/jobs/{id}/done` | Report a job's result; the site validates it for the kind and applies it |
+| POST | `/api/worker/jobs/{id}/fail` | Report a failure: retry after a backoff, fail for good, or blocked |
 
 ## GET /api/worker/config → 200
 
 ```json
 {
   "settings": { "edition_times": {"subh":"07:00","dopahar":"13:00","shaam":"19:30"}, "timezone": "Asia/Karachi",
-                "publish_policy": "auto", "site_name_en": "Tabayyun", "digits_ur": "latn", "editor_name": "" },
+                "publish_policy": "publish", "site_name_en": "Tabayyun", "digits_ur": "latn", "editor_name": "" },
   "groups": [ { "id": 1, "slug": "pakistan", "name_en": "Pakistan", "name_ur": "پاکستان", "order": 0,
                 "brief": "...", "story_count": 8, "x_list_ids": ["1234567890"] } ],
   "sources": [ { "id": 10, "group_id": 1, "name": "Dawn", "kind": "rss", "url": "https://www.dawn.com/feeds/pakistan",
@@ -41,7 +45,10 @@ The Python worker never touches Postgres. It talks to the Next.js app (Tabayyun)
   "threads": [ { "id": 3, "slug": "imf-review-2026-09", "title_en": "IMF review", "title_ur": "...", "last_seen": "2026-09-23T02:05:00+00:00" } ]
 }
 ```
-`sources` and `handles` contain only active rows; archived sources (`sources.archived_at` set) are left out even
+`settings.publish_policy` (decision D14 in `docs/PLAN.md`; `web/lib/codes.ts` `PUBLISH_POLICIES`) is `publish` (the
+default: publish every edition at once, flagged stories included), `auto` (hold an edition with a flagged story) or
+`hold` (hold every edition); the publish route applies it, the worker only reads it. `editor_name` is the editor in
+charge named in the site footer. `sources` and `handles` contain only active rows; archived sources (`sources.archived_at` set) are left out even
 when active. `glossary` is ordered locked first, then by `term_en`, so a prompt cap drops unreviewed terms before
 locked ones. `threads` covers the last 14 days.
 
@@ -136,10 +143,15 @@ latest count seen. `posts.last_seen_at` is set on every upsert.
 → `200 { "posts": [ { "platform_id": "1837...", "id": 501, "is_new": true, "handle_id": 5 } ] }`. `handle_id` is matched by `author_handle` (case-insensitive) when the handle is on the watchlist; reposts from a watched handle keep `handle_id` of the watcher.
 Key is `platform` + `platform_id`. An existing post takes the new `text` and `author_name`, unless a story already
 cites it: then both stay as first stored, so a published edition never changes when a post is collected again.
+`raw.x_list_id` (set by `collect-x` on every post an X List returned) names the list that carried the post; it is
+kept when the post is seen again. A post whose author is not a watched handle belongs to the group whose approved
+`x_list_ids` include that list (D10: a public list's members count for that group on the X board and in its posts).
+Bluesky posts (`platform: "bluesky"`, `url` on bsky.app) come from the watched Bluesky accounts, read by `collect-x`.
 
 ## GET /api/worker/posts?since=ISO&group=slug (or `handle=` / no filter) → `{ "posts": [ { "id", "handle_id", "author_handle", "author_name", "text", "url", "posted_at", "is_repost", "platform", "media" } ] }` (newest first, max 500).
-`media` is the post's stored media list (the `POST` shape, or null when none was sent): a cited post's first photo can
-be its story's image (D6).
+`group=` returns the group's watched handles' posts and the posts its approved X Lists carried (`raw.x_list_id` in
+the group's `x_list_ids`). `media` is the post's stored media list (the `POST` shape, or null when none was sent): a
+cited post's first photo can be its story's image (D6).
 ## GET /api/worker/items?since=ISO&group=slug → `{ "items": [ { "id", "source_id", "url", "url_canonical", "content_hash", "title", "text", "published_at", "lang", "image_url" } ] }` (max 1000, newest published first).
 One row per sighting last seen at or after `since` by a feed of that group; `source_id` is the feed that saw it, so an
 article carried by two of the group's feeds comes back once per feed. `title`/`text`/`published_at` are as first
@@ -147,8 +159,10 @@ stored, and `image_url` is the feed's lead image as first stored (or null), so a
 image candidate (D6). The worker calls it for a feed that answered 304 and keeps that feed's rows inside its window.
 
 ## GET /api/worker/editions/{date}/{slot}
-→ `200 { "edition_id": 7, "status": "draft" | "review" | "published", "groups": ["pakistan", "world"] }` (group slugs
-in front-page order), or `404 { "error": "not found" }` when the slot has no edition yet. The worker calls it
+→ `200 { "edition_id": 7, "status": "draft" | "review" | "published", "groups": ["pakistan", "world"] }` (slugs of the
+groups the worker has written, in front-page order: a group row kept only for editors' manual stories, D12, is left
+out), or `404 { "error": "not found" }` when the slot has no edition yet. An edition row may exist before any run
+(the admin creates the upcoming draft to hold a manual or desk story); it is an ordinary draft. The worker calls it
 before collecting so it can skip a slot that is published or held without spending anything.
 
 ## PUT /api/worker/editions/{date}/{slot}
@@ -193,22 +207,46 @@ By default the PUT replaces all of the draft's groups and stories, and groups ar
 `"partial": true` only the groups present in the payload are replaced; the draft's other groups and their stories
 stay, and all of the edition's groups are then laid out in the configured group order (`groups.order`).
 
+Editors' manual stories (`stories.origin = 'manual'`, decision D12) are never replaced: the PUT deletes only the
+worker's own stories (`origin = 'ai'`) of the groups it replaces, so a rerun keeps every manual story. A group left
+with only manual stories keeps an `edition_groups` row with an empty lead; when such a row has to be added, the
+edition's groups are laid out in the configured group order. The response lists only the PUT's own stories.
+
 ## POST /api/worker/editions/{date}/{slot}/publish
 Body `{ "force"?: false, "notify"?: true }`. The edition row is locked for the whole decision, so the stories counted
 are the ones published. An edition already in `review` stays there → `200 { "status": "review", "flagged": 1 }`: only
-the admin publishes a held edition, even with `force`. If `settings.publish_policy` is `hold`, or any story is
-`flagged` and `force` is false, a draft moves to `review` with the same response shape. An edition with no
-stories is 400; a missing one is 404. Otherwise `status` becomes `published` (guarded on the status just read),
+the admin publishes a held edition, even with `force`. A draft follows `settings.publish_policy` (D14): `publish`, the
+default, publishes it even when stories are `flagged` (each then shows readers "Check raised a question" with its
+`qa_note` until an editor reviews it; every story shows "Not reviewed yet" until then); `auto` moves it to `review` when
+any story is `flagged` and `force` is false; `hold` always moves it to `review` (same response shape). An edition with
+no stories is 400; a missing one is 404. Otherwise `status` becomes `published` (guarded on the status just read),
 `published_at` is set, the edition JSON is written to `$EDITION_SNAPSHOT_DIR/YYYY-MM-DD-slot.json` (each story with
 its `image`: `id, sha256, itemId, postId, sourceId, credit, alt, width, height, color, graphic, variants[{w, h, file,
 bytes, mime}]`, or null, and `imageHiddenAt`; never the download URL), pages are
-revalidated, and notifications fire → `200 { "status": "published", "published_at": "…", "url": "/en/2026-09-23/subh" }`.
-Publishing twice is a no-op 200 with the original `published_at`.
+revalidated, and notifications fire (with `notify`, the site's ntfy message says how many stories went out and how many
+of them QA flagged, awaiting review) → `200 { "status": "published", "published_at": "…", "url": "/en/2026-09-23/subh",
+"stories": 12, "flagged": 2 }`: `stories` is how many stories readers see in the edition (withdrawn ones not counted),
+`flagged` how many of them QA flagged. Publishing twice is a no-op 200 with the original `published_at` and the
+current counts.
+
+Review happens after publication (D14): an editor marks each story reviewed on the admin's Review page
+(`stories.reviewed_at`/`reviewed_by`), or withdraws it (`withdrawn_at`/`withdrawn_by`, `withdraw_note_en`/`_ur`), which
+takes it out of everything readers see; none of this changes a published story's text. The worker takes no part.
+
+Publishing also settles the Editor's desk (D12, `web/lib/desk.ts` `joinDeskStories`, inside the same locked
+transaction, after the hold checks): manual stories of this edition that are not ready (a language still missing, or a
+`fill_language`/`story_image` job for them still queued or running) move to the upcoming unpublished edition instead
+of going out half-made, and every live desk story (`stories.desk_at` set) hosted in another unpublished edition moves
+into this one, so it joins the next edition that publishes. An edition locked by another transaction at that moment
+(a PUT in progress) is skipped and its desk stories wait for the next publish. An edition whose only stories are
+unready manual ones is `400 { "error": "edition has no stories ready to publish …" }` and nothing moves. The stories
+count and the snapshot include the stories that joined.
 
 `EDITION_SNAPSHOT_DIR` must be an absolute path. When it is unset (or relative, which is logged and ignored) the
 default is `~/.local/share/teenpehr/snapshots`, never a path under `process.cwd()`: the standalone server runs from
 `.next/standalone/`, which every build wipes. The directory in use is logged on the first publish. The admin's
-Publish button goes through the same code (`web/lib/admin/publish.ts`), minus the policy and hold checks.
+Publish button goes through the same code (`web/lib/admin/publish.ts`), minus the policy and hold checks (a flagged
+edition needs its "publish despite flagged" box there, as under `auto`).
 
 ## POST /api/worker/images
 One publisher image for a story, already downloaded, checked and re-encoded by the worker (decisions I1–I6 in
@@ -281,6 +319,83 @@ publishes fabricated editions.
 
 ## POST /api/worker/handles/{id}/seen
 `{ "last_post_at": "…", "fallback_used": false }` → `{ "ok": true }`.
+
+## Jobs
+Work the site asks of the worker between editions (decisions D9 and D12 in `docs/PLAN.md`): a full-article Urdu
+translation a reader asked for, a manual story's missing language, a manual story's image from its link. The site
+queues them (`web/lib/jobs.ts` `enqueueJob`), the worker polls, and results come back through these routes, which
+apply them. `web/lib/contracts.ts` holds every payload and result schema; the worker's pydantic mirrors are `Job`,
+`JobContext`, `TranslateArticleDone`, `TranslateArticleBlockedResult`, `FillLanguageResult` and `StoryImageResult` in
+`worker/src/teenpehr/models.py`, and `WorkerApi.claim_job`/`job_context`/`job_done`/`job_fail` call them.
+
+| `kind` | `payload` | Done `result` | Applied to |
+| --- | --- | --- | --- |
+| `translate_article` | `{ "item_id": 9001, "lang": "ur" }` | `{ "title", "body", "source_words", "source_text_hash"?, "check_ok", "check_note", "model", "tokens_in", "tokens_out", "cost_usd" }`, or blocked: `{ "blocked": { "reason", "note"? }, "model"?, … }` | `article_translations` row (item, `ur`): `done` with the text, or `blocked` with `blocked_reason` |
+| `fill_language` | `{ "story_id": 3001, "lang": "ur" }` (the side to write) | `{ "fields": { "ur": { "title", "summary", "why"?, "contested"? } }, "model", "tokens_in", "tokens_out", "cost_usd" }` | The story's empty `*_ur` (or `*_en`) fields only, never over an editor's text; `stories.language_filled` = the side |
+| `story_image` | `{ "story_id": 3001, "item_id": 9100 }` (the manual story's link item) | `{ "image_id": 71 | null, "note"? }` | `stories.image_id`, when the story has none and the image is of an item or post it cites |
+
+Job states: `queued` → `running` (claimed: `attempts` + 1, lease in `locked_until`) → `done`, `blocked` (final: the work
+cannot be done legitimately, never retried harder) or `failed` (final), or back to `queued` after a retryable failure.
+Dedupe keys (`web/lib/jobs.ts` `jobKeys`): `translate:<item_id>:ur`, `fill:<story_id>:<lang>`, `image:<story_id>`; a
+request for a key that exists returns that job, and one that failed for good is queued again with fresh attempts.
+
+### POST /api/worker/jobs/claim
+`{ "kinds": ["translate_article"], "worker_id": "laptop-1234", "lease_s": 600 }` (`lease_s` 60–3600, default 600;
+`worker_id` letters, digits and `. _ : @ -`). First, running jobs whose lease ran out with no attempts left become
+`failed` (their translation row too). Then the highest-`priority`, oldest job of those kinds that is `queued` with
+`run_after` passed, or `running` with its lease run out and attempts left, is taken with `SELECT … FOR UPDATE SKIP
+LOCKED`, so two workers never get the same job. → `200 { "job": { "id", "kind", "payload", "priority", "attempts",
+"max_attempts", "locked_by", "locked_until", "requested_by", "created_at" } }` or `200 { "job": null }`. Claiming a
+`translate_article` job marks its translation `running`. Every claim counts an attempt, so the worker does not replay
+this call after a read timeout (an answer lost in transit leaves the job leased until the lease runs out).
+
+### GET /api/worker/jobs/{id}/context
+→ `200 { "job": { "id", "kind", "status", "payload", "attempts", "max_attempts", "locked_by", "locked_until" }, … }`:
+- `translate_article`: `item` `{ id, url, url_canonical, title, lang, published_at, description, image_url, site_name,
+  author, source: { id, name, kind, route, lang, url, perspective, fetcher_tier } }` (fetch it on `source.route`),
+  `translation` `{ status, source_text_hash, finished_at }` or null, `glossary` (locked entries `{ term_en, term_ur, kind }`).
+- `fill_language`: `story` `{ id, origin, placement, tag, title_en, title_ur, summary_en, summary_ur, why_en, why_ur,
+  contested_en, contested_ur, language_filled, created_by_name, image_id, desk_at, edition_status, group: { slug,
+  name_en, name_ur } }`, `sources` (the cited items, each an `item` as above plus `is_primary`), `glossary`.
+- `story_image`: `story` as above, `item` (the payload's item, whose page's lead image to fetch), `sources`.
+Unknown job, item or story: 404. Everything here is data for a prompt, an editor's text included, never instructions.
+
+### POST /api/worker/jobs/{id}/done
+`{ "worker_id"?: "laptop-1234", "result": { … } }` (body at most about 664 KB). The result is validated against the
+job's kind (a translation against the branch it claims, blocked or done): a mismatch is `400` with `issues` (paths
+start at `result`) and the job stays `running`, so the worker can send a corrected result or `fail`. Otherwise the
+result is applied in the same transaction that marks the job `done` (or `blocked` for a blocked translation), and →
+`200 { "ok": true, "status": "done" | "blocked" | "failed", "applied": true | false, "note"? }`. `applied: false`
+means the site refused the result for good and failed the job with the reason (its story went live meanwhile: a live
+story is never edited; the item or story is gone): do not retry. The job row keeps a summary of the result (a
+translation's text lives only in `article_translations`).
+- Translations are stored normalised to Urdu code points (ی ک ہ). A new `done` replaces an earlier one (the article
+  changed); a `blocked` never replaces a `done` translation readers already have.
+- `fill_language` writes only the payload's language and only fields that are empty (never over an editor's text),
+  refuses a live story (`applied: false`), and needs `result.fields.<lang>` (else `400`). Filling English recomputes
+  `word_count` and `reading_time_sec`.
+- `story_image` sets `stories.image_id` only when the story has no image and the image (uploaded first through
+  `POST /api/worker/images`) belongs to an item or post the story cites (else `400`); `image_id: null` is a normal
+  "no usable image".
+- When a `fill_language` or `story_image` job ends (done, failed or blocked), a `desk` story that is now ready goes live
+  (`stories.desk_at`), and reader pages are revalidated.
+
+A report for a job that is already `done` or `blocked` → `200 { …, "already": true }` and changes nothing. A job that
+is `queued` or `failed` → `409` (claim it first). A `worker_id` that differs from the lease holder's → `409` (your lease
+expired and another worker claimed the job). Unknown job → 404.
+
+### POST /api/worker/jobs/{id}/fail
+`{ "worker_id"?, "error": "…", "retry": false, "blocked"?: false, "reason"?: "paywalled", "retry_after_s"?: 300 }`.
+`blocked: true` is final and needs `retry: false`: for a translation, `reason` is one of `paywalled`,
+`robots_disallowed`, `unreachable`, `needs_germany`, `no_text`, `too_long`, `not_article` (default `unreachable`) and
+lands in `article_translations.blocked_reason`, with `error` as the note. Otherwise `retry: true` with attempts left
+queues the job again after `retry_after_s` or a backoff of 1, 2, 4 … minutes (at most an hour) →
+`200 { "ok": true, "status": "queued", "retry_at": "…" }`; else the job is `failed` for good (a translation's row too)
+→ `200 { "ok": true, "status": "failed" }`. Same 404/409/`already` rules as `done`.
+
+The fetch behind `translate_article` and `story_image` follows the worker's usual etiquette (D9): robots.txt, 429
+cooldowns, one request per host at a time, the source's route, and the Germany route only for reach. A paywall, a robots.txt disallow or a host blocked from Pakistan while the Germany route is down is a `blocked`
+result, never a reason to evade.
 
 ## Implementation notes (D5 research metadata)
 How the routes apply the research fields above, where the contract leaves a choice:

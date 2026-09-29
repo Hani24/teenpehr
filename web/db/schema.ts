@@ -8,16 +8,21 @@
  * `npm run db:push` runs through `db:prepare`.
  */
 import {
-  pgTable, pgEnum, serial, text, integer, boolean, timestamp, date, jsonb, numeric, real, customType,
+  pgTable, pgEnum, serial, text, integer, smallint, boolean, timestamp, date, jsonb, numeric, real, customType,
   primaryKey, uniqueIndex, index, check, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import {
+  FEEDBACK_REASONS, JOB_KINDS, JOB_STATUSES, MANUAL_PLACEMENTS, QA_STATUSES, REPORT_STATUSES, SOURCE_KINDS, STORY_ORIGINS,
+  TRANSLATION_STATUSES, X_LIST_PROPOSAL_STATUSES,
+} from "../lib/codes";
 
 /** Full-text vector. Only ever a generated column here, so it is never written, and the site's queries leave it out. */
 const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
 // ---- enums -------------------------------------------------------------------------------
-export const sourceKind = pgEnum("source_kind", ["rss", "html", "gnews", "youtube", "telegram"]);
+// manual (D12: the inactive source an editor's link is stored under), sitemap and gdelt (D11) came with 0005.
+export const sourceKind = pgEnum("source_kind", SOURCE_KINDS);
 export const sourceRoute = pgEnum("source_route", ["direct", "germany"]);
 export const platform = pgEnum("platform", ["x", "bluesky", "telegram", "youtube"]);
 export const handleRole = pgEnum("handle_role", ["outlet", "journalist", "official", "analyst"]);
@@ -25,7 +30,8 @@ export const editionSlot = pgEnum("edition_slot", ["subh", "dopahar", "shaam"]);
 export const editionStatus = pgEnum("edition_status", ["draft", "review", "published"]);
 export const storyTag = pgEnum("story_tag", ["must-read", "worth-knowing", "skim"]);
 export const coverage = pgEnum("coverage", ["broad", "partisan", "single-source"]);
-export const qaStatus = pgEnum("qa_status", ["pending", "verified", "flagged"]);
+// "manual": an editor's story (D12), never AI-verified.
+export const qaStatus = pgEnum("qa_status", QA_STATUSES);
 export const glossaryKind = pgEnum("glossary_kind", ["person", "place", "org", "other"]);
 export const runKind = pgEnum("run_kind", ["edition", "x_collect"]);
 // "skipped": the slot was already published or held for review, so the run did nothing billable.
@@ -37,6 +43,14 @@ export const inviteKind = pgEnum("invite_kind", ["invite", "reset"]);
 export const entityKind = pgEnum("entity_kind", ["person", "org", "place", "event", "other"]);
 // "image": one vision check of a story image (D6), its verdict kept so a blurred or dropped picture can be explained.
 export const runOutputStage = pgEnum("run_output_stage", ["curate", "urdu", "qa", "image"]);
+// Decisions D8–D12 (migration 0005); the value lists live in lib/codes.ts.
+export const storyOrigin = pgEnum("story_origin", STORY_ORIGINS);
+export const manualPlacement = pgEnum("manual_placement", MANUAL_PLACEMENTS);
+export const reportStatus = pgEnum("report_status", REPORT_STATUSES);
+export const workerJobKind = pgEnum("worker_job_kind", JOB_KINDS);
+export const workerJobStatus = pgEnum("worker_job_status", JOB_STATUSES);
+export const translationStatus = pgEnum("translation_status", TRANSLATION_STATUSES);
+export const xListProposalStatus = pgEnum("x_list_proposal_status", X_LIST_PROPOSAL_STATUSES);
 
 // ---- configuration (edited in the admin) ------------------------------------------------
 export const groups = pgTable("groups", {
@@ -308,7 +322,11 @@ export const posts = pgTable("posts", {
   inReplyTo: text("in_reply_to"), // platform id of the parent post
   conversationId: text("conversation_id"),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [uniqueIndex("posts_platform_id").on(t.platform, t.platformId), index("posts_posted").on(t.postedAt)]);
+}, (t) => [
+  uniqueIndex("posts_platform_id").on(t.platform, t.platformId), index("posts_posted").on(t.postedAt),
+  // The X board (D10) reads each group's handles' recent posts.
+  index("posts_handle_posted").on(t.handleId, t.postedAt),
+]);
 
 // ---- editorial output ---------------------------------------------------------------------
 export const threads = pgTable("threads", {
@@ -423,6 +441,31 @@ export const stories = pgTable("stories", {
   imageId: integer("image_id").references(() => images.id, { onDelete: "restrict" }),
   imageHiddenAt: timestamp("image_hidden_at", { withTimezone: true }),
   imageHiddenBy: integer("image_hidden_by").references(() => users.id, { onDelete: "set null" }),
+  // Manual entries (D12). `origin` says who wrote the story; an editor's is `manual`, with qa_status
+  // `manual`, a `placement`, and a byline snapshot (created_by_name, so "added by <name>" never changes
+  // after publication). `language_filled` names the side the worker wrote from the editor's text
+  // (fill_language job), null when the editor wrote both. `desk_at`: when a `desk` story went live on
+  // the Editor's desk strip; from then on it is immutable like a published story, and it joins the next
+  // edition that publishes (lib/desk.ts). A desk story still lives in an unpublished edition row, so
+  // edition_id stays NOT NULL and every reader query keeps its shape.
+  origin: storyOrigin("origin").notNull().default("ai"),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdByName: text("created_by_name").notNull().default(""),
+  languageFilled: text("language_filled").$type<"en" | "ur">(),
+  placement: manualPlacement("placement"),
+  deskAt: timestamp("desk_at", { withTimezone: true }),
+  // Editorial review (D14): every edition publishes without waiting for an editor, and each story shows
+  // readers whether one has reviewed it. Metadata only, never the story's text (which stays as published):
+  // reviewed_at/by when an editor marked it reviewed (an owner may undo it). withdrawn_at/by and the note
+  // (English and/or Urdu, one required) when the editors withdrew it: it leaves every reader list, and its
+  // address shows only that it was withdrawn, why and when (an owner may undo it). Who did what is also
+  // in audit_log. Stories published before D14 stay "not reviewed" (null).
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewedBy: integer("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
+  withdrawnBy: integer("withdrawn_by").references(() => users.id, { onDelete: "set null" }),
+  withdrawNoteEn: text("withdraw_note_en").notNull().default(""),
+  withdrawNoteUr: text("withdraw_note_ur").notNull().default(""),
   // Full-text search. English is stemmed; Urdu has no Postgres dictionary, so 'simple'. Arrays go through
   // immutable_array_join() (db/migrations/0000_extensions.sql): array_to_string() is only STABLE.
   searchEn: tsvector("search_en").generatedAlwaysAs(sql`setweight(to_tsvector('english'::regconfig, "title_en"), 'A') || setweight(to_tsvector('english'::regconfig, immutable_array_join("keywords")), 'B') || setweight(to_tsvector('english'::regconfig, "summary_en"), 'B') || setweight(to_tsvector('english'::regconfig, "why_en" || ' ' || "contested_en"), 'C')`),
@@ -434,6 +477,16 @@ export const stories = pgTable("stories", {
   index("stories_topics").using("gin", t.topics), index("stories_countries").using("gin", t.countries),
   // /media asks which stories show an image (app/media/[file]/route.ts); also serves the images FK checks.
   index("stories_image").on(t.imageId).where(sql`${t.imageId} is not null`),
+  // The front page's Editor's desk strip (lib/desk.ts getDeskStories).
+  index("stories_desk").on(t.deskAt).where(sql`${t.deskAt} is not null`),
+  // The admin's Review page and counts (D14): stories no editor has reviewed yet, not withdrawn.
+  index("stories_unreviewed").on(t.editionId).where(sql`${t.reviewedAt} is null and ${t.withdrawnAt} is null`),
+  check("stories_reviewed_by", sql`${t.reviewedBy} is null or ${t.reviewedAt} is not null`),
+  check("stories_withdrawn_by", sql`${t.withdrawnBy} is null or ${t.withdrawnAt} is not null`),
+  check("stories_withdraw_note", sql`${t.withdrawnAt} is null or btrim(${t.withdrawNoteEn}) <> '' or btrim(${t.withdrawNoteUr}) <> ''`),
+  check("stories_manual_placement", sql`(${t.origin} = 'manual') = (${t.placement} is not null)`),
+  check("stories_desk_at", sql`${t.deskAt} is null or ${t.placement} = 'desk'`),
+  check("stories_language_filled", sql`${t.languageFilled} is null or (${t.languageFilled} in ('en', 'ur') and ${t.origin} = 'manual')`),
 ]);
 
 export const storySources = pgTable("story_sources", {
@@ -514,6 +567,156 @@ export const searchLog = pgTable("search_log", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("search_log_created").on(t.createdAt), index("search_log_q_norm").on(t.qNorm)]);
 
+/**
+ * Relevance feedback (D8): one vote per reader per story, changed in place or deleted. 1 is "Relevant to
+ * me", -1 "Show less like this" (optional reasons from lib/codes.ts FEEDBACK_REASONS, only on -1). For
+ * insights and a later "For you" ordering that may reweight topics and groups only: never used to hide a
+ * story from the shared edition or to drop an outlet's perspective.
+ */
+export const storyFeedback = pgTable("story_feedback", {
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  storyId: integer("story_id").notNull().references(() => stories.id, { onDelete: "restrict" }),
+  value: smallint("value").notNull(),
+  reasons: text("reasons").array().notNull().default(sql`'{}'::text[]`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.storyId] }), index("story_feedback_story").on(t.storyId),
+  index("story_feedback_updated").on(t.updatedAt),
+  check("story_feedback_value", sql`${t.value} in (-1, 1)`),
+  check("story_feedback_reasons", sql`${t.reasons} <@ ${sql.raw(`array[${FEEDBACK_REASONS.map((r) => `'${r}'`).join(", ")}]::text[]`)} and (${t.value} = -1 or cardinality(${t.reasons}) = 0)`),
+]);
+
+/** "Report a mistake" (D8): a reader's free text to the editors' queue. Not a vote. */
+export const storyReports = pgTable("story_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  storyId: integer("story_id").notNull().references(() => stories.id, { onDelete: "restrict" }),
+  text: text("text").notNull(),
+  locale: text("locale").notNull().default("en"), // the language the reader was reading in
+  status: reportStatus("status").notNull().default("open"),
+  note: text("note").notNull().default(""), // the editor's resolution note
+  resolvedBy: integer("resolved_by").references(() => users.id, { onDelete: "set null" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("story_reports_status").on(t.status, t.createdAt), index("story_reports_story").on(t.storyId),
+  check("story_reports_text", sql`char_length(${t.text}) between 1 and 2000`),
+  check("story_reports_locale", sql`${t.locale} in ('en', 'ur')`),
+]);
+
+// ---- worker jobs (docs/API.md § Jobs) -------------------------------------------------------
+/**
+ * Work the site asks of the worker between editions: a full-article Urdu translation (D9), filling a
+ * manual story's missing language (D12), a manual story's image from its link (D12). The worker claims
+ * one with POST /api/worker/jobs/claim (FOR UPDATE SKIP LOCKED, a lease in locked_until; an expired lease
+ * is claimable again and every claim counts an attempt) and reports done or fail; lib/jobs.ts enqueues
+ * and applies results. `dedupe_key` (unique when set) makes a repeated request find the job it already
+ * made. `payload` and `result` are validated per kind by lib/contracts.ts.
+ */
+export const workerJobs = pgTable("worker_jobs", {
+  id: serial("id").primaryKey(),
+  kind: workerJobKind("kind").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  dedupeKey: text("dedupe_key").unique(),
+  status: workerJobStatus("status").notNull().default("queued"),
+  priority: integer("priority").notNull().default(0), // higher first
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(), // a retry's backoff
+  lockedBy: text("locked_by"),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  requestedBy: integer("requested_by").references(() => users.id, { onDelete: "set null" }),
+  result: jsonb("result").$type<Record<string, unknown>>(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+}, (t) => [
+  index("worker_jobs_claim").on(t.kind, t.priority, t.id).where(sql`${t.status} in ('queued', 'running')`),
+  // Per-reader daily limits (D9) count the jobs a reader's requests made.
+  index("worker_jobs_requested").on(t.requestedBy, t.kind, t.createdAt).where(sql`${t.requestedBy} is not null`),
+  check("worker_jobs_attempts", sql`${t.attempts} >= 0 and ${t.maxAttempts} between 1 and 20`),
+]);
+
+/**
+ * Full Urdu translations of cited articles, made on a reader's request (D9) and kept for every later
+ * reader. One row per (item, lang); only Urdu for now. Shown only to signed-in readers on its own page,
+ * labelled as an AI translation of the outlet's article; never in feeds, downloads, search or the X board.
+ * `status` follows its job; `blocked` (paywalled, robots.txt, unreachable, …) is final and says why in
+ * `blocked_reason` (lib/codes.ts TRANSLATION_BLOCK_REASONS). The item row RESTRICTs, like a citation.
+ */
+export const articleTranslations = pgTable("article_translations", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull().references(() => items.id, { onDelete: "restrict" }),
+  lang: text("lang").notNull().default("ur"),
+  status: translationStatus("status").notNull().default("queued"),
+  title: text("title"),
+  body: text("body"),
+  sourceTextHash: text("source_text_hash"), // sha256 hex of the extracted full text that was translated
+  sourceWords: integer("source_words"),
+  model: text("model"),
+  tokensIn: integer("tokens_in").notNull().default(0),
+  tokensOut: integer("tokens_out").notNull().default(0),
+  costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+  checkOk: boolean("check_ok"), // the faithfulness check (numbers, names, quotes, nothing added or dropped)
+  checkNote: text("check_note"),
+  jobId: integer("job_id").references(() => workerJobs.id, { onDelete: "set null" }),
+  requestedBy: integer("requested_by").references(() => users.id, { onDelete: "set null" }), // the first reader who asked
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  error: text("error"),
+  blockedReason: text("blocked_reason"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("article_translations_item_lang").on(t.itemId, t.lang),
+  index("article_translations_status").on(t.status, t.requestedAt),
+  check("article_translations_lang", sql`${t.lang} = 'ur'`),
+]);
+
+// ---- editorial bookkeeping ----------------------------------------------------------------
+/**
+ * Existing public X Lists proposed for a group (D10), found and verified live by the research step
+ * (syndication list endpoint). Never applied automatically: an owner's "Add to group" appends list_id to
+ * groups.x_list_ids and marks the row `added`.
+ */
+export const xListProposals = pgTable("x_list_proposals", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  listId: text("list_id").notNull(),
+  name: text("name").notNull().default(""),
+  ownerHandle: text("owner_handle").notNull().default(""),
+  url: text("url"),
+  memberCount: integer("member_count"),
+  sampleHandles: text("sample_handles").array().notNull().default(sql`'{}'::text[]`),
+  postsSeen: integer("posts_seen"), // entries the syndication endpoint returned at verification
+  newestPostAt: timestamp("newest_post_at", { withTimezone: true }),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  note: text("note").notNull().default(""), // why it fits the group, what to watch out for
+  status: xListProposalStatus("status").notNull().default("proposed"),
+  decidedBy: integer("decided_by").references(() => users.id, { onDelete: "set null" }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("x_list_proposals_group_list").on(t.groupId, t.listId),
+  check("x_list_proposals_list_id", sql`${t.listId} ~ '^[0-9]{1,25}$'`),
+]);
+
+/**
+ * Who did what in the admin, for actions worth a record (manual stories, report decisions, X List
+ * approvals, source activation). `target` is "<table>:<id>" or similar; `detail` is small JSON.
+ */
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  target: text("target").notNull().default(""),
+  detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("audit_log_at").on(t.at), index("audit_log_target").on(t.target)]);
+
 // ---- relations (for db.query.*) -----------------------------------------------------------
 export const groupsRelations = relations(groups, ({ many }) => ({ sources: many(sources), handles: many(handles), topics: many(topics) }));
 export const sourcesRelations = relations(sources, ({ one, many }) => ({ group: one(groups, { fields: [sources.groupId], references: [groups.id] }), items: many(items) }));
@@ -530,7 +733,11 @@ export const storiesRelations = relations(stories, ({ one, many }) => ({
   thread: one(threads, { fields: [stories.threadId], references: [threads.id] }),
   image: one(images, { fields: [stories.imageId], references: [images.id] }),
   imageHider: one(users, { fields: [stories.imageHiddenBy], references: [users.id] }),
+  creator: one(users, { fields: [stories.createdBy], references: [users.id] }),
+  reviewer: one(users, { fields: [stories.reviewedBy], references: [users.id] }),
+  withdrawer: one(users, { fields: [stories.withdrawnBy], references: [users.id] }),
   sources: many(storySources), posts: many(storyPosts), corrections: many(corrections), entities: many(storyEntities),
+  feedback: many(storyFeedback), reports: many(storyReports),
 }));
 export const imagesRelations = relations(images, ({ one, many }) => ({
   item: one(items, { fields: [images.itemId], references: [items.id] }),
@@ -554,3 +761,20 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({ user: one(u
 export const savedStoriesRelations = relations(savedStories, ({ one }) => ({ user: one(users, { fields: [savedStories.userId], references: [users.id] }), story: one(stories, { fields: [savedStories.storyId], references: [stories.id] }) }));
 export const savedEditionsRelations = relations(savedEditions, ({ one }) => ({ user: one(users, { fields: [savedEditions.userId], references: [users.id] }), edition: one(editions, { fields: [savedEditions.editionId], references: [editions.id] }) }));
 export const storyReadsRelations = relations(storyReads, ({ one }) => ({ user: one(users, { fields: [storyReads.userId], references: [users.id] }), story: one(stories, { fields: [storyReads.storyId], references: [stories.id] }) }));
+export const storyFeedbackRelations = relations(storyFeedback, ({ one }) => ({ user: one(users, { fields: [storyFeedback.userId], references: [users.id] }), story: one(stories, { fields: [storyFeedback.storyId], references: [stories.id] }) }));
+export const storyReportsRelations = relations(storyReports, ({ one }) => ({
+  user: one(users, { fields: [storyReports.userId], references: [users.id] }),
+  resolver: one(users, { fields: [storyReports.resolvedBy], references: [users.id] }),
+  story: one(stories, { fields: [storyReports.storyId], references: [stories.id] }),
+}));
+export const workerJobsRelations = relations(workerJobs, ({ one }) => ({ requester: one(users, { fields: [workerJobs.requestedBy], references: [users.id] }) }));
+export const articleTranslationsRelations = relations(articleTranslations, ({ one }) => ({
+  item: one(items, { fields: [articleTranslations.itemId], references: [items.id] }),
+  job: one(workerJobs, { fields: [articleTranslations.jobId], references: [workerJobs.id] }),
+  requester: one(users, { fields: [articleTranslations.requestedBy], references: [users.id] }),
+}));
+export const xListProposalsRelations = relations(xListProposals, ({ one }) => ({
+  group: one(groups, { fields: [xListProposals.groupId], references: [groups.id] }),
+  decider: one(users, { fields: [xListProposals.decidedBy], references: [users.id] }),
+}));
+export const auditLogRelations = relations(auditLog, ({ one }) => ({ user: one(users, { fields: [auditLog.userId], references: [users.id] }) }));

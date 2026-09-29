@@ -1,9 +1,9 @@
 import "server-only";
 import { inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { schema, type Db } from "@/db";
+import { schema, type Tx } from "@/db";
 
-export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+export type { Tx };
 
 /**
  * Source ids from `ids` that have no row in `sources`. Call it inside the transaction that inserts rows

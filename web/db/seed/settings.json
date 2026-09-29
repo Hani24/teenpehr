@@ -5,13 +5,14 @@
     "shaam": "19:30"
   },
   "timezone": "Asia/Karachi",
-  "publish_policy": "auto",
+  "publish_policy": "publish",
   "site_name_en": "Tabayyun",
   "site_name_ur": "تبیُّن",
   "editor_name": "",
-  "disclosure_en": "Written by AI from the listed sources and reviewed by a human editor. Every claim links to its source.",
-  "disclosure_ur": "یہ خبر درج ذیل ذرائع سے مصنوعی ذہانت نے تیار کی اور ایک انسانی ایڈیٹر نے اس کا جائزہ لیا۔ ہر بات کا حوالہ موجود ہے۔",
+  "disclosure_en": "Stories are written by AI from the listed sources, except those marked as manual entries, which an editor wrote. Each AI-written story shows whether an editor has reviewed it yet. Every claim links to its source.",
+  "disclosure_ur": "خبریں درج ذرائع سے مصنوعی ذہانت لکھتی ہے، سوائے ان کے جن پر دستی اندراج لکھا ہو، جو ایڈیٹر نے لکھی ہیں۔ مصنوعی ذہانت کی لکھی ہر خبر پر درج ہے کہ کسی ایڈیٹر نے اس کا جائزہ لیا ہے یا ابھی نہیں۔ ہر بات کا حوالہ موجود ہے۔",
   "digits_ur": "latn",
   "default_theme": "system",
-  "default_mode": "standard"
+  "default_mode": "standard",
+  "translate_daily_limit": 10
 }

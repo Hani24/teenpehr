@@ -16,6 +16,7 @@
     "db:seed": "tsx --env-file=.env.local db/seed.ts",
     "db:backfill": "tsx --env-file=.env.local db/backfill.ts",
     "user:invite": "tsx --conditions=react-server --env-file=.env.local scripts/invite.ts",
+    "sources:apply": "tsx --env-file=.env.local scripts/apply-sources.ts",
     "fonts": "bash scripts/fonts.sh"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {
