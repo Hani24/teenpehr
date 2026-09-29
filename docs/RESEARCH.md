@@ -2,7 +2,7 @@
 
 # Research
 
-Reference tables behind the plan: fetching libraries, X/Twitter options, Urdu fonts, worker automation details, the seed source pack and product benchmarks. Each fills in as its research lands.
+Reference tables behind the plan: fetching libraries, X/Twitter options, Urdu fonts, worker automation details, the seed source pack, the coverage audit of 29 September 2026 and product benchmarks. Each fills in as its research lands.
 
 ## Anti-bot fetching libraries
 
@@ -359,6 +359,306 @@ Urdu feed handling: all working Urdu feeds are UTF-8 on the wire, but Geo and Th
 | Brave Search API | Free plan removed February 2026 | 5 dollars per thousand | Search only |
 
 None of the paid news APIs is worth it for this product; the verified feeds plus Google News RSS, GDELT and YouTube cover the groups for free.
+
+## Coverage audit and expansion, 29 September 2026 (D10, D11)
+
+**Method.** Every source in `web/db/seed/sources.json` was read once from this laptop (a residential connection in
+Pakistan, direct route only: the SSH tunnel to Germany was down) by the worker's own reader,
+`uv run python -m teenpehr.fetch.audit ../web/db/seed/sources.json --write-seed`. It goes through the same code as
+a run (`fetch/kinds.read`: the same fetcher, parsers and robots.txt rules), one request per host at a time and
+at least 2 seconds apart, with 429 cooldowns shared across processes (a 429 stops all requests to that host for
+15 minutes), robots.txt read and recorded for every host, and never the Germany route (`--germany` reads rows
+already routed through Germany that way once the tunnel is back). A host that resets the TLS handshake or times
+out on connect is recorded as `needs_germany`; a Cloudflare, DataDome or Akamai wall as `challenge`. Neither is
+worked around. Each seed row now carries its `check` (status, reason, entries, age of the newest entry, robots.txt
+verdict, time). Rows that failed only for a passing reason (429, timeout, 5xx) were re-checked after the cooldowns.
+`npm run sources:apply` (`web/scripts/apply-sources.ts`) then upserts every row by group and URL (a row's
+`previous_urls` let a moved feed keep its history) and sets `active` only where the check is `ok`; an existing
+row that failed only for a passing reason keeps its current state.
+
+**Techniques, in order of preference** (RSS first):
+
+1. **The publisher's own RSS or Atom feed.** Feeds are published for readers, so robots.txt is recorded but is
+   not a gate for them.
+2. **The publisher's Google News sitemap** (source kind `sitemap`, `fetch/sitemap.py`): the publisher's own list
+   of what it published in the last two days, with headline, date, language and often an image. Read only where
+   robots.txt allows the sitemap's path; an index is followed to its newest one or two children. Only the
+   publisher's own site counts: a child sitemap or an article link on another site is dropped (`sitemap.site_of`),
+   so a source never cites another outlet's page under its own name. A sitemap lists
+   everything the outlet printed, so a URL fragment picks the news sections by path
+   (`#include=/national/,/international/`, `#exclude=/sport`); the fragment is never sent to the server. Sitemaps
+   carry no summary, so the collector fetches a short article body for these items the way it does for Google
+   News items (robots.txt, Crawl-delay, the per-run budget).
+3. **Google News search RSS** (`gnews`), one outlet per source: `site:` queries with `hl`/`gl` for wires that
+   publish no feed (Reuters, AP, and AFP through its own site, `site:afp.com`) and for outlets whose own hosts reset
+   connections from Pakistan or sit behind a bot wall (The Hindu, Times of India, ThePrint, The Quint,
+   Newslaundry, India Today, The Daily Star, DW, +972 Magazine, Sudan Tribune, Xinhua). Links are decoded by the
+   worker; the article page is then fetched only where robots.txt allows it and the host answers. A source is one
+   outlet everywhere in the product (the chip, the perspective label), so mixed-outlet topic feeds were not added.
+4. **YouTube channel feeds** of major TV news. Channel ids came from each channel page's canonical link
+   (robots.txt allows `/@handle`); each feed's own title confirmed the channel.
+5. **GDELT DOC 2.0** (`gdelt`, `fetch/gdelt.py`): implemented (one request per 5.5 s process-wide, robots.txt,
+   plain-text error answers reported rather than parsed) and seeded for three Urdu outlets that have no feed, a bot
+   wall on the feed or nothing on Google News (Geo Urdu, Hum News Urdu, Inquilab), one outlet each
+   (`domainis:`). **Not verified live:** GDELT answered HTTP 429 to single requests made 15 minutes apart from this
+   connection all morning (most likely a shared carrier-grade NAT address). The three rows stay off until an
+   audit reads them; the Germany route is not used to get past a rate limit.
+6. **Bluesky** outlet accounts, checked through the public API (`app.bsky.feed.getAuthorFeed`), added to
+   `web/db/seed/handles.json`.
+7. **Telegram:** `t.me` and `telegram.org` time out on connect from Pakistan (25 s): needs the Germany route.
+   The worker has no Telegram reader, so no Telegram source was seeded; the channels listed under the seed source
+   pack above remain the candidates once the tunnel is back.
+
+**Other fixes the audit found.** `hindustantimes.com` resets connections but `www.hindustantimes.com` answers, so
+the Hindustan Times row moved to the `www` host; Scroll's feed answers directly again; the Middle East "Arab News"
+row pointed at the Pakistan edition (`arabnews.pk`), which is now its own Pakistan source; Aaj's feed is Urdu, not
+English; Dawn News (Urdu) stopped its RSS in January 2026 and is read from its news sitemap; the Times of Israel
+feed is behind a Cloudflare challenge while its news sitemap is open; Qaumi Awaz, Prothom Alo and The Business
+Standard have empty or dead feeds and working news sitemaps; the Afghanistan Analysts Network feed lives on the
+`www` host. Some hosts reset connections intermittently (Siasat and 5Pillars answered at 04:07 and reset at 05:12);
+their route stays `direct`, since a run tries the direct route first and Germany only when the host is blocked.
+
+**A fair share per source.** With many more feeds per group, the curation list (120 articles a group) used to be
+filled in source order, so later sources could be cut entirely. It is now filled round robin over the group's
+feeds, each newest first, whenever the group has more than 120 (`pipeline.round_robin`).
+
+**Result.** 271 sources in the seed, 253 working today (the dev database: 253 active of 271: IRNA kept on after
+a passing 504, Malay Mail World kept off by choice, since it overlaps the World group). On 23 September 62 of 182 were active.
+
+| Group | Seeded 23 Sep (active) | In the seed now | Working today | Added |
+| --- | --- | --- | --- | --- |
+| Pakistan | 45 (19) | 61 | 58 | 16 |
+| India | 24 (9) | 42 | 35 | 18 |
+| Afghanistan | 18 (6) | 29 | 29 | 11 |
+| Middle East | 37 (11) | 50 | 46 | 13 |
+| Muslim world | 29 (7) | 43 | 40 | 14 |
+| World | 29 (10) | 46 | 45 | 17 |
+| **Total** | **182 (62)** | **271** | **253** | **89** |
+
+By kind: RSS 149 of 161 working, news sitemaps 19 of 20, Google News 33 of 33, YouTube 52 of 54, GDELT 0 of 3.
+New Google News sources take at most 4 items a run: every Google News link costs one page fetch and a share of a
+batch request to decode, one host at one request a second.
+
+**New sources** (verified live on 29 September, except the three GDELT rows; "newest" is the age of the newest
+entry at the check):
+
+| Group | Outlet | Kind | Lang | Where | Check |
+| --- | --- | --- | --- | --- | --- |
+| Pakistan | Samaa | news sitemap | en | `www.samaa.tv/sitemap-news.xml` | ok, 49 items, newest 6 h |
+| Pakistan | Roznama Dunya | news sitemap | ur | `dunya.com.pk/newweb/dunya_html/dunya_json_front/rss_feed/aj_ka_akhbar_sitemap.xml` `#include=/index.php/pakistan,/index.php/business` | ok, 68 items, newest 24 h |
+| Pakistan | Bol News | news sitemap | en | `bolnews.com/news-sitemap.xml` `#include=/pakistan/,/business/,/world/` | off: every link is on a bare IP address (see below) |
+| Pakistan | Hum News English | RSS | en | `humenglish.com/feed/` | ok, 20 items, newest 5 h |
+| Pakistan | Arab News Pakistan | RSS | en | `www.arabnews.pk/rss.xml` | ok, 50 items, newest 1 h |
+| Pakistan | Minute Mirror | RSS | en | `minutemirror.com.pk/feed/` | ok, 100 items, newest 2 h |
+| Pakistan | Pakistan Observer | RSS | en | `pakobserver.net/feed/` | ok, 10 items, newest 6 h |
+| Pakistan | Reuters Pakistan | Google News | en | `site:reuters.com pakistan when:2d` (en-PK, PK) | ok, 31 items, newest 0 h |
+| Pakistan | AP Pakistan | Google News | en | `site:apnews.com pakistan when:2d` (en-PK, PK) | ok, 18 items, newest 2 h |
+| Pakistan | Aaj English | news sitemap | en | `english.aaj.tv/feeds/sitemap` | ok, 100 items, newest 0 h |
+| Pakistan | 24 News HD (YouTube) | YouTube | ur | `UCcmpeVbSSQlZRvHfdC-CRwg` | ok, 15 items, newest 1 h |
+| Pakistan | Radio Pakistan | Google News | en | `site:radio.gov.pk when:2d` (en-PK, PK) | ok, 87 items, newest 1 h |
+| Pakistan | Pakistan Today | Google News | en | `site:pakistantoday.com.pk when:2d` (en-PK, PK) | ok, 100 items, newest 0 h |
+| Pakistan | AFP Pakistan | Google News | en | `site:afp.com pakistan when:3d` (en-PK, PK) | ok, 6 items, newest 15 h |
+| Pakistan | Geo Urdu | GDELT | ur | `domainis:urdu.geo.tv` | rate limited |
+| Pakistan | Hum News Urdu | GDELT | ur | `domainis:humnews.pk` | rate limited |
+| India | PTI | news sitemap | en | `www.ptinews.com/news-sitemap.xml` `#include=/story/national,/story/international,/story/business` | ok, 1544 items, newest 6 h |
+| India | Deccan Herald | news sitemap | en | `www.deccanherald.com/news_sitemap.xml` `#include=/india/,/world/` | ok, 268 items, newest 0 h |
+| India | The Tribune (India) | news sitemap | en | `www.tribuneindia.com/sitemap-news.xml` `#include=/news/india/,/news/j-k/,/news/world/` | ok, 176 items, newest 2 h |
+| India | Outlook | news sitemap | en | `www.outlookindia.com/oisitemap-news.xml` `#include=/national/,/international/` | ok, 141 items, newest 8 h |
+| India | BBC India | RSS | en | `feeds.bbci.co.uk/news/world/asia/india/rss.xml` | ok, 31 items, newest 25 h |
+| India | Guardian India | RSS | en | `www.theguardian.com/world/india/rss` | ok, 20 items, newest 61 h |
+| India | Reuters India | Google News | en | `site:reuters.com india when:2d` (en-IN, IN) | ok, 100 items, newest 2 h |
+| India | The Hindu (Google News) | Google News | en | `site:thehindu.com when:1d` (en-IN, IN) | ok, 100 items, newest 3 h |
+| India | Times of India (Google News) | Google News | en | `site:timesofindia.indiatimes.com india when:1d` (en-IN, IN) | ok, 100 items, newest 0 h |
+| India | ThePrint (Google News) | Google News | en | `site:theprint.in when:1d` (en-IN, IN) | ok, 100 items, newest 5 h |
+| India | The Quint (Google News) | Google News | en | `site:thequint.com when:2d` (en-IN, IN) | ok, 21 items, newest 11 h |
+| India | Newslaundry (Google News) | Google News | en | `site:newslaundry.com when:3d` (en-IN, IN) | ok, 11 items, newest 11 h |
+| India | India Today | Google News | en | `site:indiatoday.in india when:1d` (en-IN, IN) | ok, 100 items, newest 1 h |
+| India | WION (YouTube) | YouTube | en | `UC_gUM8rL-Lrg6O3adPW9K1g` | ok, 15 items, newest 5 h |
+| India | India Today (YouTube) | YouTube | en | `UCYPvAwZP8pZhSMW8qs7cVCw` | ok, 15 items, newest 3 h |
+| India | Clarion India | Google News | en | `site:clarionindia.net when:3d` (en-IN, IN) | ok, 47 items, newest 8 h |
+| India | Muslim Mirror | Google News | en | `site:muslimmirror.com when:3d` (en-IN, IN) | ok, 13 items, newest 13 h |
+| India | Inquilab | GDELT | ur | `domainis:inquilab.com` | rate limited |
+| Afghanistan | BBC Pashto | RSS | ps | `feeds.bbci.co.uk/pashto/rss.xml` | ok, 14 items, newest 9 h |
+| Afghanistan | BBC Persian | RSS | fa | `feeds.bbci.co.uk/persian/rss.xml` | ok, 28 items, newest 1 h |
+| Afghanistan | Guardian Afghanistan | RSS | en | `www.theguardian.com/world/afghanistan/rss` | ok, 20 items, newest 30 h |
+| Afghanistan | Hasht-e Subh (Persian) | news sitemap | fa | `8am.media/fa/sitemap-news.xml` | ok, 102 items, newest 0 h |
+| Afghanistan | Reuters Afghanistan | Google News | en | `site:reuters.com (afghanistan OR taliban) when:3d` (en-US, US) | ok, 100 items, newest 0 h |
+| Afghanistan | TOLOnews | Google News | en | `site:tolonews.com when:2d` (en-US, US) | ok, 100 items, newest 2 h |
+| Afghanistan | Zan Times | RSS | en | `zantimes.com/feed/` | ok, 10 items, newest 130 h |
+| Afghanistan | Afghanistan International (YouTube) | YouTube | fa | `UCI66K57kW6e9erEkY_n_JRA` | ok, 15 items, newest 4 h |
+| Afghanistan | BBC Pashto (YouTube) | YouTube | ps | `UCu7qsdVTUWcI_PclOr8z51Q` | ok, 15 items, newest 6 h |
+| Afghanistan | Bakhtar | Google News | en | `site:bakhtarnews.af/en -Tag when:3d` (en-US, US) | ok, 31 items, newest 9 h |
+| Afghanistan | Pajhwok | Google News | en | `site:pajhwok.com when:3d` (en-US, US) | ok, 6 items, newest 13 h |
+| Middle East | AP Middle East | Google News | en | `site:apnews.com (israel OR gaza OR iran OR lebanon OR syria OR yemen OR iraq) when:1d` (en-US, US) | ok, 100 items, newest 0 h |
+| Middle East | Reuters Middle East | Google News | en | `site:reuters.com (israel OR gaza OR iran OR lebanon OR syria OR yemen OR iraq) when:1d` (en-US, US) | ok, 100 items, newest 2 h |
+| Middle East | Egypt Independent | RSS | en | `www.egyptindependent.com/feed/` | ok, 10 items, newest 10 h |
+| Middle East | Gulf News | news sitemap | en | `gulfnews.com/news_sitemap.xml` `#include=/world/,/uae/` | ok, 153 items, newest -0 h |
+| Middle East | Iran International (English) | news sitemap | en | `www.iranintl.com/sitemap.xml` `#include=/en/` | ok, 133 items, newest 1 h |
+| Middle East | Khaleej Times World | RSS | en | `www.khaleejtimes.com/api/v1/collections/world.rss` | ok, 40 items, newest 7 h |
+| Middle East | Khaleej Times UAE | RSS | en | `www.khaleejtimes.com/api/v1/collections/uae.rss` | ok, 40 items, newest 5 h |
+| Middle East | Naharnet | RSS | en | `www.naharnet.com/tags/lebanon/en/feed.atom` | ok, 10 items, newest 10 h |
+| Middle East | The National | news sitemap | en | `www.thenationalnews.com/arc/outboundfeeds/news-sitemap/?outputType=xml` `#include=/news/` | ok, 52 items, newest 4 h |
+| Middle East | Ynetnews | RSS | en | `www.ynetnews.com/Integration/StoryRss3082.xml` | ok, 30 items, newest 53 h |
+| Middle East | +972 Magazine (Google News) | Google News | en | `site:972mag.com when:7d` (en-US, US) | ok, 7 items, newest 2 h |
+| Middle East | Al Arabiya English (YouTube) | YouTube | en | `UCIZJ9a6P_nxCFJTmL0gh_IQ` | ok, 15 items, newest 1 h |
+| Middle East | WAFA | Google News | en | `site:english.wafa.ps when:3d` (en-US, US) | ok, 48 items, newest 3 h |
+| Muslim world | AKIpress | RSS | en | `akipress.com/rss/en.rss` | ok, 20 items, newest 4 h |
+| Muslim world | AP Muslim world | Google News | en | `site:apnews.com (bangladesh OR indonesia OR malaysia OR sudan OR somalia OR uyghur OR rohingya) when:2d` (en-US, US) | ok, 51 items, newest 2 h |
+| Muslim world | Reuters Muslim world | Google News | en | `site:reuters.com (bangladesh OR indonesia OR malaysia OR sudan OR somalia OR uzbekistan OR kazakhstan OR uyghur OR rohingya) when:2d` (en-US, US) | ok, 100 items, newest 0 h |
+| Muslim world | CNA Asia | RSS | en | `www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511` | ok, 19 items, newest 2 h |
+| Muslim world | Guardian Bangladesh | RSS | en | `www.theguardian.com/world/bangladesh/rss` | ok, 20 items, newest 16 h |
+| Muslim world | Guardian Indonesia | RSS | en | `www.theguardian.com/world/indonesia/rss` | ok, 20 items, newest 189 h |
+| Muslim world | Hiiraan Online | RSS | en | `hiiraan.com/news.xml` | ok, 20 items, newest 4 h |
+| Muslim world | Malaysiakini | RSS | en | `www.malaysiakini.com/rss/en/news.rss` | ok, 10 items, newest 13 h |
+| Muslim world | RFA English | news sitemap | en | `rfa.org/arc/outboundfeeds/english/sitemap-news/` `#include=/english/uyghur,/english/myanmar,/english/china` | ok, 22 items, newest 75 h |
+| Muslim world | The Jakarta Post | news sitemap | en | `www.thejakartapost.com/sitemap_news.xml` `#include=/indonesia/,/world/,/business/` | ok, 25 items, newest 0 h |
+| Muslim world | bdnews24 | news sitemap | en | `bdnews24.com/news_sitemap.xml` `#include=/bangladesh/,/world/,/neighbours/,/business/` | ok, 86 items, newest 2 h |
+| Muslim world | The Daily Star (Google News) | Google News | en | `site:thedailystar.net when:1d` (en-US, US) | ok, 100 items, newest 0 h |
+| Muslim world | Sudan Tribune | Google News | en | `site:sudantribune.com when:3d` (en-US, US) | ok, 100 items, newest 1 h |
+| Muslim world | CNA (YouTube) | YouTube | en | `UC83jt4dlz1Gjl58fzQrrKZg` | ok, 15 items, newest 0 h |
+| World | AFP (Google News) | Google News | en | `site:afp.com (china OR russia OR ukraine OR "united nations" OR trump OR climate OR economy) when:1d` (en-US, US) | ok, 68 items, newest 0 h |
+| World | France 24 | RSS | en | `www.france24.com/en/rss` | ok, 24 items, newest 0 h |
+| World | NPR World | RSS | en | `feeds.npr.org/1004/rss.xml` | ok, 10 items, newest 2 h |
+| World | Sky News World | RSS | en | `feeds.skynews.com/feeds/rss/world.xml` | ok, 10 items, newest 4 h |
+| World | CBC World | RSS | en | `www.cbc.ca/webfeed/rss/rss-world` | ok, 20 items, newest 2 h |
+| World | ABC Australia | RSS | en | `www.abc.net.au/news/feed/51120/rss.xml` | ok, 25 items, newest 1 h |
+| World | SCMP | RSS | en | `www.scmp.com/rss/91/feed` | ok, 50 items, newest 0 h |
+| World | TASS | RSS | en | `tass.com/rss/v2.xml` | ok, 100 items, newest 0 h |
+| World | The Independent World | RSS | en | `www.independent.co.uk/news/world/rss` | ok, 63 items, newest 1 h |
+| World | Politico | RSS | en | `www.politico.com/rss/politicopicks.xml` | ok, 36 items, newest 3 h |
+| World | UN News (Asia Pacific) | RSS | en | `news.un.org/feed/subscribe/en/news/region/asia-pacific/feed/rss.xml` | ok, 30 items, newest 60 h |
+| World | DW (Google News) | Google News | en | `site:dw.com/en when:1d` (en-US, US) | ok, 100 items, newest 1 h |
+| World | Xinhua | Google News | en | `site:english.news.cn when:1d` (en-US, US) | ok, 100 items, newest 0 h |
+| World | DW News (YouTube) | YouTube | en | `UCknLrEdhRCp1aegoMqRaCZg` | ok, 15 items, newest 0 h |
+| World | Sky News (YouTube) | YouTube | en | `UCoMdktPbSTixAyNGwb-UYkQ` | ok, 15 items, newest 1 h |
+| World | France 24 English (YouTube) | YouTube | en | `UCQfwfsi5VrQ8yKZ-UWmAEFg` | ok, 15 items, newest 3 h |
+| World | CGTN (YouTube) | YouTube | en | `UCgrNz-aDmcr2uuto8_DL2jg` | ok, 15 items, newest 9 h |
+
+
+**Existing rows changed:**
+
+| Group | Outlet | Change | Check |
+| --- | --- | --- | --- |
+| Pakistan | Dawn News | RSS → news sitemap `www.dawnnews.tv/feeds/sitemap` | ok, 100 items, newest 0 h |
+| India | Scroll | route germany → direct | ok, 100 items, newest 8 h |
+| India | Hindustan Times | URL → `www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml`; route germany → direct | ok, 100 items, newest 2 h |
+| India | Siasat | route germany → direct | needs germany |
+| Middle East | Times of Israel | RSS → news sitemap `www.timesofisrael.com/news-sitemap.xml` | ok, 179 items, newest 1 h |
+| Pakistan | Aaj | lang en → ur | ok, 30 items, newest 5 h |
+| India | Qaumi Awaz | RSS → news sitemap `www.qaumiawaz.com/news_sitemap.xml` `#include=/national/,/international/,/other-countries/,/arab-world/,/political/` | ok, 58 items, newest 6 h |
+| Afghanistan | Afghanistan Analysts Network | URL → `www.afghanistan-analysts.org/en/feed/` | ok, 12 items, newest 8 h |
+| Middle East | Arab News | URL → `www.arabnews.com/rss.xml` | ok, 50 items, newest 1 h |
+| Muslim world | Prothom Alo | RSS → news sitemap `en.prothomalo.com/news_sitemap.xml` `#include=/bangladesh/,/international/` | ok, 42 items, newest 8 h |
+| Muslim world | The Business Standard | RSS → news sitemap `www.tbsnews.net/googlenews.xml` `#include=/bangladesh/,/economy/,/world/,/foreign-policy/` | ok, 291 items, newest 4 h |
+| India | The Wire, Siasat Urdu | route germany → direct | ok directly |
+| Afghanistan | Radio Azadi (Dari), Radio Azadi (Pashto) | route germany → direct | ok directly |
+| Middle East | Al Arabiya, The New Arab | route germany → direct | ok directly |
+| World | Long War Journal | route germany → direct | ok directly |
+| Muslim world | Malay Mail World | kept off (the seed row's own note: it overlaps the World group) | ok |
+
+**Review of 29 September** (a second pass over the work above):
+
+- *Germany only for reach.* Seven rows routed through Germany answered directly in the audit, yet a run would still
+  have sent them through the tunnel (down today, so they would have failed on every run while counted as active).
+  Their route is now `direct`; a run falls back to Germany only if a host is blocked again. The audit now flags a
+  `germany` row that answers directly, and `sources:apply` lists any such row it activates.
+- *One outlet per source, AFP included.* `intitle:pakistan AFP` matched any outlet that mentioned AFP: on the
+  review's check it returned Dawn and The Express Tribune articles, which would have been cited as "AFP Pakistan"
+  under AFP's perspective label (and could take an article away from Dawn's own source in the same group). The
+  World row's `"AFP"` query over France 24, Barron's and RFI had the same flaw (France 24 is its own World source).
+  Both now search AFP's own site, `site:afp.com` (one outlet: AFP and AFP Fact Check), verified live.
+- *A sitemap cites only its own site.* The Bol News sitemap lists every article on the bare address
+  `https://34.192.131.30/…` instead of `bolnews.com`: links a reader cannot use and the outlet does not publish. The
+  reader now drops children and articles on another site than the sitemap's own; Bol News then reads as a parse
+  error and is off (it has no RSS feed; its YouTube channel is on). The other 19 sitemaps read as before.
+- *Malay Mail World* stays off, as its seed note says (it overlaps the World group); the expansion had switched it on.
+
+
+**Not working today** (kept in the seed and off in the database, except IRNA, left on after a passing 504;
+`needs germany` hosts come back with the tunnel, through `audit --germany`):
+
+| Group | Outlet | Kind | Check | Why |
+| --- | --- | --- | --- | --- |
+| India | The Hindu | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| India | Siasat | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| Middle East | Al Jazeera English (RSS) | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| Middle East | IRNA | RSS | http error | http 504 |
+| Muslim world | The Daily Star | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| India | Times of India | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| India | ThePrint | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| India | The Quint | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| India | Newslaundry | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| Middle East | +972 Magazine | RSS | challenge | Cloudflare challenge (http 403); needs a tier-2 browser, never evaded |
+| Muslim world | 5Pillars | RSS | needs germany | unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. |
+| World | ReliefWeb | RSS | empty | no entries in a text/html; charset=UTF-8 of 2279 bytes |
+| Middle East | Press TV (YouTube) | YouTube | stale | newest entry 33 days old |
+| Muslim world | Sudan Tribune (YouTube) | YouTube | stale | newest entry 209 days old |
+| Pakistan | Geo Urdu | GDELT | rate limited | http 429 |
+| Pakistan | Hum News Urdu | GDELT | rate limited | http 429 (on robots.txt) |
+| India | Inquilab | GDELT | rate limited | http 429 (on robots.txt) |
+| Pakistan | Bol News | news sitemap | parse error | every article link is on the bare address 34.192.131.30, not bolnews.com; no RSS feed |
+
+
+Where an outlet above has a replacement, it is in the new sources: The Hindu, Times of India, ThePrint, The
+Quint, Newslaundry, The Daily Star and +972 Magazine through Google News, Al Jazeera English through its existing
+Google News source, Press TV through IRNA, Tehran Times and Mehr (Iranian state media), Sudan Tribune through
+Google News. Siasat's English site and 5Pillars have none; both answered directly at 04:07 and reset at 05:12, so
+their route stays `direct` (a run tries direct first and Germany only for a blocked host).
+
+Tried and not added: Geo Urdu's plain sitemap (unreadable) and its news sitemap (last entry 2022), Hum News Urdu's
+feed (Cloudflare challenge), Inquilab (no feed or news sitemap; Google News lists only old pages), Muslim Mirror's
+feed (Cloudflare challenge) and Clarion India's site (403) (both added through Google News instead), Pajhwok's feed (410; added through Google
+News), Bakhtar's sitemap (not a news sitemap; added through Google News, English pages only, tag pages excluded),
+UNAMA and WAFA English feeds (404), L'Orient Today and the Saudi Press Agency sitemaps (no news entries), Ahram
+Online and Rudaw (Google News returns only section pages), Pakistan Today's and Profit's feeds (404; Pakistan
+Today added through Google News), Radio Pakistan's sitemap (404; added through Google News), Mashriq TV (no news
+sitemap), the Express Tribune `latest` sitemap (not a news sitemap; its RSS works), Dunya News's sitemap
+(answered at 04:16, then timed out twice; its YouTube channel is on), VOA (empty), CNN's and Xinhua's own RSS (last entries 2023 and 2017; Xinhua added
+through Google News), Global Times (RSS 37 days old), AP's own feed (DataDome wall; AP comes through Google News),
+AP's news sitemap and the BBC's (every desk, sport included, with no section in the URL to filter on; their
+RSS and Google News sources cover them), Reuters' news sitemap (robots.txt disallows it), Bernama (RSS entries
+carry no dates), Shamshad TV's YouTube channel (mostly religious and entertainment programmes), a second
+Afghanistan International YouTube channel (empty feed) and "WIOnews" (a dormant namesake of WION).
+
+**Bluesky** (`handles.json`, verified through `app.bsky.feed.getAuthorFeed` with fresh posts from the account
+itself): World: reuters.com, apnews.com, theguardian.com, nytimes.com, washingtonpost.com, france24.com, npr.org,
+economist.com, bloomberg.com, thediplomat.com, bellingcat.com, hrw.org; Middle East: 972mag.com, mondoweiss.net.
+Three seeded Bluesky handles have not posted since early 2025 and are marked inactive in the seed
+(tolonews.bsky.social, geonewsurdu.bsky.social, ravishndtv.bsky.social); `aljazeera.com` answered 502 twice.
+`sources:apply --handles` only adds handles, so the dev database's copies of these three are unchanged. Dawn,
+DW, Middle East Eye, Haaretz, CPJ and RFE/RL have no handle that resolves; The Hindu's (24 days) and The Indian
+Express's (16 months) accounts are dormant.
+
+**X Lists (D10, the research half).** Web searches found public lists only as old `owner/slug` addresses; none
+gave a numeric `x.com/i/lists/<id>`. Candidates: Pakistan `dawn_com/pakistan-journalists` (Dawn's own list);
+India `ingridtherwath/india-journalists`; Afghanistan `jcravens42/afghanistan`; Middle East
+`peterben/middle-east-journalists`, `oxenstierna_irl/middle-east-journalists`, `ckanal/middle-east`,
+`corybe/israel-gaza-journalists`; World `nytimesworld/nyt-foreign-journalists` (The New York Times' foreign
+correspondents), `kautoh/int-journalists`; none for the Muslim world. The syndication endpoint's list-id route
+answered at once (X's own list `84839422`: 98 posts, the newest six minutes old), but its screen-name/slug route
+answered 429 on every attempt (05:09, 05:27, 05:42 and 05:58, each after a full 15-minute cooldown), and a
+signed-out reader cannot turn a slug into an id (x.com resolves it only for a signed-in user; the archived copy of
+the NYT list page is a script shell without the id). So none of these could be verified. The review then searched
+for list pages indexed by their numeric id (`site:x.com "i/lists"`): searches per region found none, and one
+general hit, the Financial Times' own "FT journalists" list (`1687552711401607168`, by @FT, 449 members), was read
+once through the list-id route at 01:20 UTC: 98 recent posts (68 of them reposts) from 23 accounts, the newest six
+minutes old, 43% of the accounts posting on the World group's subjects, none already watched. It passes the
+thresholds below and is the one entry in `web/db/seed/x-list-proposals.json`, proposed for World; nothing
+unverified is proposed. The regional candidates above still need their ids: open each
+candidate on x.com while signed in, copy the digits of `x.com/i/lists/<id>`, and run
+`uv run python -m teenpehr.fetch.xlist_audit --group <slug> <ids…> --write ../web/db/seed/x-list-proposals.json`.
+It reads each list once (10 s apart, stopping at a 429), reports entries, authors, the newest post's age,
+reposts, overlap with the watched handles and the share of authors posting on the group's subjects, and writes
+only lists with at least 20 fresh entries (newest under 48 h) and 30% relevant authors. The admin then shows
+them, and only an owner's "Add to group" puts a list id into `groups.x_list_ids`. The tool refuses `owner/slug`
+input before any request, since that route's 429 would put X on cooldown for the X collector too.
+
+**Redo this audit:** `cd worker && uv run python -m teenpehr.fetch.audit ../web/db/seed/sources.json --write-seed`
+(add `--germany` once the tunnel is back; `--status <status>` re-checks only rows with that recorded status), then
+`cd web && npm run sources:apply -- --dry-run` and `npm run sources:apply` (`--db <name>` for a throwaway copy;
+`--handles` adds new handles, `--proposals` loads the X List proposals). A row's `active` in the seed is the
+intent and its `check` the gate, so on a fresh database run `npm run sources:apply` after `npm run db:seed`, which
+reads `active` alone.
 
 ## Product benchmarks and names
 

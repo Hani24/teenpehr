@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/admin/shell";
 import { flashFrom } from "@/components/admin/flash";
 import { Table, Th, Td, Dot, Empty } from "@/components/admin/table";
 import { Select, Input, Button } from "@/components/admin/form";
+import { SOURCE_KINDS } from "@/lib/codes";
 
 export const dynamic = "force-dynamic";
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -21,7 +22,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: SP }
     <AdminShell title={`Sources (${rows.length})`} flash={flash} actions={<Link href="/admin/sources/new" className="chip font-semibold">+ New source</Link>}>
       <form method="get" className="mb-3 flex flex-wrap items-end gap-2">
         <Select name="group" defaultValue={filter.group} aria-label="Group" options={[["", "All groups"], ...groups.map((g) => [g.slug, g.nameEn] as [string, string])]} className="!w-auto" />
-        <Select name="kind" defaultValue={filter.kind} aria-label="Kind" options={[["", "All kinds"], ["rss", "rss"], ["gnews", "gnews"], ["youtube", "youtube"], ["html", "html"], ["telegram", "telegram"]]} className="!w-auto" />
+        <Select name="kind" defaultValue={filter.kind} aria-label="Kind" options={[["", "All kinds"], ...SOURCE_KINDS.map((k) => [k, k] as [string, string])]} className="!w-auto" />
         <Select name="route" defaultValue={filter.route} aria-label="Route" options={[["", "All routes"], ["direct", "direct"], ["germany", "germany"]]} className="!w-auto" />
         <Select name="active" defaultValue={filter.active} aria-label="Active" options={[["", "Active and inactive"], ["1", "Active only"], ["0", "Inactive only"]]} className="!w-auto" />
         <Input name="q" defaultValue={filter.q} placeholder="Search name or URL" aria-label="Search" className="!w-56" />

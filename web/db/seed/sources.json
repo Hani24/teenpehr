@@ -9,7 +9,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text; paper of record."
+    "notes": "Full text; paper of record.",
+    "check": {
+      "status": "ok",
+      "items": 27,
+      "newest_h": 5.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -21,7 +28,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text; Pakistan section."
+    "notes": "Full text; Pakistan section.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 5.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -33,19 +47,36 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 6.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
     "name": "Dawn News",
-    "kind": "rss",
-    "url": "https://dawnnews.tv/feeds/home",
+    "kind": "sitemap",
+    "url": "https://www.dawnnews.tv/feeds/sitemap",
     "lang": "ur",
     "perspective": "Dawn group's Urdu channel",
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "Google News sitemap (the RSS feed stopped in January 2026).",
+    "previous_urls": [
+      "https://dawnnews.tv/feeds/home"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -57,7 +88,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Header claims ISO-8859-1, body is UTF-8; force UTF-8 in the parser."
+    "notes": "Header claims ISO-8859-1, body is UTF-8; force UTF-8 in the parser.",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 3.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -69,7 +107,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "50 items, short summaries, no XML encoding declaration; force UTF-8."
+    "notes": "50 items, short summaries, no XML encoding declaration; force UTF-8.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 4.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -81,7 +126,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Second Jang feed; 50 items, short summaries, no XML encoding declaration."
+    "notes": "Second Jang feed; 50 items, short summaries, no XML encoding declaration.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 1.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -93,7 +145,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Third Jang feed; 50 items, short summaries, no XML encoding declaration."
+    "notes": "Third Jang feed; 50 items, short summaries, no XML encoding declaration.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 10.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -105,7 +164,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 74,
+      "newest_h": 5.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -117,7 +183,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Pakistan section."
+    "notes": "Pakistan section.",
+    "check": {
+      "status": "ok",
+      "items": 38,
+      "newest_h": 11.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -129,7 +202,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "105 items; two-digit year in pubDate, use a lenient date parser."
+    "notes": "105 items; two-digit year in pubDate, use a lenient date parser.",
+    "check": {
+      "status": "ok",
+      "items": 106,
+      "newest_h": 19.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -141,7 +221,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Sends an ISO-8859-1 header, body is UTF-8; force UTF-8."
+    "notes": "Sends an ISO-8859-1 header, body is UTF-8; force UTF-8.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 5.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -153,7 +240,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 0.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -165,7 +259,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Full text; markets desk."
+    "notes": "Full text; markets desk.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 7.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -177,7 +278,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 2.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -189,7 +297,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "English feed of ARY."
+    "notes": "English feed of ARY.",
+    "check": {
+      "status": "ok",
+      "items": 90,
+      "newest_h": 3.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -201,7 +316,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Headline plus one line."
+    "notes": "Headline plus one line.",
+    "check": {
+      "status": "ok",
+      "items": 21,
+      "newest_h": 7.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -213,7 +335,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text, about 12,000 characters per item; mixes translated pieces with original Islamabad reporting."
+    "notes": "Full text, about 12,000 characters per item; mixes translated pieces with original Islamabad reporting.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 7.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -225,7 +354,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "State wire."
+    "notes": "State wire.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 5.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -237,7 +373,13 @@
     "route": "germany",
     "max_items": 8,
     "active": true,
-    "notes": "Unreachable from Pakistan; metered paywall."
+    "notes": "Unreachable from Pakistan; metered paywall.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "india",
@@ -246,10 +388,17 @@
     "url": "https://feeds.feedburner.com/ScrollinArticles.rss",
     "lang": "en",
     "perspective": "Independent Indian digital outlet",
-    "route": "germany",
+    "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "100 items; site blocked from Pakistan, feed reachable."
+    "notes": "Reachable directly again (29 Sep 2026 audit).",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 7.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -258,22 +407,39 @@
     "url": "https://cms.thewire.in/feed",
     "lang": "en",
     "perspective": "Independent Indian digital outlet",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Site unreachable from Pakistan."
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Site unreachable from Pakistan.",
+    "check": {
+      "status": "ok",
+      "items": 40,
+      "newest_h": 3.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
     "name": "Hindustan Times",
     "kind": "rss",
-    "url": "https://hindustantimes.com/feeds/rss/india-news/rssfeed.xml",
+    "url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",
     "lang": "en",
     "perspective": "Delhi English daily; mainstream",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Needs DoH from Pakistan; India news feed."
+    "notes": "www host answers directly; the bare hindustantimes.com host resets connections from Pakistan.",
+    "previous_urls": [
+      "https://hindustantimes.com/feeds/rss/india-news/rssfeed.xml"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 2.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -285,7 +451,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "CloudFront refuses Pakistani and datacenter IPs, so the site is read through Google News. Google News RSS; links are redirect wrappers that need gnews-decoder."
+    "notes": "CloudFront refuses Pakistani and datacenter IPs, so the site is read through Google News. Google News RSS; links are redirect wrappers that need gnews-decoder.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 6.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -297,7 +470,15 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text; Kashmir."
+    "notes": "Full text; Kashmir.",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 6 days old",
+      "items": 50,
+      "newest_h": 135.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -309,7 +490,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text; Kashmir."
+    "notes": "Full text; Kashmir.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 5.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -318,10 +506,16 @@
     "url": "https://siasat.com/feed/",
     "lang": "en",
     "perspective": "Hyderabad Muslim daily",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Needs DoH from Pakistan."
+    "notes": "Reachable directly again (29 Sep 2026 audit).",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "india",
@@ -330,10 +524,17 @@
     "url": "https://urdu.siasat.com/feed/",
     "lang": "ur",
     "perspective": "Hyderabad Muslim daily",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Needs DoH from Pakistan."
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Needs DoH from Pakistan.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 2.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -345,7 +546,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 3.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -357,7 +565,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 5.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -369,7 +584,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Headlines only."
+    "notes": "Headlines only.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 8.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -381,7 +603,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Headlines only."
+    "notes": "Headlines only.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 1.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -393,7 +622,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "100 items, full text, mixed quality."
+    "notes": "100 items, full text, mixed quality.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 5.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:29Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -405,7 +641,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 1.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -416,8 +659,14 @@
     "perspective": "Qatari state-funded; Arab and Global South lens",
     "route": "germany",
     "max_items": 8,
-    "active": false,
-    "notes": "Blocked from Pakistan (TLS reset) and returned 403 via the datacenter proxy on 23 Sep 2026; use the Google News query instead."
+    "active": true,
+    "notes": "Blocked from Pakistan (TLS reset) and returned 403 via the datacenter proxy on 23 Sep 2026; use the Google News query instead.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "middle-east",
@@ -429,7 +678,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Google News RSS; links are redirect wrappers that need gnews-decoder."
+    "notes": "Google News RSS; links are redirect wrappers that need gnews-decoder.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -441,7 +697,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 25,
+      "newest_h": 3.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -453,7 +716,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 0.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -465,7 +735,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "100 items."
+    "notes": "100 items.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -477,7 +754,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Current-news category; Urdu feed is broken."
+    "notes": "Current-news category; Urdu feed is broken.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 0.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -489,19 +773,36 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 1.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
     "name": "Times of Israel",
-    "kind": "rss",
-    "url": "https://timesofisrael.com/feed/",
+    "kind": "sitemap",
+    "url": "https://www.timesofisrael.com/news-sitemap.xml",
     "lang": "en",
     "perspective": "Jerusalem-based English news site",
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Blocks curl's user agent; send a browser user agent."
+    "notes": "Google News sitemap (its RSS sits behind a Cloudflare challenge); includes liveblog entries.",
+    "previous_urls": [
+      "https://timesofisrael.com/feed/"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 179,
+      "newest_h": 1.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -513,7 +814,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Headlines feed; articles paywalled."
+    "notes": "Headlines feed; articles paywalled.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -525,7 +833,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "http_error",
+      "why": "http 504",
+      "items": 0,
+      "robots": "unreachable",
+      "checked_at": "2026-09-29T00:29Z"
+    }
   },
   {
     "group": "middle-east",
@@ -537,7 +852,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 7.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -549,7 +871,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 9.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -561,7 +890,13 @@
     "route": "germany",
     "max_items": 8,
     "active": true,
-    "notes": "Unreachable from Pakistan."
+    "notes": "Unreachable from Pakistan.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -573,7 +908,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Trailing slash matters."
+    "notes": "Trailing slash matters.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 3.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -585,7 +927,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text; Malaysia section."
+    "notes": "Full text; Malaysia section.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 1.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -597,7 +946,14 @@
     "route": "direct",
     "max_items": 5,
     "active": false,
-    "notes": "Full text; world section, overlaps the World group so off by default."
+    "notes": "Full text; world section, overlaps the World group so off by default.",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 1.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -609,7 +965,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 24.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -621,7 +984,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -633,7 +1003,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Full text."
+    "notes": "Full text.",
+    "check": {
+      "status": "ok",
+      "items": 12,
+      "newest_h": 34.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -645,7 +1022,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Fresh on 22 September 2026."
+    "notes": "Fresh on 22 September 2026.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 71.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -657,7 +1041,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 35,
+      "newest_h": 0.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -669,7 +1060,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 17,
+      "newest_h": 5.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -681,7 +1079,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 7.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -693,7 +1098,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": "Free Open Platform API also available."
+    "notes": "Free Open Platform API also available.",
+    "check": {
+      "status": "ok",
+      "items": 45,
+      "newest_h": 0.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -705,7 +1117,15 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 3 days old",
+      "items": 20,
+      "newest_h": 82.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -717,7 +1137,14 @@
     "route": "direct",
     "max_items": 8,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 13.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:28Z"
+    }
   },
   {
     "group": "world",
@@ -729,7 +1156,14 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 6.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:28Z"
+    }
   },
   {
     "group": "world",
@@ -741,7 +1175,14 @@
     "route": "direct",
     "max_items": 12,
     "active": true,
-    "notes": "No public RSS (401). Google News RSS; links are redirect wrappers that need gnews-decoder."
+    "notes": "No public RSS (401). Google News RSS; links are redirect wrappers that need gnews-decoder.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -753,7 +1194,14 @@
     "route": "direct",
     "max_items": 12,
     "active": true,
-    "notes": "No public RSS (Cloudflare-challenged). Google News RSS; links are redirect wrappers that need gnews-decoder."
+    "notes": "No public RSS (Cloudflare-challenged). Google News RSS; links are redirect wrappers that need gnews-decoder.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -765,7 +1213,15 @@
     "route": "direct",
     "max_items": 5,
     "active": true,
-    "notes": ""
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 7 days old",
+      "items": 10,
+      "newest_h": 176.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -776,8 +1232,15 @@
     "perspective": "Nawa-i-Waqt group; conservative, pro-establishment",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Headlines feed."
+    "active": true,
+    "notes": "Headlines feed.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 23.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -788,8 +1251,15 @@
     "perspective": "Nawa-i-Waqt group; conservative, pro-establishment",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Titles only."
+    "active": true,
+    "notes": "Titles only.",
+    "check": {
+      "status": "ok",
+      "items": 44,
+      "newest_h": 3.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -800,8 +1270,15 @@
     "perspective": "Urdu daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 200,
+      "newest_h": 4.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -812,20 +1289,34 @@
     "perspective": "English edition of Daily Pakistan",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 6.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
     "name": "Aaj",
     "kind": "rss",
     "url": "https://aaj.tv/feeds/",
-    "lang": "en",
+    "lang": "ur",
     "perspective": "Aaj TV news site",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Full text."
+    "active": true,
+    "notes": "Urdu site.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 5.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -836,8 +1327,15 @@
     "perspective": "English daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": -0.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -848,8 +1346,15 @@
     "perspective": "news weekly",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 13.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -860,8 +1365,15 @@
     "perspective": "tech and business news site",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 6.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -872,8 +1384,15 @@
     "perspective": "German public broadcaster; Urdu service",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 8,
+      "newest_h": 9.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -884,8 +1403,15 @@
     "perspective": "Delhi TV network; English site",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Headlines only; omits the XML encoding declaration."
+    "active": true,
+    "notes": "Headlines only; omits the XML encoding declaration.",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 0.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -896,8 +1422,14 @@
     "perspective": "Indian English daily; mass-market",
     "route": "germany",
     "max_items": 5,
-    "active": false,
-    "notes": "Unreachable from Pakistan; top stories feed."
+    "active": true,
+    "notes": "Unreachable from Pakistan; top stories feed.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "india",
@@ -908,8 +1440,14 @@
     "perspective": "Delhi digital outlet; politics and policy",
     "route": "germany",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs the proxy from Pakistan."
+    "active": true,
+    "notes": "Needs the proxy from Pakistan.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "india",
@@ -920,8 +1458,14 @@
     "perspective": "Delhi digital outlet",
     "route": "germany",
     "max_items": 8,
-    "active": false,
-    "notes": "Unreachable from Pakistan; Quintype site, omits the XML encoding declaration."
+    "active": true,
+    "notes": "Unreachable from Pakistan; Quintype site, omits the XML encoding declaration.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "india",
@@ -932,8 +1476,15 @@
     "perspective": "Srinagar news weekly",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 5.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -944,20 +1495,37 @@
     "perspective": "Indian Muslim digital outlet",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 5.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
     "name": "Qaumi Awaz",
-    "kind": "rss",
-    "url": "https://qaumiawaz.com/feed",
+    "kind": "sitemap",
+    "url": "https://www.qaumiawaz.com/news_sitemap.xml#include=/national/,/international/,/other-countries/,/arab-world/,/political/",
     "lang": "ur",
     "perspective": "Indian Urdu daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "Google News sitemap, news sections only (the RSS feed is empty).",
+    "previous_urls": [
+      "https://qaumiawaz.com/feed"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 58,
+      "newest_h": 6.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -968,8 +1536,15 @@
     "perspective": "Hyderabad Urdu daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 11.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -980,8 +1555,14 @@
     "perspective": "Delhi independent digital outlet; media critique",
     "route": "germany",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs the proxy from Pakistan."
+    "active": true,
+    "notes": "Needs the proxy from Pakistan.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -992,8 +1573,15 @@
     "perspective": "Kabul private TV network",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 6.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1004,8 +1592,15 @@
     "perspective": "Afghan Persian daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 6.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1016,8 +1611,16 @@
     "perspective": "Afghan women-focused outlet; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 7 days old",
+      "items": 10,
+      "newest_h": 159.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1028,20 +1631,37 @@
     "perspective": "Afghan digital outlet",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 12,
+      "newest_h": 5.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
     "name": "Afghanistan Analysts Network",
     "kind": "rss",
-    "url": "https://afghanistan-analysts.org/en/feed/",
+    "url": "https://www.afghanistan-analysts.org/en/feed/",
     "lang": "en",
     "perspective": "independent research network; analytical",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "www host; the bare host serves a page, not the feed.",
+    "previous_urls": [
+      "https://afghanistan-analysts.org/en/feed/"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 12,
+      "newest_h": 8.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1050,10 +1670,17 @@
     "url": "https://da.azadiradio.com/api/",
     "lang": "fa",
     "perspective": "RFE/RL Afghan service; Dari",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Domain DNS-blocked from Pakistan; DoH fixes it."
+    "active": true,
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Domain DNS-blocked from Pakistan; DoH fixes it.",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 7.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1062,10 +1689,17 @@
     "url": "https://pa.azadiradio.com/api/",
     "lang": "ps",
     "perspective": "RFE/RL Afghan service; Pashto",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Domain DNS-blocked from Pakistan; DoH fixes it."
+    "active": true,
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Domain DNS-blocked from Pakistan; DoH fixes it.",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 7.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1076,8 +1710,15 @@
     "perspective": "Taliban state daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Taliban state media."
+    "active": true,
+    "notes": "Taliban state media.",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 11.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1088,8 +1729,15 @@
     "perspective": "Turkish state news agency; reflects Ankara's line",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 23,
+      "newest_h": 3.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1100,8 +1748,15 @@
     "perspective": "Turkish state news agency; reflects Ankara's line",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 0.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1112,8 +1767,15 @@
     "perspective": "London-based; pro-Palestinian advocacy",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 4.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1124,8 +1786,15 @@
     "perspective": "US-based Middle East specialist; analytical",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 2.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1136,20 +1805,37 @@
     "perspective": "Israeli; right-of-centre",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 26,
+      "newest_h": -0.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
     "name": "Arab News",
     "kind": "rss",
-    "url": "https://arabnews.pk/rss.xml",
+    "url": "https://www.arabnews.com/rss.xml",
     "lang": "en",
     "perspective": "Saudi-owned English daily; reflects Riyadh's line",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Pakistan edition feed."
+    "active": true,
+    "notes": "Main Saudi edition; the row pointed at the Pakistan edition (arabnews.pk), now its own Pakistan source.",
+    "previous_urls": [
+      "https://arabnews.pk/rss.xml"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 0.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1158,10 +1844,17 @@
     "url": "https://english.alarabiya.net/feed/rss2/en.xml",
     "lang": "en",
     "perspective": "Saudi-owned news channel; English service",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs the proxy from Pakistan."
+    "active": true,
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Needs the proxy from Pakistan.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 4.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1172,8 +1865,15 @@
     "perspective": "Iranian state-aligned English daily",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 3.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1184,8 +1884,15 @@
     "perspective": "Iranian state-aligned news agency",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 3.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1194,10 +1901,17 @@
     "url": "https://newarab.com/rss",
     "lang": "en",
     "perspective": "London-based, Qatar-linked; pan-Arab",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs the proxy from Pakistan."
+    "active": true,
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Needs the proxy from Pakistan.",
+    "check": {
+      "status": "ok",
+      "items": 70,
+      "newest_h": 4.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1208,8 +1922,15 @@
     "perspective": "Israeli-Palestinian independent magazine",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs a browser user agent."
+    "active": true,
+    "notes": "Needs a browser user agent.",
+    "check": {
+      "status": "challenge",
+      "why": "Cloudflare challenge (http 403); needs a tier-2 browser, never evaded",
+      "items": 0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1220,8 +1941,15 @@
     "perspective": "Turkish English daily; pro-government",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Politics feed."
+    "active": true,
+    "notes": "Politics feed.",
+    "check": {
+      "status": "ok",
+      "items": 49,
+      "newest_h": 2.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1232,8 +1960,15 @@
     "perspective": "Turkish daily; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 60,
+      "newest_h": 2.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1244,8 +1979,15 @@
     "perspective": "pan-Arab daily; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 300,
+      "newest_h": -6.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1256,8 +1998,15 @@
     "perspective": "Cairo independent outlet; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 12.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1268,8 +2017,15 @@
     "perspective": "Syrian independent outlet; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 6.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -1280,32 +2036,59 @@
     "perspective": "Saudi English daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 3.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
     "name": "Prothom Alo",
-    "kind": "rss",
-    "url": "https://en.prothomalo.com/feed",
+    "kind": "sitemap",
+    "url": "https://en.prothomalo.com/news_sitemap.xml#include=/bangladesh/,/international/",
     "lang": "en",
     "perspective": "Dhaka daily; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "Google News sitemap, Bangladesh and international sections (the RSS feed is empty).",
+    "previous_urls": [
+      "https://en.prothomalo.com/feed"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 42,
+      "newest_h": 7.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
     "name": "The Business Standard",
-    "kind": "rss",
-    "url": "https://tbsnews.net/rss.xml",
+    "kind": "sitemap",
+    "url": "https://www.tbsnews.net/googlenews.xml#include=/bangladesh/,/economy/,/world/,/foreign-policy/",
     "lang": "en",
     "perspective": "Dhaka business daily",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "Google News sitemap, news sections (the RSS feed stopped in 2021).",
+    "previous_urls": [
+      "https://tbsnews.net/rss.xml"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 291,
+      "newest_h": 4.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1316,8 +2099,15 @@
     "perspective": "Jakarta news magazine",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 0.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1328,8 +2118,15 @@
     "perspective": "Indonesian state news agency",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 4.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1340,8 +2137,15 @@
     "perspective": "Malaysian independent news site",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 0.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1352,8 +2156,15 @@
     "perspective": "US-funded broadcaster; Central Asia and Caucasus",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 1.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1364,8 +2175,15 @@
     "perspective": "Uzbek news site; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 10.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1376,8 +2194,15 @@
     "perspective": "Central Asia regional news site",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 3.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1388,8 +2213,15 @@
     "perspective": "Nigerian daily; northern focus",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 14,
+      "newest_h": 3.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1400,8 +2232,15 @@
     "perspective": "Somali news site",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 17.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1412,8 +2251,14 @@
     "perspective": "British Muslim news site",
     "route": "germany",
     "max_items": 8,
-    "active": false,
-    "notes": "Needs DoH from Pakistan."
+    "active": true,
+    "notes": "Needs DoH from Pakistan.",
+    "check": {
+      "status": "needs_germany",
+      "why": "unreachable directly: SSLError: Failed to perform, curl: (35) Recv failure: Connection reset by peer. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+      "items": 0,
+      "checked_at": "2026-09-29T00:30Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1424,8 +2269,15 @@
     "perspective": "US Muslim commentary site",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 20.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1436,8 +2288,15 @@
     "perspective": "US Muslim civil-rights advocacy",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 2.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1448,8 +2307,15 @@
     "perspective": "Uyghur diaspora outlet",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 12,
+      "newest_h": 7.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1460,8 +2326,15 @@
     "perspective": "Myanmar independent outlet; English edition",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 12.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -1472,8 +2345,15 @@
     "perspective": "Myanmar independent outlet",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 11.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1484,8 +2364,15 @@
     "perspective": "Asia-Pacific affairs magazine; South Asia feed",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 96,
+      "newest_h": 9.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1496,8 +2383,15 @@
     "perspective": "US foreign-policy think tank",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 24,
+      "newest_h": 8.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1506,10 +2400,17 @@
     "url": "https://longwarjournal.org/feed",
     "lang": "en",
     "perspective": "tracks militant groups; US-based",
-    "route": "germany",
+    "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": "Blocked from Pakistan."
+    "active": true,
+    "notes": "Reachable directly on 29 Sep 2026, so route direct (a run falls back to Germany only if the host is blocked again). Before: Blocked from Pakistan.",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 4.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1520,8 +2421,15 @@
     "perspective": "US establishment; liberal",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 57,
+      "newest_h": 2.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1532,8 +2440,15 @@
     "perspective": "US daily; establishment",
     "route": "direct",
     "max_items": 8,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 7,
+      "newest_h": 2.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1544,8 +2459,15 @@
     "perspective": "British weekly; liberal, paywalled",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 300,
+      "newest_h": 34.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1556,8 +2478,15 @@
     "perspective": "German public broadcaster",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "All-English feed; high volume."
+    "active": true,
+    "notes": "All-English feed; high volume.",
+    "check": {
+      "status": "ok",
+      "items": 131,
+      "newest_h": 7.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1568,8 +2497,15 @@
     "perspective": "UN's own news service",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 12.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1580,8 +2516,15 @@
     "perspective": "UN OCHA humanitarian updates",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "High volume."
+    "active": true,
+    "notes": "High volume.",
+    "check": {
+      "status": "empty",
+      "why": "no entries in a text/html; charset=UTF-8 of 2279 bytes",
+      "items": 0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1592,8 +2535,15 @@
     "perspective": "human-rights advocacy",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 44.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1604,8 +2554,15 @@
     "perspective": "human-rights advocacy",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 12,
+      "newest_h": 14.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1616,8 +2573,15 @@
     "perspective": "press-freedom advocacy",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 9.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1628,8 +2592,16 @@
     "perspective": "open-source investigations",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 9 days old",
+      "items": 10,
+      "newest_h": 222.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1640,8 +2612,15 @@
     "perspective": "US security-policy commentary",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": ""
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 4.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1652,8 +2631,15 @@
     "perspective": "US financial wire; headlines only, paywalled",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Headlines only, paywalled."
+    "active": true,
+    "notes": "Headlines only, paywalled.",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 0.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -1664,8 +2650,15 @@
     "perspective": "British financial daily; headlines only, paywalled",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Headlines only, paywalled."
+    "active": true,
+    "notes": "Headlines only, paywalled.",
+    "check": {
+      "status": "ok",
+      "items": 25,
+      "newest_h": 0.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1676,8 +2669,15 @@
     "perspective": "Jang group TV; mass-market, sometimes populist",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": -0.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1688,8 +2688,15 @@
     "perspective": "TV channel; populist, widely seen as PTI-sympathetic",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1700,8 +2707,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": -0.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1712,8 +2726,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1724,8 +2745,15 @@
     "perspective": "Express group Urdu channel; mass-market",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1736,8 +2764,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 5.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1748,8 +2783,15 @@
     "perspective": "Dawn group's Urdu channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 4.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1760,8 +2802,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1772,8 +2821,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 2.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1784,8 +2840,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1796,8 +2859,15 @@
     "perspective": "Pakistani TV channel",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1808,8 +2878,15 @@
     "perspective": "military media wing; official",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 38.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1820,8 +2897,15 @@
     "perspective": "state broadcaster",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 5.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1832,8 +2916,15 @@
     "perspective": "state broadcaster",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 6.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1844,8 +2935,15 @@
     "perspective": "BBC's Urdu service; foreign public broadcaster",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 7.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1856,8 +2954,15 @@
     "perspective": "German public broadcaster; Urdu service",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 11.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "pakistan",
@@ -1868,8 +2973,15 @@
     "perspective": "Saudi-owned; strong features",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 9.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1880,8 +2992,15 @@
     "perspective": "Delhi TV network",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1892,8 +3011,15 @@
     "perspective": "Independent Indian digital outlet",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 9.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1904,8 +3030,15 @@
     "perspective": "Delhi digital outlet",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 10.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1916,8 +3049,15 @@
     "perspective": "Independent Indian digital outlet",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 7.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1928,8 +3068,15 @@
     "perspective": "Delhi digital outlet; politics and policy",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 5.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "india",
@@ -1940,8 +3087,15 @@
     "perspective": "Srinagar English daily",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 8.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1952,8 +3106,15 @@
     "perspective": "Kabul private TV network",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 5.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1964,8 +3125,15 @@
     "perspective": "Kabul private TV network",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 6.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1976,8 +3144,15 @@
     "perspective": "exile, anti-Taliban",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 7.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "afghanistan",
@@ -1988,8 +3163,15 @@
     "perspective": "Kabul news agency",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 11.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2000,8 +3182,15 @@
     "perspective": "Qatari state-funded; Arab and Global South lens",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2012,8 +3201,15 @@
     "perspective": "Qatari state-funded; Arabic service",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": -0.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2024,8 +3220,15 @@
     "perspective": "Turkish public broadcaster; English service",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2036,8 +3239,15 @@
     "perspective": "Turkish state news agency; reflects Ankara's line",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2048,8 +3258,15 @@
     "perspective": "London-based; critical of Gulf monarchies and Israel, seen as Qatar-aligned",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 4.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2060,8 +3277,15 @@
     "perspective": "Jerusalem-based English news site",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 8.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2072,8 +3296,16 @@
     "perspective": "Iranian state broadcaster; English",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "stale",
+      "why": "newest entry 33 days old",
+      "items": 15,
+      "newest_h": 800.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "middle-east",
@@ -2084,8 +3316,15 @@
     "perspective": "Palestinian Authority news agency",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 7.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -2096,8 +3335,15 @@
     "perspective": "Dhaka English daily",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 5.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -2108,8 +3354,15 @@
     "perspective": "Dhaka English daily",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 8.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -2120,8 +3373,15 @@
     "perspective": "Nigerian investigative daily",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 18.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -2132,8 +3392,16 @@
     "perspective": "Sudan news site",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "stale",
+      "why": "newest entry 209 days old",
+      "items": 15,
+      "newest_h": 5015.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "muslim-world",
@@ -2144,8 +3412,16 @@
     "perspective": "British Muslim news site",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 5 days old",
+      "items": 15,
+      "newest_h": 126.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -2156,8 +3432,15 @@
     "perspective": "British public broadcaster",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -2168,8 +3451,15 @@
     "perspective": "international wire agency; foreign, agency style",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
   },
   {
     "group": "world",
@@ -2180,7 +3470,1711 @@
     "perspective": "international wire agency; foreign, agency style",
     "route": "direct",
     "max_items": 5,
-    "active": false,
-    "notes": "Channel RSS; verified 23 Sep 2026."
+    "active": true,
+    "notes": "Channel RSS; verified 23 Sep 2026.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Samaa",
+    "kind": "sitemap",
+    "url": "https://www.samaa.tv/sitemap-news.xml",
+    "lang": "en",
+    "perspective": "Karachi TV channel; mainstream",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap.",
+    "check": {
+      "status": "ok",
+      "items": 49,
+      "newest_h": 5.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Roznama Dunya",
+    "kind": "sitemap",
+    "url": "https://dunya.com.pk/newweb/dunya_html/dunya_json_front/rss_feed/aj_ka_akhbar_sitemap.xml#include=/index.php/pakistan,/index.php/business",
+    "lang": "ur",
+    "perspective": "Dunya group Urdu daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 68,
+      "newest_h": 24.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Bol News",
+    "kind": "sitemap",
+    "url": "https://bolnews.com/news-sitemap.xml#include=/pakistan/,/business/,/world/",
+    "lang": "en",
+    "perspective": "Karachi TV channel; populist",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only. Off since 29 Sep 2026: the sitemap's article links point at a bare IP address instead of bolnews.com, so they are not links a reader can use or cite; no RSS feed (/feed/ is 404). Bol comes through its YouTube channel.",
+    "check": {
+      "status": "parse_error",
+      "why": "parse: the sitemap lists only other sites' pages (every link is on the bare address 34.192.131.30, not bolnews.com)",
+      "items": 0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T01:17Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Hum News English",
+    "kind": "rss",
+    "url": "https://humenglish.com/feed/",
+    "lang": "en",
+    "perspective": "Hum Network TV; English site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 5.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Arab News Pakistan",
+    "kind": "rss",
+    "url": "https://www.arabnews.pk/rss.xml",
+    "lang": "en",
+    "perspective": "Saudi-owned English daily; Pakistan edition",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 0.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Minute Mirror",
+    "kind": "rss",
+    "url": "https://minutemirror.com.pk/feed/",
+    "lang": "en",
+    "perspective": "Lahore English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 2.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Pakistan Observer",
+    "kind": "rss",
+    "url": "https://pakobserver.net/feed/",
+    "lang": "en",
+    "perspective": "Islamabad English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 5.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Reuters Pakistan",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:reuters.com+pakistan+when:2d&hl=en-PK&gl=PK&ceid=PK:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 31,
+      "newest_h": 0.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "AP Pakistan",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:apnews.com+pakistan+when:2d&hl=en-PK&gl=PK&ceid=PK:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 18,
+      "newest_h": 2.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Aaj English",
+    "kind": "sitemap",
+    "url": "https://english.aaj.tv/feeds/sitemap",
+    "lang": "en",
+    "perspective": "Aaj TV news site; English edition",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "24 News HD (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCcmpeVbSSQlZRvHfdC-CRwg",
+    "lang": "ur",
+    "perspective": "Lahore Urdu TV news channel; City group",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Radio Pakistan",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:radio.gov.pk+when:2d&hl=en-PK&gl=PK&ceid=PK:en",
+    "lang": "en",
+    "perspective": "Pakistani state broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 87,
+      "newest_h": 1.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Pakistan Today",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:pakistantoday.com.pk+when:2d&hl=en-PK&gl=PK&ceid=PK:en",
+    "lang": "en",
+    "perspective": "Lahore English daily",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "AFP Pakistan",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:afp.com+pakistan+when:3d&hl=en-PK&gl=PK&ceid=PK:en",
+    "lang": "en",
+    "perspective": "French international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search of AFP's own site (site:afp.com), links decoded by the worker. Replaces `intitle:pakistan AFP`, which matched any outlet mentioning AFP (Dawn and The Express Tribune on 29 Sep 2026) and would have cited their articles as AFP.",
+    "previous_urls": [
+      "https://news.google.com/rss/search?q=intitle:pakistan+AFP+when:2d&hl=en-PK&gl=PK&ceid=PK:en"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 6,
+      "newest_h": 14.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T01:14Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "PTI",
+    "kind": "sitemap",
+    "url": "https://www.ptinews.com/news-sitemap.xml#include=/story/national,/story/international,/story/business",
+    "lang": "en",
+    "perspective": "Indian national wire agency",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 1544,
+      "newest_h": 5.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Deccan Herald",
+    "kind": "sitemap",
+    "url": "https://www.deccanherald.com/news_sitemap.xml#include=/india/,/world/",
+    "lang": "en",
+    "perspective": "Bengaluru English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 268,
+      "newest_h": 0.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "The Tribune (India)",
+    "kind": "sitemap",
+    "url": "https://www.tribuneindia.com/sitemap-news.xml#include=/news/india/,/news/j-k/,/news/world/",
+    "lang": "en",
+    "perspective": "Chandigarh English daily; Punjab, Haryana and Jammu and Kashmir focus",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 176,
+      "newest_h": 2.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Outlook",
+    "kind": "sitemap",
+    "url": "https://www.outlookindia.com/oisitemap-news.xml#include=/national/,/international/",
+    "lang": "en",
+    "perspective": "Delhi news magazine",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 141,
+      "newest_h": 7.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "BBC India",
+    "kind": "rss",
+    "url": "https://feeds.bbci.co.uk/news/world/asia/india/rss.xml",
+    "lang": "en",
+    "perspective": "British public broadcaster; India desk",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 31,
+      "newest_h": 25.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Guardian India",
+    "kind": "rss",
+    "url": "https://www.theguardian.com/world/india/rss",
+    "lang": "en",
+    "perspective": "British; left-liberal",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 61.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Reuters India",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:reuters.com+india+when:2d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "The Hindu (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:thehindu.com+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Chennai English daily; national desk",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 2.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Times of India (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:timesofindia.indiatimes.com+india+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Indian English daily; mass-market",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "ThePrint (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:theprint.in+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Delhi digital outlet; politics and policy",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 5.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "The Quint (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:thequint.com+when:2d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Delhi digital outlet",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 21,
+      "newest_h": 11.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Newslaundry (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:newslaundry.com+when:3d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Delhi independent digital outlet; media critique",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 11,
+      "newest_h": 10.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "India Today",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:indiatoday.in+india+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Delhi news magazine and TV group; mainstream",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "WION (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC_gUM8rL-Lrg6O3adPW9K1g",
+    "lang": "en",
+    "perspective": "Indian English TV channel; Zee group, nationalist-leaning",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 4.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "India Today (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYPvAwZP8pZhSMW8qs7cVCw",
+    "lang": "en",
+    "perspective": "Delhi news magazine and TV group; mainstream",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 3.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Clarion India",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:clarionindia.net+when:3d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Delhi-based Indian Muslim news site",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 47,
+      "newest_h": 7.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Muslim Mirror",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:muslimmirror.com+when:3d&hl=en-IN&gl=IN&ceid=IN:en",
+    "lang": "en",
+    "perspective": "Indian Muslim digital outlet",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 13,
+      "newest_h": 12.6,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "BBC Pashto",
+    "kind": "rss",
+    "url": "https://feeds.bbci.co.uk/pashto/rss.xml",
+    "lang": "ps",
+    "perspective": "BBC's Pashto service; foreign public broadcaster",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 14,
+      "newest_h": 8.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "BBC Persian",
+    "kind": "rss",
+    "url": "https://feeds.bbci.co.uk/persian/rss.xml",
+    "lang": "fa",
+    "perspective": "BBC's Persian service; foreign public broadcaster",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 28,
+      "newest_h": 0.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Guardian Afghanistan",
+    "kind": "rss",
+    "url": "https://www.theguardian.com/world/afghanistan/rss",
+    "lang": "en",
+    "perspective": "British; left-liberal",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 30.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Hasht-e Subh (Persian)",
+    "kind": "sitemap",
+    "url": "https://8am.media/fa/sitemap-news.xml",
+    "lang": "fa",
+    "perspective": "Afghan independent daily in exile; Persian edition",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap.",
+    "check": {
+      "status": "ok",
+      "items": 102,
+      "newest_h": 0.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Reuters Afghanistan",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:reuters.com+(afghanistan+OR+taliban)+when:3d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "TOLOnews",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:tolonews.com+when:2d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Kabul private TV network; largest Afghan broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Zan Times",
+    "kind": "rss",
+    "url": "https://zantimes.com/feed/",
+    "lang": "en",
+    "perspective": "Afghan women-led investigative outlet",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 5 days old",
+      "items": 10,
+      "newest_h": 129.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Afghanistan International (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCI66K57kW6e9erEkY_n_JRA",
+    "lang": "fa",
+    "perspective": "London-based Afghan exile channel; critical of the Taliban",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 4.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "BBC Pashto (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCu7qsdVTUWcI_PclOr8z51Q",
+    "lang": "ps",
+    "perspective": "BBC's Pashto service; foreign public broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 6.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Bakhtar",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:bakhtarnews.af/en+-Tag+when:3d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Taliban-run state news agency",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query, English pages, tag pages excluded); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 31,
+      "newest_h": 8.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:34Z"
+    }
+  },
+  {
+    "group": "afghanistan",
+    "name": "Pajhwok",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:pajhwok.com+when:3d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Kabul-based independent news agency",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 6,
+      "newest_h": 13.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "AP Middle East",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:apnews.com+(israel+OR+gaza+OR+iran+OR+lebanon+OR+syria+OR+yemen+OR+iraq)+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Reuters Middle East",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:reuters.com+(israel+OR+gaza+OR+iran+OR+lebanon+OR+syria+OR+yemen+OR+iraq)+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Egypt Independent",
+    "kind": "rss",
+    "url": "https://www.egyptindependent.com/feed/",
+    "lang": "en",
+    "perspective": "Cairo English news site; Al-Masry Al-Youm",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 10.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Gulf News",
+    "kind": "sitemap",
+    "url": "https://gulfnews.com/news_sitemap.xml#include=/world/,/uae/",
+    "lang": "en",
+    "perspective": "Dubai English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 153,
+      "newest_h": -0.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Iran International (English)",
+    "kind": "sitemap",
+    "url": "https://www.iranintl.com/sitemap.xml#include=/en/",
+    "lang": "en",
+    "perspective": "London-based Persian-language channel; opposed to the Islamic Republic; English site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 133,
+      "newest_h": 1.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Khaleej Times World",
+    "kind": "rss",
+    "url": "https://www.khaleejtimes.com/api/v1/collections/world.rss",
+    "lang": "en",
+    "perspective": "Dubai English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 40,
+      "newest_h": 6.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Khaleej Times UAE",
+    "kind": "rss",
+    "url": "https://www.khaleejtimes.com/api/v1/collections/uae.rss",
+    "lang": "en",
+    "perspective": "Dubai English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 40,
+      "newest_h": 4.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Naharnet",
+    "kind": "rss",
+    "url": "https://www.naharnet.com/tags/lebanon/en/feed.atom",
+    "lang": "en",
+    "perspective": "Beirut English news site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 10.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "The National",
+    "kind": "sitemap",
+    "url": "https://www.thenationalnews.com/arc/outboundfeeds/news-sitemap/?outputType=xml#include=/news/",
+    "lang": "en",
+    "perspective": "Abu Dhabi state-owned English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 52,
+      "newest_h": 4.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Ynetnews",
+    "kind": "rss",
+    "url": "https://www.ynetnews.com/Integration/StoryRss3082.xml",
+    "lang": "en",
+    "perspective": "Israeli; Yedioth Ahronoth's English site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 53.3,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "+972 Magazine (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:972mag.com+when:7d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Israeli-Palestinian independent magazine",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 7,
+      "newest_h": 1.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "Al Arabiya English (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCIZJ9a6P_nxCFJTmL0gh_IQ",
+    "lang": "en",
+    "perspective": "Saudi-owned pan-Arab channel; reflects Riyadh's line",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.9,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "middle-east",
+    "name": "WAFA",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:english.wafa.ps+when:3d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Palestinian Authority's official news agency",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 48,
+      "newest_h": 3.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "AKIpress",
+    "kind": "rss",
+    "url": "https://akipress.com/rss/en.rss",
+    "lang": "en",
+    "perspective": "Kyrgyz news agency; Central Asia",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 3.8,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "AP Muslim world",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:apnews.com+(bangladesh+OR+indonesia+OR+malaysia+OR+sudan+OR+somalia+OR+uyghur+OR+rohingya)+when:2d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 51,
+      "newest_h": 1.7,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Reuters Muslim world",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:reuters.com+(bangladesh+OR+indonesia+OR+malaysia+OR+sudan+OR+somalia+OR+uzbekistan+OR+kazakhstan+OR+uyghur+OR+rohingya)+when:2d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "CNA Asia",
+    "kind": "rss",
+    "url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511",
+    "lang": "en",
+    "perspective": "Singapore state-linked broadcaster; Asia",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 19,
+      "newest_h": 2.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Guardian Bangladesh",
+    "kind": "rss",
+    "url": "https://www.theguardian.com/world/bangladesh/rss",
+    "lang": "en",
+    "perspective": "British; left-liberal",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 16.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Guardian Indonesia",
+    "kind": "rss",
+    "url": "https://www.theguardian.com/world/indonesia/rss",
+    "lang": "en",
+    "perspective": "British; left-liberal",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 8 days old",
+      "items": 20,
+      "newest_h": 189.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Hiiraan Online",
+    "kind": "rss",
+    "url": "https://hiiraan.com/news.xml",
+    "lang": "en",
+    "perspective": "Somali diaspora news site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 4.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Malaysiakini",
+    "kind": "rss",
+    "url": "https://www.malaysiakini.com/rss/en/news.rss",
+    "lang": "en",
+    "perspective": "Malaysian independent news site; paywalled",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 13.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "RFA English",
+    "kind": "sitemap",
+    "url": "https://rfa.org/arc/outboundfeeds/english/sitemap-news/#include=/english/uyghur,/english/myanmar,/english/china",
+    "lang": "en",
+    "perspective": "US-funded broadcaster; Asia",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "why": "slow: newest entry 3 days old",
+      "items": 22,
+      "newest_h": 74.7,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "The Jakarta Post",
+    "kind": "sitemap",
+    "url": "https://www.thejakartapost.com/sitemap_news.xml#include=/indonesia/,/world/,/business/",
+    "lang": "en",
+    "perspective": "Jakarta English daily",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 25,
+      "newest_h": 0.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "bdnews24",
+    "kind": "sitemap",
+    "url": "https://bdnews24.com/news_sitemap.xml#include=/bangladesh/,/world/,/neighbours/,/business/",
+    "lang": "en",
+    "perspective": "Dhaka English news site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "Google News sitemap, news sections only.",
+    "check": {
+      "status": "ok",
+      "items": 86,
+      "newest_h": 2.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "The Daily Star (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:thedailystar.net+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Dhaka English daily",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "Sudan Tribune",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:sudantribune.com+when:3d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Sudan news site; Paris-based",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.0,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "muslim-world",
+    "name": "CNA (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC83jt4dlz1Gjl58fzQrrKZg",
+    "lang": "en",
+    "perspective": "Singapore state-linked broadcaster; Asia",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "AFP (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:afp.com+(china+OR+russia+OR+ukraine+OR+%22united+nations%22+OR+trump+OR+climate+OR+economy)+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "French international wire agency; foreign, agency style",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search of AFP's own site (site:afp.com) on the World group's subjects, links decoded by the worker. Replaces a query over France 24, Barron's and RFI pages mentioning \"AFP\", which would have cited those outlets' own articles as AFP (France 24 is its own World source).",
+    "previous_urls": [
+      "https://news.google.com/rss/search?q=%22AFP%22+(site:france24.com+OR+site:barrons.com+OR+site:rfi.fr)+when:1d&hl=en-US&gl=US&ceid=US:en"
+    ],
+    "check": {
+      "status": "ok",
+      "items": 68,
+      "newest_h": 0.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T01:14Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "France 24",
+    "kind": "rss",
+    "url": "https://www.france24.com/en/rss",
+    "lang": "en",
+    "perspective": "French public broadcaster; carries AFP",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 24,
+      "newest_h": 0.1,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "NPR World",
+    "kind": "rss",
+    "url": "https://feeds.npr.org/1004/rss.xml",
+    "lang": "en",
+    "perspective": "US public radio",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 2.0,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "Sky News World",
+    "kind": "rss",
+    "url": "https://feeds.skynews.com/feeds/rss/world.xml",
+    "lang": "en",
+    "perspective": "British commercial broadcaster",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 10,
+      "newest_h": 3.5,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "CBC World",
+    "kind": "rss",
+    "url": "https://www.cbc.ca/webfeed/rss/rss-world",
+    "lang": "en",
+    "perspective": "Canadian public broadcaster",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 20,
+      "newest_h": 1.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "ABC Australia",
+    "kind": "rss",
+    "url": "https://www.abc.net.au/news/feed/51120/rss.xml",
+    "lang": "en",
+    "perspective": "Australian public broadcaster",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 25,
+      "newest_h": 0.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "SCMP",
+    "kind": "rss",
+    "url": "https://www.scmp.com/rss/91/feed",
+    "lang": "en",
+    "perspective": "Hong Kong English daily; Alibaba-owned",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 50,
+      "newest_h": 0.2,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "TASS",
+    "kind": "rss",
+    "url": "https://tass.com/rss/v2.xml",
+    "lang": "en",
+    "perspective": "Russian state news agency",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.4,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "The Independent World",
+    "kind": "rss",
+    "url": "https://www.independent.co.uk/news/world/rss",
+    "lang": "en",
+    "perspective": "British; liberal",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 63,
+      "newest_h": 0.9,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "Politico",
+    "kind": "rss",
+    "url": "https://www.politico.com/rss/politicopicks.xml",
+    "lang": "en",
+    "perspective": "US politics site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 36,
+      "newest_h": 2.6,
+      "robots": "allowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "UN News (Asia Pacific)",
+    "kind": "rss",
+    "url": "https://news.un.org/feed/subscribe/en/news/region/asia-pacific/feed/rss.xml",
+    "lang": "en",
+    "perspective": "UN's own news service",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "",
+    "check": {
+      "status": "ok",
+      "items": 30,
+      "newest_h": 60.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "DW (Google News)",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:dw.com/en+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "German public broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 1.2,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "Xinhua",
+    "kind": "gnews",
+    "url": "https://news.google.com/rss/search?q=site:english.news.cn+when:1d&hl=en-US&gl=US&ceid=US:en",
+    "lang": "en",
+    "perspective": "Chinese state news agency",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "Google News search (site: query); links decoded by the worker.",
+    "check": {
+      "status": "ok",
+      "items": 100,
+      "newest_h": 0.4,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "DW News (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCknLrEdhRCp1aegoMqRaCZg",
+    "lang": "en",
+    "perspective": "German public broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 0.5,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "Sky News (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCoMdktPbSTixAyNGwb-UYkQ",
+    "lang": "en",
+    "perspective": "British commercial broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 1.1,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "France 24 English (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCQfwfsi5VrQ8yKZ-UWmAEFg",
+    "lang": "en",
+    "perspective": "French public broadcaster",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 2.8,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "world",
+    "name": "CGTN (YouTube)",
+    "kind": "youtube",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCgrNz-aDmcr2uuto8_DL2jg",
+    "lang": "en",
+    "perspective": "Chinese state broadcaster; English service",
+    "route": "direct",
+    "max_items": 4,
+    "active": true,
+    "notes": "YouTube channel feed.",
+    "check": {
+      "status": "ok",
+      "items": 15,
+      "newest_h": 9.3,
+      "robots": "disallowed",
+      "checked_at": "2026-09-29T00:12Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Geo Urdu",
+    "kind": "gdelt",
+    "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=domainis%3Aurdu.geo.tv&mode=artlist&format=json&timespan=1d&maxrecords=50&sort=datedesc",
+    "lang": "ur",
+    "perspective": "Jang group TV; Urdu site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "GDELT DOC 2.0 artlist for this one outlet (its news sitemap stopped in 2022 and Google News lists none). Not verified live on 29 Sep 2026: GDELT answered 429 to single requests 15 minutes apart from this connection; stays off until an audit reads it.",
+    "check": {
+      "status": "rate_limited",
+      "why": "http 429",
+      "items": 0,
+      "checked_at": "2026-09-29T00:44Z"
+    }
+  },
+  {
+    "group": "pakistan",
+    "name": "Hum News Urdu",
+    "kind": "gdelt",
+    "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=domainis%3Ahumnews.pk&mode=artlist&format=json&timespan=1d&maxrecords=50&sort=datedesc",
+    "lang": "ur",
+    "perspective": "Hum Network TV; Urdu site",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "GDELT DOC 2.0 artlist for this one outlet (its feed is behind a Cloudflare challenge and Google News lists none). Not verified live on 29 Sep 2026: GDELT answered 429 to single requests 15 minutes apart from this connection; stays off until an audit reads it.",
+    "check": {
+      "status": "rate_limited",
+      "why": "http 429 (on robots.txt)",
+      "items": 0,
+      "checked_at": "2026-09-29T00:44Z"
+    }
+  },
+  {
+    "group": "india",
+    "name": "Inquilab",
+    "kind": "gdelt",
+    "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=domainis%3Ainquilab.com&mode=artlist&format=json&timespan=1d&maxrecords=50&sort=datedesc",
+    "lang": "ur",
+    "perspective": "Mumbai Urdu daily; largest Indian Urdu paper",
+    "route": "direct",
+    "max_items": 6,
+    "active": true,
+    "notes": "GDELT DOC 2.0 artlist for this one outlet (no feed or news sitemap; Google News only has old pages). Not verified live on 29 Sep 2026: GDELT answered 429 to single requests 15 minutes apart from this connection; stays off until an audit reads it.",
+    "check": {
+      "status": "rate_limited",
+      "why": "http 429 (on robots.txt)",
+      "items": 0,
+      "checked_at": "2026-09-29T00:44Z"
+    }
   }
 ]

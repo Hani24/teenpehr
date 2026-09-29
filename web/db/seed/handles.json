@@ -549,7 +549,7 @@
     "handle": "tolonews.bsky.social",
     "display_name": "TOLOnews",
     "role": "outlet",
-    "active": true
+    "active": false
   },
   {
     "group": "pakistan",
@@ -557,7 +557,7 @@
     "handle": "geonewsurdu.bsky.social",
     "display_name": "Geo News Urdu",
     "role": "outlet",
-    "active": true
+    "active": false
   },
   {
     "group": "india",
@@ -565,7 +565,7 @@
     "handle": "ravishndtv.bsky.social",
     "display_name": "Ravish Kumar",
     "role": "journalist",
-    "active": true
+    "active": false
   },
   {
     "group": "world",
@@ -573,6 +573,118 @@
     "handle": "mehdirhasan.bsky.social",
     "display_name": "Mehdi Hasan",
     "role": "journalist",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "reuters.com",
+    "display_name": "Reuters",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "apnews.com",
+    "display_name": "The Associated Press",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "theguardian.com",
+    "display_name": "The Guardian",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "nytimes.com",
+    "display_name": "The New York Times",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "washingtonpost.com",
+    "display_name": "The Washington Post",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "france24.com",
+    "display_name": "France 24",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "npr.org",
+    "display_name": "NPR",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "economist.com",
+    "display_name": "The Economist",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "bloomberg.com",
+    "display_name": "Bloomberg News",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "thediplomat.com",
+    "display_name": "The Diplomat",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "bellingcat.com",
+    "display_name": "Bellingcat",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "world",
+    "platform": "bluesky",
+    "handle": "hrw.org",
+    "display_name": "Human Rights Watch",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "bluesky",
+    "handle": "972mag.com",
+    "display_name": "+972 Magazine",
+    "role": "outlet",
+    "active": true
+  },
+  {
+    "group": "middle-east",
+    "platform": "bluesky",
+    "handle": "mondoweiss.net",
+    "display_name": "Mondoweiss",
+    "role": "outlet",
     "active": true
   }
 ]

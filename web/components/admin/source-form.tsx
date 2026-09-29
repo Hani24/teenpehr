@@ -19,7 +19,12 @@ export function SourceForm({ source, groups, usage }: { source: Source | null; g
         <Field label="Name"><Input name="name" defaultValue={s?.name ?? ""} required /></Field>
         <Field label="Group"><Select name="group_id" defaultValue={String(s?.groupId ?? groups[0]?.id ?? "")} options={groups.map((g) => [String(g.id), g.nameEn])} /></Field>
         <Field label="URL" className="sm:col-span-2"><Input name="url" type="url" defaultValue={s?.url ?? ""} required /></Field>
-        <Field label="Kind"><Select name="kind" defaultValue={s?.kind ?? "rss"} options={[["rss", "rss"], ["gnews", "gnews (Google News query)"], ["youtube", "youtube"], ["html", "html (no feed)"], ["telegram", "telegram"]]} /></Field>
+        <Field label="Kind"><Select name="kind" defaultValue={s?.kind ?? "rss"} options={[
+          ["rss", "rss"], ["gnews", "gnews (Google News query)"], ["sitemap", "sitemap (Google News sitemap)"], ["gdelt", "gdelt (GDELT DOC query)"],
+          ["youtube", "youtube"], ["html", "html (no feed)"], ["telegram", "telegram"],
+          // Manual sources hold editors' links (D12) and are made by the manual-entry form; shown only to keep one's kind.
+          ...(s?.kind === "manual" ? [["manual", "manual (editors' links)"] as [string, string]] : []),
+        ]} /></Field>
         <Field label="Language" hint="en, ur, ar, fa, ug…"><Input name="lang" defaultValue={s?.lang ?? "en"} required /></Field>
         <Field label="Perspective label" hint="Shown to readers next to the outlet" className="sm:col-span-2"><Input name="perspective" defaultValue={s?.perspective ?? ""} /></Field>
         <Field label="Route" hint="germany = via the Hetzner SOCKS proxy for hosts blocked from Pakistan"><Select name="route" defaultValue={s?.route ?? "direct"} options={[["direct", "direct"], ["germany", "germany"]]} /></Field>
