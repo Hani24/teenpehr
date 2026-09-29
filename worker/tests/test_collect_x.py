@@ -82,6 +82,8 @@ def test_collect_x_posts_and_marks_handles(settings):
     assert calls == ["https://syndication.twitter.com/srv/timeline-list/list-id/84839422"]
     assert report.lists == 1 and report.posts == 97 and report.new_posts > 0 and report.status == "ok"
     assert runs.called and posts.called and seen.called
+    sent = json.loads(posts.calls[0].request.content)["posts"]
+    assert {p["raw"]["x_list_id"] for p in sent} == {"84839422"}  # each post names the list that carried it
     assert json.loads(fin.calls[0].request.content)["status"] == "ok"
 
 
@@ -282,3 +284,106 @@ def test_an_interrupt_closes_the_run_row(settings):
         run_collect_x(settings, _api(), _client([], fail=stop), dry_run=False, now=NOW)
     body = json.loads(fin.calls[0].request.content)
     assert body["status"] == "failed" and "interrupted" in body["error"]  # not left "running"
+
+
+# ---- Bluesky (decision D10: the X board shows the watched Bluesky accounts too) ----------------------
+def _bsky_item(handle: str, rkey: str, text: str, *, author: str | None = None, repost: bool = False) -> dict:
+    item = {
+        "post": {
+            "uri": f"at://did:plc:{rkey}/app.bsky.feed.post/{rkey}",
+            "cid": f"c{rkey}",
+            "author": {"handle": author or handle, "displayName": (author or handle).split(".")[0].title()},
+            "record": {"text": text, "createdAt": "2026-09-23T14:00:00Z"},
+        }
+    }
+    if repost:
+        item["reason"] = {"$type": "app.bsky.feed.defs#reasonRepost"}
+    return item
+
+
+def _bsky_config(*handles: str) -> str:
+    cfg = copy.deepcopy(CONFIG)
+    cfg["groups"][0]["x_list_ids"] = []
+    cfg["groups"][1]["x_list_ids"] = []
+    cfg["handles"] = [
+        {"id": 40 + n, "group_id": 1, "platform": "bluesky", "handle": h, "display_name": h, "role": "outlet"}
+        for n, h in enumerate(handles)
+    ]
+    return json.dumps(cfg)
+
+
+@respx.mock
+def test_bluesky_accounts_are_read_one_by_one_and_stored(settings):
+    settings.bluesky_spacing_s = 0
+    _, fin, posts, _ = _mock_web(_bsky_config("dawn.com", "reuters.com"))
+    asked = []
+
+    def get_json(url):
+        asked.append(url)
+        actor = url.split("actor=")[1].split("&")[0]
+        return {
+            "feed": [
+                _bsky_item(actor, f"{actor[:4]}1", f"{actor} headline one"),
+                _bsky_item(actor, f"{actor[:4]}2", "someone else's post", author="other.bsky.social", repost=True),
+            ]
+        }
+
+    report = run_collect_x(settings, _api(), _client([]), dry_run=False, now=NOW, bluesky_get=get_json)
+    assert [u.split("actor=")[1].split("&")[0] for u in asked] == ["dawn.com", "reuters.com"]
+    assert report.bluesky_handles == 2 and report.bluesky_ok == 2 and report.bluesky_posts == 2
+    sent = json.loads(posts.calls[0].request.content)["posts"]
+    assert {p["platform"] for p in sent} == {"bluesky"}
+    assert {p["author_handle"] for p in sent} == {
+        "dawn.com",
+        "reuters.com",
+    }  # the repost of another account is left out
+    assert all(p["url"].startswith("https://bsky.app/profile/") for p in sent)
+    assert report.status == "ok" and json.loads(fin.calls[0].request.content)["status"] == "ok"
+
+
+@respx.mock
+def test_bluesky_rate_limit_stops_the_rest_and_a_bad_handle_does_not(settings):
+    from teenpehr.social.bluesky import BlueskyError, BlueskyRateLimited
+
+    settings.bluesky_spacing_s = 0
+    _mock_web(_bsky_config("gone.example", "dawn.com", "limited.example", "never.example"))
+    asked = []
+
+    def get_json(url):
+        actor = url.split("actor=")[1].split("&")[0]
+        asked.append(actor)
+        if actor == "gone.example":
+            raise BlueskyError("http 400")
+        if actor == "limited.example":
+            raise BlueskyRateLimited("http 429")
+        return {"feed": [_bsky_item(actor, "d1", "a post")]}
+
+    report = run_collect_x(settings, _api(), _client([]), dry_run=False, now=NOW, bluesky_get=get_json)
+    assert asked == ["gone.example", "dawn.com", "limited.example"]  # nothing after the 429
+    assert report.bluesky_ok == 1 and report.bluesky_posts == 1 and report.status == "ok"
+    assert any("gone.example" in w for w in report.warnings) and any("rate-limited" in w for w in report.warnings)
+
+
+def test_bluesky_fetch_json_maps_rate_limits_and_errors():
+    from teenpehr.fetch.http import FetchResult
+    from teenpehr.social.bluesky import BlueskyError, BlueskyRateLimited, author_posts, fetch_json
+
+    class F:
+        def __init__(self, res):
+            self.res, self.calls = res, []
+
+        def get(self, url, **kw):
+            self.calls.append((url, kw))
+            return self.res
+
+    ok = F(FetchResult(url="u", status=200, content=json.dumps({"feed": [_bsky_item("npr.org", "n1", "hi")]}).encode()))
+    posts = author_posts("npr.org", fetch_json(ok), limit=500)
+    assert [p.author_handle for p in posts] == ["npr.org"]
+    url, kw = ok.calls[0]
+    assert "actor=npr.org" in url and "limit=100" in url and kw["allow_fallback"] is False
+    with pytest.raises(BlueskyRateLimited):
+        fetch_json(F(FetchResult(url="u", status=429, error="http 429", rate_limited=True)))("u")
+    with pytest.raises(BlueskyError):
+        fetch_json(F(FetchResult(url="u", status=400, error="http 400")))("u")
+    with pytest.raises(BlueskyError):
+        fetch_json(F(FetchResult(url="u", status=200, content=b"<html>")))("u")

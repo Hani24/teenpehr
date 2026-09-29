@@ -9,6 +9,7 @@ import { TOPICS, topicLabel } from "@/lib/taxonomy";
 import { formatDate, isLocale, langAttrs, localDigits, type Locale } from "@/lib/urdu";
 import { dateAt } from "@/lib/view";
 import { SearchBox } from "@/components/search-box";
+import { ChoiceGroup } from "@/components/choice-group";
 import { entityName } from "@/components/entity-chips";
 import { Pager, StoryHits } from "../topic/_components/story-hits";
 
@@ -95,21 +96,16 @@ export default async function SearchPage({ params, searchParams }: Props) {
         <SearchBox locale={l} q={p.q}>
           <details className="mt-3" open={filtered || undefined}>
             <summary className="cursor-pointer text-ink-2">{t("narrow")}</summary>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1"><span className="meta">{t("group")}</span>
-                <select name="group" defaultValue={p.group ?? ""} className={field}>
-                  <option value="">{t("anyGroup")}</option>
-                  {groups.map((g) => <option key={g.slug} value={g.slug}>{l === "ur" ? g.nameUr : g.nameEn}</option>)}
-                </select>
-              </label>
-              <label className="grid gap-1"><span className="meta">{t("topic")}</span>
-                <select name="topic" defaultValue={p.topic ?? ""} className={field}>
-                  <option value="">{t("anyTopic")}</option>
-                  {TOPICS.map((x) => <option key={x} value={x}>{topicLabel(x, l)}</option>)}
-                </select>
-              </label>
-              <label className="grid gap-1"><span className="meta">{t("from")}</span><input type="date" name="from" defaultValue={p.from ?? ""} className={field} /></label>
-              <label className="grid gap-1"><span className="meta">{t("to")}</span><input type="date" name="to" defaultValue={p.to ?? ""} className={field} /></label>
+            {/* Sections and topics are chip radio groups, not pull-down menus (D7, components/choice-group.tsx). */}
+            <div className="mt-3 grid gap-4">
+              <ChoiceGroup name="group" legend={t("group")} value={p.group} pageLocale={l}
+                choices={[{ value: "", label: t("anyGroup") }, ...groups.map((g) => ({ value: g.slug, label: l === "ur" ? g.nameUr : g.nameEn }))]} />
+              <ChoiceGroup name="topic" legend={t("topic")} value={p.topic} pageLocale={l}
+                choices={[{ value: "", label: t("anyTopic") }, ...TOPICS.map((x) => ({ value: x, label: topicLabel(x, l) }))]} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1"><span className="meta">{t("from")}</span><input type="date" name="from" defaultValue={p.from ?? ""} className={field} /></label>
+                <label className="grid gap-1"><span className="meta">{t("to")}</span><input type="date" name="to" defaultValue={p.to ?? ""} className={field} /></label>
+              </div>
             </div>
             {p.entity && <input type="hidden" name="entity" value={p.entity} />}
             <button type="submit" className="chip mt-3 font-semibold text-ink">{t("apply")}</button>

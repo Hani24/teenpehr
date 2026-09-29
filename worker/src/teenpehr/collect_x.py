@@ -1,6 +1,7 @@
 """The X collector (every 30 minutes): read each group's public Lists through the syndication
-endpoint, store the posts, record when each watched handle last posted, and fall back to a paid
-API for handles that have gone quiet when a key is configured.
+endpoint, and each watched Bluesky account through Bluesky's public API (decision D10: the X board
+shows both), store the posts, record when each watched handle last posted, and fall back to a paid
+API for X handles that have gone quiet when a key is configured.
 
 The paid fallback asks about a handle at most once per `x_stale_hours` (remembered in the state
 directory), so a handle that simply is not posting costs one call a day, not one per run.
@@ -14,6 +15,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -25,7 +28,7 @@ from .api import WorkerApi
 from .config import Settings
 from .models import Handle, PostIn, RunFinish
 from .notify import ntfy
-from .social import twitterapi_io
+from .social import bluesky, twitterapi_io
 from .social.x_list import XListClient, XListError, XRateLimited, health
 
 logger = log.get("collect_x")
@@ -48,6 +51,9 @@ class CollectReport:
     fallback_handles: list[str] = field(default_factory=list)
     alerts: list[str] = field(default_factory=list)
     status: str = "ok"
+    bluesky_handles: int = 0
+    bluesky_ok: int = 0
+    bluesky_posts: int = 0
 
 
 # ---- small JSON state files (key -> ISO time) ---------------------------------------------------
@@ -127,7 +133,10 @@ def run_collect_x(
     *,
     dry_run: bool | None = None,
     now: datetime | None = None,
+    bluesky_get: Callable[[str], dict] | None = None,
 ) -> CollectReport:
+    """`bluesky_get` (bluesky.fetch_json over the run's Fetcher) reads the watched Bluesky accounts;
+    without it they are skipped."""
     dry = settings.dry_run if dry_run is None else dry_run
     now = now or datetime.now(UTC)
     report = CollectReport()
@@ -178,11 +187,17 @@ def run_collect_x(
                     healthy += 1
                     alerts.ok(key, where)
                 for p in posts:
-                    posts_by_id.setdefault(p.platform_id, p)
+                    if p.platform_id not in posts_by_id:
+                        # The list it came from: the site files a post by an author it does not watch under
+                        # the group whose approved list carried it (D10: the X board, the edition's posts).
+                        p.raw = {**(p.raw or {}), "x_list_id": list_id}
+                        posts_by_id[p.platform_id] = p
                 lines.append(f"{where}: {len(posts)} posts")
                 logger.info(lines[-1])
         if report.lists_ok and not limited:
             alerts.ok("x:rate-limit", "X rate limit")
+        if bluesky_get is not None:
+            _read_bluesky(settings, config.handles, bluesky_get, posts_by_id, report, alerts, lines)
         all_posts = list(posts_by_id.values())
         report.posts = len(all_posts)
 
@@ -252,6 +267,49 @@ def run_collect_x(
         report.alerts = alerts.flush("X collector crashed", "high")
         report.status = "failed"
         raise
+
+
+def _read_bluesky(
+    settings: Settings,
+    handles: list[Handle],
+    get_json: Callable[[str], dict],
+    posts_by_id: dict[str, PostIn],
+    report: CollectReport,
+    alerts: _Alerts,
+    lines: list[str],
+) -> None:
+    """One request per watched Bluesky account, one at a time and spaced (the Fetcher's host lock and
+    429 cooldown apply too). A 429 stops the rest until the next run; an unknown handle is a warning."""
+    accounts = [h for h in handles if h.platform == "bluesky"]
+    report.bluesky_handles = len(accounts)
+    for n, h in enumerate(accounts):
+        if n and settings.bluesky_spacing_s > 0:
+            time.sleep(settings.bluesky_spacing_s)
+        where = f"bluesky @{h.handle}"
+        try:
+            posts = bluesky.author_posts(h.handle, get_json, limit=settings.bluesky_posts_per_handle)
+        except bluesky.BlueskyRateLimited as e:
+            msg = f"{where}: Bluesky rate-limited us ({e}); the remaining accounts wait for the next run"
+            report.warnings.append(msg)
+            logger.warning(msg)
+            alerts.problem("bluesky:rate-limit", msg)
+            return
+        except Exception as e:  # noqa: BLE001 - one account never stops the others
+            msg = f"{where}: {type(e).__name__}: {str(e)[:160]}"
+            report.warnings.append(msg)
+            logger.warning(msg)
+            alerts.problem(f"bluesky:{h.handle.lower()}", msg)
+            continue
+        report.bluesky_ok += 1
+        alerts.ok(f"bluesky:{h.handle.lower()}", where)
+        for p in posts:
+            if p.platform_id not in posts_by_id:
+                posts_by_id[p.platform_id] = p
+                report.bluesky_posts += 1
+        lines.append(f"{where}: {len(posts)} posts")
+        logger.info(lines[-1])
+    if report.bluesky_ok:
+        alerts.ok("bluesky:rate-limit", "Bluesky rate limit")
 
 
 def _fallback(

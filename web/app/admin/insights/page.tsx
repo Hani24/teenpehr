@@ -7,6 +7,7 @@ import { topicLabel } from "@/lib/taxonomy";
 import { fmtDate } from "@/lib/admin/util";
 import { AdminShell } from "@/components/admin/shell";
 import { Table, Th, Td, Empty } from "@/components/admin/table";
+import { FeedbackSummary } from "../feedback/summary";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Insights" };
@@ -102,6 +103,9 @@ export default async function InsightsPage() {
           {names.length ? <TrendTable rows={names} caption={t("trendingEntities")} nameHeader={t("name")} t={t} href={(r) => `/en/entity/${r.key}`} /> : <Empty>{t("noTrend")}</Empty>}
         </section>
       </div>
+
+      {/* Relevance votes and mistake reports (D8); the full view is /admin/feedback. */}
+      <FeedbackSummary />
 
       <section aria-labelledby="se">
         <h2 id="se" className={h2}>{t("searches")}</h2>
