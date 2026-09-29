@@ -348,6 +348,69 @@ bdi, [dir="ltr"] { unicode-bidi: isolate; }
 .masthead-title { font-family: var(--font-latin-display); font-weight: 700; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; }
 .masthead-title:lang(ur) { font-family: var(--font-urdu-display); font-weight: 700; letter-spacing: 0; padding-block: 0.1em; }
 
+/* ---- <select> menus, everywhere (reader site and admin; decision D7) --------------------------------
+   The open list of a native <select> is not part of the page: the browser draws it in a separate popup
+   window, from the select's colours, each option's own colours and the system's menu colours. On the
+   owner's desktop that popup showed /ur/search's sections in Kaghaz as white rows with no readable text,
+   only a blue highlight bar. The page's CSS was not the cause: the same markup and the same stylesheet in
+   Chrome 150 on this dark GNOME desktop (X11, real fonts, Kaghaz, Urdu, RTL) drew a readable list, so the
+   fault lies in how that popup is drawn in the owner's session (not reproduced). So we stop relying on it:
+   1. every option and optgroup still carries the palette's own paper and ink, so an engine that does draw
+      a native list (Firefox, older Chrome) copies a complete, readable pair;
+   2. where the browser can (Chrome and Edge 135+), the list is drawn in the page itself (appearance:
+      base-select): the palette's colours, the page's fonts and direction, Wazeh-sized rows;
+   3. the reader site's own filters are chip radio groups instead (.choices below): Wazeh avoids
+      pull-down menus, and a handful of choices reads better laid out than hidden in a menu.
+   In the base layer, so a utility class on a select (bg-*, text-*) still wins. */
+@layer base {
+  select { background-color: var(--surface); color: var(--ink); }
+  select :is(option, optgroup) { background-color: var(--surface); color: var(--ink); }
+  select option:disabled { color: var(--ink-3); }
+}
+@supports (appearance: base-select) {
+  @layer base {
+    select, ::picker(select) { appearance: base-select; }
+    select { align-items: center; gap: 0.5em; cursor: pointer; }
+    select::picker-icon { color: var(--ink-2); }
+    ::picker(select) {
+      margin-block: 4px; padding: 0.25rem; border: 1px solid var(--rule-strong); border-radius: var(--radius);
+      background: var(--surface); color: var(--ink); max-block-size: min(26rem, 70dvh);
+      box-shadow: 0 10px 28px color-mix(in oklab, #000 24%, transparent);
+    }
+    select option { min-block-size: 44px; padding-block: 0.3em; padding-inline: 0.6em; border-radius: calc(var(--radius) - 2px); cursor: pointer; }
+    select option:is(:hover, :focus-visible) { background-color: var(--surface-2); outline: none; }
+    select option:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+    select option:checked { font-weight: 600; }
+    select option::checkmark { color: var(--ink); }
+    [data-mode="wazeh"] select option { min-block-size: max(48px, 2.2em); }
+  }
+}
+
+/* ---- choice chips: a radio group drawn as chips (search filters, D7) --------------------------------
+   The native radio stays inside its chip, transparent and covering it, so it keeps its role, its name, the
+   group's arrow keys and its form value; the chip shows the state (inverted, with a tick, never colour
+   alone). 44px targets, 48px and larger type in Wazeh. */
+.choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+.choice {
+  position: relative; display: inline-flex; align-items: center; gap: 0.35em; min-block-size: 44px; padding: 0.2em 0.9em;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: var(--step--1); line-height: 1.3; cursor: pointer;
+}
+.choice:lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.8; }
+.choice > input, [data-mode="wazeh"] .choice > input { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.choice:hover { border-color: var(--rule-strong); }
+.choice:has(> input:checked) { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.choice:has(> input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.choice-tick { display: none; }
+.choice:has(> input:checked) .choice-tick { display: inline; }
+[data-mode="wazeh"] .choice { min-block-size: max(48px, 2.4em); padding: 0.3em 1em; border-width: 2px; font-size: var(--step-0); }
+@media (forced-colors: active) { .choice:has(> input:checked) { forced-color-adjust: none; border-color: Highlight; background: Highlight; color: HighlightText; } }
+
+/* ---- relevance feedback on a card (components/feedback-buttons.tsx, D8) and the X board's posts (D10) ---
+   The feedback row comes after a card's sources row; both go below a floated thumbnail. */
+.story-card > :has(+ .feedback-row), .story-card > .feedback-row { clear: both; }
+/* A reply or a bare repost on the X board: quieter paper, same readable ink contrast. */
+.card.post-quiet { background: var(--surface-2); }
+
 /* ---- display preferences (components/theme-controls.tsx) -------------------------------------
    .opt: one choice of a radio group or a checkbox, the native control kept visible. */
 .opt { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6em; min-block-size: 44px; padding: 0.4em 0.75em; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -374,7 +437,7 @@ bdi, [dir="ltr"] { unicode-bidi: isolate; }
 /* ---- Wazeh layout and interaction -------------------------------------------------------------
    One column, 48px targets, underlined links, no all-caps, no motion. Groups the admin hides in
    Wazeh carry data-hidden-in (hiddenGroupCss in lib/view.ts). */
-[data-mode="wazeh"] a:not(.chip, .pill, .masthead-title) { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 0.25em; }
+[data-mode="wazeh"] a:not(.chip, .pill, .masthead-title, .bar-btn, .tabbar-item, .sheet-link) { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 0.25em; }
 [data-mode="wazeh"] .page { max-inline-size: 46rem; }
 [data-mode="wazeh"] :is(.edition-grid, .ntk-grid) { grid-template-columns: 1fr; }
 /* Any other grid that gains columns on wider screens (sm:/md:/lg:/xl:grid-cols-*) stays one column too,
@@ -399,6 +462,176 @@ bdi, [dir="ltr"] { unicode-bidi: isolate; }
 [data-mode="wazeh"] .clamp-3 { display: block; -webkit-line-clamp: unset; overflow: visible; padding-block: 0; }
 [data-mode="wazeh"] .cov { inline-size: 0.8em; block-size: 0.8em; }
 [data-mode="wazeh"] *, [data-mode="wazeh"] ::before, [data-mode="wazeh"] ::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* ---- phones: the slim bar, the bottom navigation and the menu sheet -----------------------------------
+   components/masthead.tsx and site-menu.tsx. Under Tailwind's `sm` (40rem; a media query's rem is the
+   browser's 16px whatever the Wazeh size) the masthead is one sticky row: the name, the other language
+   and Menu, 56px tall (64px in Wazeh, with 48px targets). Signed in, a bottom navigation of four items
+   (56px; 64px in Wazeh) sits above the device's home indicator. The bars' type does not follow the Wazeh
+   text size, or they would outgrow a phone at A++: it stays at Wazeh's UI size, over the floors (20px
+   Latin, 22px Urdu). The menu is a full-screen modal dialog with its own scroll. Tablets and desktops
+   never show any of this. Each bar reserves its height: scroll-padding keeps focus and anchors clear of
+   both, the spacer at the end of the page keeps the footer clear of the bottom one. */
+:root { --topbar-h: 56px; --tabbar-h: 56px; }
+:root[data-mode="wazeh"] { --topbar-h: 64px; --tabbar-h: 64px; }
+
+/* The top bar's buttons (the other language, Menu) and the sheet's Close. */
+.bar-btn {
+  display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 0.4em;
+  min-block-size: 44px; min-inline-size: 44px; margin: 0; padding-block: 0; padding-inline: 0.75em;
+  border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--surface); color: var(--ink);
+  font-family: var(--font-latin); font-size: 1rem; font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.bar-btn:lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.5; }
+.bar-btn svg { flex: none; inline-size: 1.25em; block-size: 1.25em; }
+[data-mode="wazeh"] .bar-btn { min-block-size: 48px; min-inline-size: 48px; padding-inline: 0.6em; border-width: 2px; font-size: max(var(--latin-floor), min(1rem, 22px)); }
+[data-mode="wazeh"] .bar-btn:lang(ur) { font-size: max(var(--urdu-floor), min(1rem, 24px)); }
+
+/* Shown only on phones (the media query below): unlayered, this rule would beat a Tailwind `sm:hidden`. */
+.masthead-bar {
+  display: none; align-items: center; gap: 8px; min-block-size: var(--topbar-h);
+  padding-inline: max(min(var(--gutter), 16px), env(safe-area-inset-left), env(safe-area-inset-right));
+}
+.masthead-bar-title { display: inline-flex; align-items: center; min-block-size: 44px; margin-inline-end: auto; color: var(--ink); font-size: 1.5rem; line-height: 1.2; text-decoration: none; white-space: nowrap; }
+.masthead-bar-title:lang(ur) { line-height: 1.7; }
+[data-mode="wazeh"] .masthead-bar-title { min-block-size: 48px; font-size: 26px; }
+
+.tabbar, .tabbar-spacer { display: none; }
+/* Equal columns, except that a label never wraps: a longer one ("ایکس بورڈ" at 22px on a 360px phone)
+   takes the width it needs from the others. */
+.tabbar {
+  position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 30;
+  grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr);
+  padding-block-end: env(safe-area-inset-bottom); padding-inline: max(env(safe-area-inset-left), env(safe-area-inset-right));
+  border-block-start: 1px solid var(--rule-strong); background: var(--bg);
+}
+/* The bar's height, and room for the back-to-top button that floats above it, so the end of the page (the
+   footer) can scroll clear of both. */
+.tabbar-spacer { flex: none; block-size: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 4rem); }
+.tabbar .tabbar-item {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-block-size: var(--tabbar-h); min-inline-size: 48px; margin: 0; padding: 4px; border: 0; border-radius: 0; background: none;
+  color: var(--ink-2); font-family: var(--font-latin); font-size: 0.8125rem; font-weight: 600; line-height: 1.2; text-align: center; text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.tabbar .tabbar-item:lang(ur) { font-family: var(--font-urdu-ui); font-size: 0.875rem; line-height: 1.4; }
+.tabbar .tabbar-item svg { flex: none; inline-size: 24px; block-size: 24px; }
+/* The page shown: ink instead of grey, and a bar along the top edge (a border, so forced colours keep it). */
+.tabbar .tabbar-item[aria-current="page"] { color: var(--ink); }
+.tabbar .tabbar-item[aria-current="page"]::before { content: ""; position: absolute; inset-block-start: 0; inset-inline: 22%; border-block-start: 4px solid currentColor; border-end-start-radius: 2px; border-end-end-radius: 2px; }
+.tabbar .tabbar-item:focus-visible { outline-offset: -5px; border-radius: 10px; }
+[data-mode="wazeh"] .tabbar { border-block-start-width: 2px; }
+[data-mode="wazeh"] .tabbar .tabbar-item { gap: 0; padding-block: 2px; font-size: var(--latin-floor); }
+[data-mode="wazeh"] .tabbar .tabbar-item:lang(ur) { font-size: var(--urdu-floor); line-height: 1.4; }
+
+/* The menu sheet: a header row like the top bar (title, Close) over a scrolling body. */
+.sheet {
+  position: fixed; inset: 0; inline-size: auto; block-size: auto; max-inline-size: none; max-block-size: none;
+  margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--ink); overflow: hidden;
+}
+.sheet[open] { display: flex; flex-direction: column; }
+.sheet::backdrop { background: color-mix(in oklab, #000 50%, transparent); }
+:root:has(.sheet[open]) { overflow: hidden; }
+.sheet-head {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  min-block-size: calc(var(--topbar-h) + env(safe-area-inset-top)); padding-block-start: env(safe-area-inset-top);
+  padding-inline: max(min(var(--gutter), 16px), env(safe-area-inset-left), env(safe-area-inset-right));
+  border-block-end: 1px solid var(--rule-strong);
+}
+.sheet-title { margin: 0; font-size: var(--step-1); font-weight: 700; line-height: 1.3; }
+.sheet-title:lang(ur) { line-height: 1.8; }
+.sheet-body {
+  flex: 1 1 auto; min-block-size: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: grid; align-content: start; gap: 1.75rem;
+  padding-block: 1rem calc(2rem + env(safe-area-inset-bottom));
+  padding-inline: max(min(var(--gutter), 16px), env(safe-area-inset-left), env(safe-area-inset-right));
+}
+.sheet-heading { margin: 0 0 0.5rem; color: var(--ink-2); font-size: var(--step--1); font-weight: 700; }
+.sheet-list { margin: 0; padding: 0; list-style: none; border-block-start: 1px solid var(--rule); }
+.sheet-list > li { border-block-end: 1px solid var(--rule); }
+.sheet .sheet-link {
+  display: flex; align-items: center; gap: 0.75em; inline-size: 100%; min-block-size: 48px; margin: 0; padding: 0.4em 0.25em;
+  border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-align: start; text-decoration: none; cursor: pointer;
+}
+.sheet .sheet-link svg { flex: none; inline-size: 1.25em; block-size: 1.25em; color: var(--ink-2); }
+/* The Wazeh text size: three big buttons, the letter drawn at the size it gives. */
+.sheet-sizes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.sheet-size {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1em; min-block-size: 56px; margin: 0; padding: 0.3em 0.2em;
+  border: 2px solid var(--rule-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.sheet-size[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.sheet-size-glyph { font-family: var(--font-latin); font-weight: 700; line-height: 1.15; }
+.sheet-size-glyph:lang(ur) { font-family: var(--font-urdu-ui); line-height: 1.4; }
+.sheet-size[data-step="sm"] .sheet-size-glyph { font-size: 22px; }
+.sheet-size[data-step="md"] .sheet-size-glyph { font-size: 28px; }
+.sheet-size[data-step="lg"] .sheet-size-glyph { font-size: 34px; }
+/* Like the bars, the names keep one size whatever the text size, so all three fit on a 360px phone. */
+.sheet-size-name { font-size: 20px; line-height: 1.3; overflow-wrap: normal; }
+.sheet-size-name:lang(ur) { font-size: 22px; line-height: 1.6; }
+.flip-rtl:dir(rtl) { transform: scaleX(-1); }
+@media (forced-colors: active) { .sheet-size[aria-pressed="true"] { forced-color-adjust: none; } }
+
+/* Narrower than 360px (small or zoomed phones): a little less room around the bar's three controls. */
+@media (width < 22.5rem) {
+  .masthead-bar { gap: 6px; padding-inline: max(10px, env(safe-area-inset-left), env(safe-area-inset-right)); }
+  .masthead-bar .bar-btn { padding-inline: 0.45em; }
+  .masthead-bar .bar-btn svg { display: none; }
+  [data-mode="wazeh"] .masthead-bar-title { font-size: 22px; }
+}
+@media (width < 40rem) {
+  .masthead { position: sticky; inset-block-start: 0; z-index: 30; padding-block-start: env(safe-area-inset-top); }
+  .masthead-bar { display: flex; }
+  /* Focus and anchors land clear of the top bar, and of the bottom bar and the back-to-top button over it. */
+  html { scroll-padding-block: calc(var(--topbar-h) + env(safe-area-inset-top) + 0.75rem) calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 4rem); }
+  .tabbar { display: grid; }
+  .tabbar-spacer { display: block; }
+  .back-to-top[data-raised] { inset-block-end: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 0.75rem); }
+  /* Wazeh's page gutter follows its root size (28px a side at A++, 15% of a 360px screen): on a phone it
+     is standard's, so lines wrap less. */
+  :root[data-mode="wazeh"] { --gutter: clamp(16px, 4vw, 32px); }
+}
+
+/* ---- phones: the edition's own header, tightened (CSS only) ------------------------------------------
+   components/edition-header.tsx (its <header data-tb-rev>) is another component's markup, so it is
+   restyled here, on phones only: the date, the Hijri date and the two meta lines in the small size and
+   running on (the review count after a middle dot), the edition title at headline size in Wazeh, and the
+   edition switcher, Save and Download as smaller chips that share rows (48px targets kept in Wazeh). */
+@media (width < 40rem) {
+  /* The header's own size and leading set the line boxes of the run-on meta lines (inline, so their own
+     leading does not): the small size, not the body's (at Nastaliq's 2.4 a line would be 70px tall). */
+  header[data-tb-rev] { padding-block-start: 0.75rem; font-size: var(--step--1); line-height: 1.5; }
+  header[data-tb-rev]:lang(ur) { font-size: calc(var(--step--1) * 1.05); line-height: 1.8; }
+  [data-mode="wazeh"] header[data-tb-rev] { font-size: var(--latin-floor); }
+  [data-mode="wazeh"] header[data-tb-rev]:lang(ur) { font-size: var(--urdu-floor); }
+  header[data-tb-rev] > p:not(.meta) { column-gap: 0.6em; row-gap: 0; }
+  header[data-tb-rev] > h1 { margin-block: 0.25rem; }
+  header[data-tb-rev] > p.meta { display: inline; margin: 0; }
+  header[data-tb-rev] > p.meta + p.meta::before { content: "·"; content: "·" / ""; margin-inline: 0.45em; }
+  header[data-tb-rev] > nav { margin-block-start: 0.75rem; }
+  header[data-tb-rev] > nav + div { margin-block-start: 0.5rem; }
+  [data-mode="wazeh"] header[data-tb-rev] > :is(p, p.meta) { font-size: var(--latin-floor); }
+  [data-mode="wazeh"] header[data-tb-rev] > :is(p, p.meta):lang(ur) { font-size: var(--urdu-floor); }
+  [data-mode="wazeh"] header[data-tb-rev] > h1 { font-size: max(36px, var(--step-2)); }
+  [data-mode="wazeh"] header[data-tb-rev] > h1:lang(ur) { font-size: max(40px, var(--step-2)); }
+  [data-mode="wazeh"] header[data-tb-rev] .chip { min-block-size: 48px; padding: 0.1em 0.65em; font-size: var(--latin-floor); }
+  [data-mode="wazeh"] header[data-tb-rev] .chip:lang(ur) { font-size: var(--urdu-floor); }
+  [data-mode="wazeh"] header[data-tb-rev] :is(nav, nav > span, nav + div, nav + div > span) { gap: 8px; }
+  /* The first story follows sooner: less space before "Need to know", and in Wazeh the tags over a
+     headline (Must read, Developing story, review) at the floor size, so two share a row. */
+  .page > header[data-tb-rev] ~ section[aria-labelledby="ntk"] { margin-block-start: 1.25rem; }
+  [data-mode="wazeh"] .pill { font-size: var(--latin-floor); }
+  [data-mode="wazeh"] .pill:lang(ur) { font-size: var(--urdu-floor); }
+  /* A story page's top (app/[locale]/story/[id]/page.tsx, <article data-tb-rev>), the same way: less
+     space around the breadcrumb and the tag row (.story-tags, under the headline), and in Wazeh both at
+     the floor size. Its short date on phones keeps the breadcrumb's two 48 px links on one line. */
+  article[data-tb-rev] > nav[aria-label="Breadcrumb"] { padding-block-start: 0.5rem; }
+  article[data-tb-rev] > nav[aria-label="Breadcrumb"] + header { margin-block-start: 0.5rem; padding-block-start: 0.75rem; }
+  article[data-tb-rev] .story-tags { margin-block-start: 0.5rem; }
+  [data-mode="wazeh"] article[data-tb-rev] > nav[aria-label="Breadcrumb"],
+  [data-mode="wazeh"] article[data-tb-rev] .story-tags .meta { font-size: var(--latin-floor); }
+  [data-mode="wazeh"] article[data-tb-rev] > nav[aria-label="Breadcrumb"]:lang(ur),
+  [data-mode="wazeh"] article[data-tb-rev] .story-tags .meta:lang(ur) { font-size: var(--urdu-floor); }
+}
 
 /* ---- publisher images (components/story-image.tsx, story-image-view.tsx; decision D6) ----------------
    A figure: a frame at the image's shape in its dominant colour (--fig-bg, --fig-ratio), the photo cropped
@@ -465,6 +698,7 @@ bdi, [dir="ltr"] { unicode-bidi: isolate; }
 [data-mode="wazeh"] .story-card { display: flex; flex-direction: column; }
 [data-mode="wazeh"] .story-card > .story-fig { order: 1; margin-block: 0.75rem 0.25rem; }
 [data-mode="wazeh"] .story-card > h3 ~ * { order: 2; }
+[data-mode="wazeh"] .story-card > .card-tags { order: 0; } /* the tags stay right under the headline */
 [data-mode="wazeh"] .story-fig-thumb { float: none; inline-size: min(100%, 16rem); margin-inline-start: 0; }
 [data-mode="wazeh"] .story-fig-thumb .story-fig-frame { aspect-ratio: 16 / 9; }
 [data-mode="wazeh"] .story-fig:is(.story-fig-lead, .story-fig-hero) .story-fig-frame { max-block-size: min(45vh, 24rem); }

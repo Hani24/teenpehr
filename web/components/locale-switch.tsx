@@ -8,14 +8,15 @@ import { getPathname, usePathname } from "@/i18n/navigation";
  * font is preloaded from <head> (Nastaliq uses font-display: optional and would otherwise miss
  * its load window inside a client-side navigation and stay in the fallback until a reload).
  * The middleware updates the locale cookie on that document request.
+ * `className`: a chip in the tablet and desktop masthead, a bar button in the phone bar.
  */
-export function LocaleSwitch() {
+export function LocaleSwitch({ className = "chip font-semibold" }: { className?: string }) {
   const locale = useLocale();
   const pathname = usePathname();
   const t = useTranslations("nav");
   const other = locale === "ur" ? "en" : "ur";
   return (
-    <a href={getPathname({ href: pathname, locale: other })} lang={other} dir={other === "ur" ? "rtl" : "ltr"} className="chip font-semibold" aria-label={t("languageLabel")} hrefLang={other}>
+    <a href={getPathname({ href: pathname, locale: other })} lang={other} dir={other === "ur" ? "rtl" : "ltr"} className={className} aria-label={t("languageLabel")} hrefLang={other}>
       {t("language")}
     </a>
   );

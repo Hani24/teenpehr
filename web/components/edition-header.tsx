@@ -6,6 +6,7 @@ import { dirOf, formatDate, formatHijri, formatTime, localDigits, SLOTS, slotNam
 import { dateAt, distinctSourceCount, readingMinutes } from "@/lib/view";
 import { editionSavedState } from "@/lib/saved";
 import { SaveButton } from "./save-button";
+import { editionRev, reviewCounts } from "@/lib/review-state";
 import { DownloadMenu } from "./download-menu";
 
 type Neighbour = { date: string; slot: string } | null;
@@ -22,8 +23,10 @@ export async function EditionHeader({ ed, locale, published, prev, next }:
   const rtl = dirOf(locale) === "rtl";
   const back = rtl ? "→" : "←", forward = rtl ? "←" : "→";
   const saved = await editionSavedState(ed.id);
+  const review = reviewCounts(ed.stories);
   return (
-    <header className="rule-strong pt-4">
+    // data-tb-rev: what this page shows about review, for the offline copy's refresh (public/sw.js, D14).
+    <header className="rule-strong pt-4" data-tb-rev={editionRev(ed.stories)}>
       <p className="ui flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[length:var(--step--1)] text-ink-2">
         <time dateTime={ed.date} className="font-semibold text-ink">{formatDate(day, locale, { dateStyle: "full" }, digits)}</time>
         <span aria-label="Hijri date">{formatHijri(day, locale, prefs.hijriAdjust, digits)} <span className="text-ink-3">({t("time.hijriApprox")})</span></span>
@@ -31,11 +34,17 @@ export async function EditionHeader({ ed, locale, published, prev, next }:
       <h1 className="display mt-2 text-[length:var(--step-3)]">{t(`slots.${ed.slot}Long`)}</h1>
       <p className="meta mt-2">
         {ed.publishedAt && num(t("edition.compiledAt", { time: formatTime(ed.publishedAt, locale, digits), count: sources }))}
-        {prefs.editorName && <> · {t("edition.reviewedBy", { name: prefs.editorName })}</>}
         {" · "}{num(t("edition.readingTime", { minutes: readingMinutes(ed, locale) }))}
       </p>
+      {/* D14: the edition went out without waiting for an editor; this says how far review has got. */}
+      {review.total > 0 && (
+        <p className="meta mt-1" data-review-count="">
+          {num(t(review.manual ? "review.editionCountAi" : "review.editionCount", { reviewed: review.reviewed, total: review.total }))}
+        </p>
+      )}
       <nav aria-label={t("nav.today")} className="ui mt-4 flex flex-wrap items-center gap-2">
-        {prev && <Link href={`/${prev.date}/${prev.slot}`} className="chip" rel="prev"><span aria-hidden="true">{back}</span> {t("edition.previous")}</Link>}
+        {/* On phones the chips keep only their arrows (the words stay for screen readers), so the edition row fits. */}
+        {prev && <Link href={`/${prev.date}/${prev.slot}`} className="chip" rel="prev"><span aria-hidden="true">{back}</span> <span className="max-sm:sr-only">{t("edition.previous")}</span></Link>}
         <span role="group" aria-label={ed.date} className="inline-flex gap-1">
           {SLOTS.map((s) => {
             const on = published.includes(s);
@@ -47,11 +56,13 @@ export async function EditionHeader({ ed, locale, published, prev, next }:
             );
           })}
         </span>
-        {next && <Link href={`/${next.date}/${next.slot}`} className="chip" rel="next">{t("edition.next")} <span aria-hidden="true">{forward}</span></Link>}
+        {next && <Link href={`/${next.date}/${next.slot}`} className="chip" rel="next"><span className="max-sm:sr-only">{t("edition.next")}</span> <span aria-hidden="true">{forward}</span></Link>}
       </nav>
-      {/* Save the whole edition, print it to PDF, or download it as one file (D3); signed-in readers. */}
+      {/* Save the whole edition, print it to PDF, or download it as one file (D3); signed-in readers. On
+          phones these sit at the end of the edition instead (EditionView), so the first story is not pushed
+          below the first screen. */}
       {saved !== null && (
-        <div className="ui no-print mt-3 flex flex-wrap items-center gap-2">
+        <div className="ui no-print mt-3 flex flex-wrap items-center gap-2 max-sm:hidden">
           <SaveButton kind="edition" id={ed.id} saved={saved} label={t("saved.saveEdition")} />
           <DownloadMenu date={ed.date} slot={ed.slot} />
         </div>

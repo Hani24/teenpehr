@@ -11,11 +11,13 @@ import {
 
 /*
  * Display preferences (decision D4): the colour palette, the Wazeh reading mode and its text size,
- * contrast, Nastaliq, Urdu digits, and publisher images (auto/on/off, D6). ThemeControls sits in the
- * masthead bar; DisplayPanel is the full set, shown below the bar. What is applied lives on <html>
- * (set before paint by bootScript in
- * lib/view.ts); a choice is stored on this device at once and, when signed in, saved to the account
- * so it follows the reader. The rules for which copy wins are resolvePrefs/reconcilePrefs.
+ * contrast, Nastaliq, Urdu digits, and publisher images (auto/on/off, D6). On tablets and desktops
+ * ThemeControls sits in the masthead bar and DisplayPanel, the full set, opens below it; on phones both
+ * are hidden (ThemeControls stays mounted: it applies and syncs the choices) and the menu sheet
+ * (components/site-menu.tsx) offers QuickDisplay at its top and DisplayFields further down. What is
+ * applied lives on <html> (set before paint by bootScript in lib/view.ts); a choice is stored on this
+ * device at once and, when signed in, saved to the account so it follows the reader. The rules for
+ * which copy wins are resolvePrefs/reconcilePrefs.
  */
 
 // ---- a small store over <html>, localStorage and the panel -------------------------------------
@@ -205,16 +207,74 @@ function Label({ title, hint }: { title: React.ReactNode; hint?: React.ReactNode
 
 export function DisplayPanel({ boot }: { boot: ThemeBoot }) {
   const t = useTranslations();
-  const prefs = usePrefs(boot);
-  const { open, status } = useUi();
-  const choose = useChoose(boot);
+  const { open } = useUi();
   const id = useId();
   // The panel is rendered below the whole bar, after the account menu: focus moves into it on opening,
   // so the next Tab after "Display" is not the account menu (Escape and Done bring it back).
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { if (open) heading.current?.focus(); }, [open]);
   if (!open) return null;
+  return (
+    <section id="display-prefs" aria-labelledby={`${id}-h`} className="no-print mx-auto max-w-6xl px-[var(--gutter)] pb-4"
+      onKeyDown={(e) => { if (e.key === "Escape") closePanel(); }}>
+      <div className="card grid gap-6 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id={`${id}-h`} ref={heading} tabIndex={-1} className="ui text-[length:var(--step-1)] font-bold focus:outline-none">{t("display.title")}</h2>
+          <button type="button" onClick={closePanel} className="chip font-semibold">{t("display.done")}</button>
+        </div>
+        <DisplayFields boot={boot} />
+      </div>
+    </section>
+  );
+}
 
+// ---- the phone menu's share (components/site-menu.tsx) ------------------------------------------
+/**
+ * The first controls of the phone menu, one tap after Menu: in Wazeh its text size, then Wazeh on or
+ * off (always shown, so the switch keeps focus when it changes the mode). The other display choices
+ * follow lower in the menu (DisplayFields with `omitQuick`), so none is offered twice.
+ */
+export function QuickDisplay({ boot }: { boot: ThemeBoot }) {
+  const t = useTranslations();
+  const prefs = usePrefs(boot);
+  const choose = useChoose(boot);
+  const id = useId();
+  const wazeh = prefs.mode === "wazeh";
+  const ur = (chunks: React.ReactNode) => <span lang="ur">{chunks}</span>;
+  const sizeNames = { sm: t("display.sizeSmall"), md: t("display.sizeMedium"), lg: t("display.sizeLarge") };
+  return (
+    <div className="grid gap-4">
+      {wazeh && (
+        <div role="group" aria-labelledby={`${id}-size`}>
+          <p id={`${id}-size`} className="sheet-heading">{t("nav.textSize")}</p>
+          <div className="sheet-sizes">
+            {TEXT_SIZES.map((s) => (
+              <button key={s} type="button" onClick={() => choose({ size: s })} aria-pressed={prefs.size === s} className="sheet-size" data-step={s}>
+                <span aria-hidden="true" className="sheet-size-glyph">{t(`wazeh.${s === "sm" ? "sizeSmall" : s === "md" ? "sizeMedium" : "sizeLarge"}`)}</span>
+                <span className="sheet-size-name">{sizeNames[s]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <Choice type="checkbox" checked={wazeh} onChange={() => choose({ mode: wazeh ? "standard" : "wazeh" })}>
+        <Label title={t.rich("wazeh.label", { ur })} hint={t("wazeh.description")} />
+      </Choice>
+    </div>
+  );
+}
+
+/**
+ * Every display choice as fieldsets, with the line that says where a choice was saved. The Display panel
+ * shows them all; the phone menu passes `omitQuick`, leaving out the reading mode and the text size,
+ * which QuickDisplay already offers at its top.
+ */
+export function DisplayFields({ boot, omitQuick = false }: { boot: ThemeBoot; omitQuick?: boolean }) {
+  const t = useTranslations();
+  const prefs = usePrefs(boot);
+  const { status } = useUi();
+  const choose = useChoose(boot);
+  const id = useId();
   const wazeh = prefs.mode === "wazeh";
   const legend = "ui mb-2 font-semibold";
   // Images: story pictures follow this at once (components/story-image-view.tsx watches <html data-images>).
@@ -226,26 +286,20 @@ export function DisplayPanel({ boot }: { boot: ThemeBoot }) {
   const ur = (chunks: React.ReactNode) => <span lang="ur">{chunks}</span>;
   const message = status === "idle" ? "" : t(`display.status.${status}`);
   return (
-    <section id="display-prefs" aria-labelledby={`${id}-h`} className="no-print mx-auto max-w-6xl px-[var(--gutter)] pb-4"
-      onKeyDown={(e) => { if (e.key === "Escape") closePanel(); }}>
-      <div className="card grid gap-6 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id={`${id}-h`} ref={heading} tabIndex={-1} className="ui text-[length:var(--step-1)] font-bold focus:outline-none">{t("display.title")}</h2>
-          <button type="button" onClick={closePanel} className="chip font-semibold">{t("display.done")}</button>
+    <>
+      <fieldset className="min-w-0">
+        <legend className={legend}>{t("display.palette")}</legend>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-2">
+          {THEMES.map((th) => (
+            <Choice key={th.id} name={`${id}-palette`} checked={prefs.palette === th.id} onChange={() => choose({ palette: th.id })}>
+              <Swatch id={th.id} />
+              <Label title={t(`themes.${th.id}`)} hint={t(`themes.${th.id}Hint`)} />
+            </Choice>
+          ))}
         </div>
+      </fieldset>
 
-        <fieldset className="min-w-0">
-          <legend className={legend}>{t("display.palette")}</legend>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-2">
-            {THEMES.map((th) => (
-              <Choice key={th.id} name={`${id}-palette`} checked={prefs.palette === th.id} onChange={() => choose({ palette: th.id })}>
-                <Swatch id={th.id} />
-                <Label title={t(`themes.${th.id}`)} hint={t(`themes.${th.id}Hint`)} />
-              </Choice>
-            ))}
-          </div>
-        </fieldset>
-
+      {!omitQuick && (
         <fieldset className="min-w-0">
           <legend className={legend}>{t("display.mode")}</legend>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -257,66 +311,66 @@ export function DisplayPanel({ boot }: { boot: ThemeBoot }) {
             </Choice>
           </div>
         </fieldset>
+      )}
 
-        {wazeh && (
-          <fieldset className="min-w-0">
-            <legend className={legend}>{t("nav.textSize")}</legend>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
-              {TEXT_SIZES.map((s) => (
-                <Choice key={s} name={`${id}-size`} checked={prefs.size === s} onChange={() => choose({ size: s })}>
-                  <Label title={t(`wazeh.${s === "sm" ? "sizeSmall" : s === "md" ? "sizeMedium" : "sizeLarge"}`)} hint={t(`display.${s === "sm" ? "sizeSmall" : s === "md" ? "sizeMedium" : "sizeLarge"}`)} />
-                </Choice>
-              ))}
-            </div>
-          </fieldset>
-        )}
-
-        {wazeh && (
-          <fieldset className="min-w-0">
-            <legend className={legend}>{t("display.urduBody")}</legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Choice name={`${id}-script`} checked={!prefs.nastaliq} onChange={() => choose({ nastaliq: false })}>
-                <Label title={<span lang="ur" className="sample-naskh">{t("display.naskh")}</span>} hint={t("display.naskhHint")} />
-              </Choice>
-              <Choice name={`${id}-script`} checked={prefs.nastaliq} onChange={() => choose({ nastaliq: true })}>
-                <Label title={<span lang="ur" className="sample-nastaliq">{t("display.nastaliq")}</span>} hint={t("display.nastaliqHint")} />
-              </Choice>
-            </div>
-          </fieldset>
-        )}
-
+      {!omitQuick && wazeh && (
         <fieldset className="min-w-0">
-          <legend className={legend}>{t("images.prefTitle")}</legend>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-2">
-            {IMAGE_PREFS.map((v) => (
-              <Choice key={v} name={`${id}-images`} checked={prefs.images === v} onChange={() => choose({ images: v })}>
-                <Label title={imageChoice[v].title} hint={imageChoice[v].hint} />
+          <legend className={legend}>{t("nav.textSize")}</legend>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+            {TEXT_SIZES.map((s) => (
+              <Choice key={s} name={`${id}-size`} checked={prefs.size === s} onChange={() => choose({ size: s })}>
+                <Label title={t(`wazeh.${s === "sm" ? "sizeSmall" : s === "md" ? "sizeMedium" : "sizeLarge"}`)} hint={t(`display.${s === "sm" ? "sizeSmall" : s === "md" ? "sizeMedium" : "sizeLarge"}`)} />
               </Choice>
             ))}
           </div>
         </fieldset>
+      )}
 
+      {wazeh && (
         <fieldset className="min-w-0">
-          <legend className={legend}>{t("display.contrast")}</legend>
-          <Choice type="checkbox" checked={prefs.contrast === "high"} onChange={() => choose({ contrast: prefs.contrast === "high" ? "normal" : "high" })}>
-            <Label title={t("display.contrastHigh")} hint={t("display.contrastHint")} />
-          </Choice>
-        </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className={legend}>{t("display.digits")}</legend>
+          <legend className={legend}>{t("display.urduBody")}</legend>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Choice name={`${id}-digits`} checked={prefs.digits === "latn"} onChange={() => choose({ digits: "latn" })}>
-              <Label title={t("display.digitsLatn")} hint={<bdi dir="ltr" lang="en">1 2 3</bdi>} />
+            <Choice name={`${id}-script`} checked={!prefs.nastaliq} onChange={() => choose({ nastaliq: false })}>
+              <Label title={<span lang="ur" className="sample-naskh">{t("display.naskh")}</span>} hint={t("display.naskhHint")} />
             </Choice>
-            <Choice name={`${id}-digits`} checked={prefs.digits === "arabext"} onChange={() => choose({ digits: "arabext" })}>
-              <Label title={t("display.digitsArabext")} hint={<span lang="ur">۱ ۲ ۳</span>} />
+            <Choice name={`${id}-script`} checked={prefs.nastaliq} onChange={() => choose({ nastaliq: true })}>
+              <Label title={<span lang="ur" className="sample-nastaliq">{t("display.nastaliq")}</span>} hint={t("display.nastaliqHint")} />
             </Choice>
           </div>
         </fieldset>
+      )}
 
-        <p role="status" className={`meta min-h-[1.6em] ${status === "error" ? "!text-accent" : ""}`}>{message}</p>
-      </div>
-    </section>
+      <fieldset className="min-w-0">
+        <legend className={legend}>{t("images.prefTitle")}</legend>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-2">
+          {IMAGE_PREFS.map((v) => (
+            <Choice key={v} name={`${id}-images`} checked={prefs.images === v} onChange={() => choose({ images: v })}>
+              <Label title={imageChoice[v].title} hint={imageChoice[v].hint} />
+            </Choice>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="min-w-0">
+        <legend className={legend}>{t("display.contrast")}</legend>
+        <Choice type="checkbox" checked={prefs.contrast === "high"} onChange={() => choose({ contrast: prefs.contrast === "high" ? "normal" : "high" })}>
+          <Label title={t("display.contrastHigh")} hint={t("display.contrastHint")} />
+        </Choice>
+      </fieldset>
+
+      <fieldset className="min-w-0">
+        <legend className={legend}>{t("display.digits")}</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Choice name={`${id}-digits`} checked={prefs.digits === "latn"} onChange={() => choose({ digits: "latn" })}>
+            <Label title={t("display.digitsLatn")} hint={<bdi dir="ltr" lang="en">1 2 3</bdi>} />
+          </Choice>
+          <Choice name={`${id}-digits`} checked={prefs.digits === "arabext"} onChange={() => choose({ digits: "arabext" })}>
+            <Label title={t("display.digitsArabext")} hint={<span lang="ur">۱ ۲ ۳</span>} />
+          </Choice>
+        </div>
+      </fieldset>
+
+      <p role="status" className={`meta min-h-[1.6em] ${status === "error" ? "!text-accent" : ""}`}>{message}</p>
+    </>
   );
 }

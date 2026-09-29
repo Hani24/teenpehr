@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getCurrentUser, roleAtLeast } from "@/lib/auth";
 import type { Locale } from "@/lib/urdu";
 import { MenuDetails } from "./menu-details";
+import { IconAccount, IconAdmin, IconSignOut } from "./icons";
 
 /**
  * The signed-in reader's menu in the masthead: who is signed in, their account page, the admin for
@@ -43,5 +44,36 @@ export async function AccountMenu({ locale }: { locale: Locale }) {
         </form>
       </div>
     </MenuDetails>
+  );
+}
+
+/**
+ * The same account items in the phone menu sheet (components/site-menu.tsx): who is signed in, the
+ * account page, the admin for editors and owners, and sign out, as full-width rows.
+ */
+export async function AccountSection({ locale }: { locale: Locale }) {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const t = await getTranslations("account");
+  const who = user.name || user.email;
+  return (
+    <section aria-labelledby="site-menu-account" className="sheet-section">
+      <h3 id="site-menu-account" className="sheet-heading">{t("menu")}</h3>
+      <p className="meta">
+        {t("signedInAs")} {user.name ? <bdi className="font-semibold text-ink">{who}</bdi> : <bdi className="latin font-semibold text-ink wrap-anywhere!">{who}</bdi>}
+      </p>
+      <ul className="sheet-list mt-2">
+        <li><Link href="/account" className="sheet-link"><IconAccount />{t("title")}</Link></li>
+        {roleAtLeast(user.role, "editor") && (
+          <li><NextLink href="/admin" className="sheet-link"><IconAdmin />{t("admin")}</NextLink></li>
+        )}
+        <li>
+          <form method="post" action="/api/auth/logout">
+            <input type="hidden" name="locale" value={locale} />
+            <button type="submit" className="sheet-link"><IconSignOut />{t("signOut")}</button>
+          </form>
+        </li>
+      </ul>
+    </section>
   );
 }

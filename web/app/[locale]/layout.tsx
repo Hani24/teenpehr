@@ -12,6 +12,7 @@ import { bootScript, hiddenGroupCss, paletteBg, renderedPrefs, SYSTEM_DARK, SYST
 import { Masthead } from "@/components/masthead";
 import { SiteFooter } from "@/components/site-footer";
 import { BackToTop } from "@/components/back-to-top";
+import { BottomNav } from "@/components/site-menu";
 import { OfflineBanner } from "@/components/offline-banner";
 import { SwRegister } from "@/components/sw-register";
 import "../globals.css";
@@ -75,7 +76,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <Masthead locale={l} />
           <main id="content" className="flex-1">{children}</main>
           <SiteFooter locale={l} />
-          <BackToTop />
+          {/* Phones, signed in: Today, Search, the X board and Menu at the bottom of the screen (components/site-menu.tsx). */}
+          {reader && <BottomNav />}
+          <BackToTop raised={!!reader} />
           {/* The account id: offline copies kept for another account on this browser are dropped (D3). */}
           <SwRegister owner={reader ? String(reader.id) : null} />
         </NextIntlClientProvider>
