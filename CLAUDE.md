@@ -17,10 +17,17 @@ are already made there; if one must change, change the doc too.
   Newsreader). Never embed Jameel Noori Nastaleeq.
 - **Urdu text:** normalise to Urdu code points (ی U+06CC, ک U+06A9, ہ U+06C1); never set
   `letter-spacing` on Urdu; `lang`/`dir` on the root; logical CSS properties only.
-- **Editions are immutable** after publish. Corrections are appended rows.
+- **Editions are immutable** after publish, and so is a manual story once it is live on the
+  Editor's desk (`stories.desk_at`, D12). Corrections are appended rows.
 - **Fetching etiquette:** RSS first; honour robots.txt and 429s; one request per host at a
   time; snippets and links, never full-text republication; the Germany route is for hosts
   blocked from Pakistan, never for bot evasion.
+  **One exception (D9):** a full Urdu translation of an article a story cites, made only when a
+  signed-in reader asks for it, stored once (`article_translations`) and shown only inside the
+  login wall on its own page, labelled "AI translation of <outlet>'s article · may contain
+  errors" with the original link and date; never in feeds, downloads, search or the X board.
+  A paywalled, robots-disallowed or unreachable article is never fetched another way: the
+  reader gets the link.
 
 ## Working here
 - `web/`: Next 16 App Router, TypeScript, Tailwind v4, next-intl (en/ur), Drizzle + Postgres.

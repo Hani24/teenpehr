@@ -8,6 +8,7 @@ The Next.js app for Tabayyun: reader site (`app/[locale]`, invite-only), admin (
 npm run dev          # http://localhost:3000/en · /ur · /admin
 npm run typecheck && npm run lint && npm run build
 npm run db:push -- --force && npm run db:seed   # dev schema (db:prepare first, then drizzle-kit push) + seed data (db/seed/*.json)
+npm run sources:apply -- --dry-run   # then without --dry-run: apply the audited source list (D11) to an existing database
 npm run db:backfill  # after a schema push on an existing database: one-off data fixes (idempotent, see db/backfill.ts)
 npm run db:migrate   # a new production database: applies db/migrations/ in order
 npm run user:invite -- --email you@example.com --role owner   # print a one-time invite link (first owner; --kind reset for a new password)
@@ -27,7 +28,9 @@ index by index):
   Push re-applies the `'{}'::text[]` array defaults every time; that is a drizzle-kit quirk and changes nothing.
 - **Migrations** (a new production database): `npm run db:migrate` applies `db/migrations/` in order:
   `0000_extensions` (custom), `0001_baseline` (generated from the schema), `0002_wazeh_tabayyun` and
-  `0003_default_palette` (data). Then `npm run db:seed`.
+  `0003_default_palette` (data), `0004_story_images` and `0005_feedback_jobs_manual` (D7–D13). Then `npm run db:seed`.
+  The seed switches a source on only when its recorded audit check is `ok` (D11); on an existing database use
+  `npm run sources:apply` instead, which also follows moved feeds (`previous_urls`) and turns failing rows off.
   After a schema change, `npm run db:generate` adds the next one. Do not run migrations on a pushed
   database: its tables already exist; keep it on push.
 
@@ -120,6 +123,19 @@ the year 2000, so they never collide with real slots or snapshot files.
   `messages/*.json`. Run `node scripts/contrast-check.mjs` after changing colours (AA for every palette, AAA for
   high contrast). The admin's default palette and mode, Urdu digits, disclosure text and the groups hidden in
   Wazeh come from the settings and groups tables; a reader's own choices override them.
+- **Publishing and review** (docs/PLAN.md D14). `settings.publish_policy` is `publish` by default: the worker's
+  publish call puts an edition out at once, QA-flagged stories included; `auto` holds one with a flagged story,
+  `hold` holds every edition (held editions are published from their admin page). Each AI-written story then shows
+  readers whether an editor has reviewed it (`components/review-badge.tsx`, `lib/review-state.ts`, and
+  `lib/review-text.ts` for the feeds, the print sheet and the HTML download): "Not reviewed yet", "Check raised a
+  question" (with the check's note on the story page) or "Reviewed by <name>". Editors work through
+  `/admin/review` (`lib/admin/review.ts`, `lib/admin/review-actions.ts`): mark reviewed, add a correction, withdraw
+  with a reason; owners can undo a review or a withdrawal. A withdrawn story (`stories.withdrawn_at`) is left out of
+  every reader list (`storyVisibleSql` in `lib/desk.ts`, the relational loads in `lib/queries.ts`, search, the X
+  board, the Saved shelf, `/media`), and its address shows only that it was withdrawn, when and why. The offline
+  manifest gives each kept page a review token (`rev`, matched against the page's `data-tb-rev` by `public/sw.js`)
+  and a `drop` list of withdrawn stories, so kept copies follow. The site-wide disclosure (settings
+  `disclosure_en`/`_ur`) makes no claim about any one story; each story carries its own.
 - **Messages.** `messages/en.json` and `ur.json` have the same keys; `global.d.ts` types `t()` against
   `en.json`, so `npm run typecheck` fails on a key that does not exist.
 - **Snapshots.** Published editions are also written as JSON to `EDITION_SNAPSHOT_DIR` (default

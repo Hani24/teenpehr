@@ -2,6 +2,158 @@
 
 # Bilingual News Digest Plan
 
+## Decisions of 29 September 2026 (they override anything below, D1–D6 included)
+
+The owner's second batch, after testing the first build. Schema: migration `0005_feedback_jobs_manual`
+(`web/db/schema.ts`); the worker job contract is in `docs/API.md` § Jobs. D14 came later the same day, with migration
+`0006_review_state`.
+
+- **D14 Publish first, review whenever (owner, 29 September 2026).** "Don't wait for the reviewer. Publish every edition
+  by default with a 'not reviewed' tag; a reviewer reviews whenever, and the story is then marked reviewed." This
+  replaces the hold rule everywhere below (flagged stories no longer keep an edition off the site).
+  - **Publishing.** `settings.publish_policy` gains `publish`, the new default (seed, and existing databases still on the
+    old default `auto` were moved to it by migration 0006 / `db/backfill.ts`; an explicit `hold` stays): the edition
+    publishes as soon as the worker finishes, even when QA flagged stories. `auto` (hold only if a story is flagged)
+    and `hold` (hold every edition) remain selectable in Admin → Settings. An edition already held (status `review`)
+    is still published with the edition page's Publish button, as before. The publish response now carries
+    `stories` and `flagged` (docs/API.md), and the notifications say how many flagged stories await review; a
+    backfill still sends no success notification.
+  - **Review state per story, metadata only.** `stories.reviewed_at`/`reviewed_by` (an editor marked it reviewed;
+    an owner can undo) and `withdrawn_at`/`withdrawn_by` with `withdraw_note_en`/`_ur` (the editors withdrew it,
+    with a reason in at least one language; an owner can undo). The story's text is never touched: it stays as
+    published, and corrections remain appended rows. Stories published before D14 stay "not reviewed". Every change
+    is in `audit_log`.
+  - **Readers** (`components/review-badge.tsx`, `lib/review-state.ts`, `lib/review-text.ts`). Each AI-written story
+    card has a calm pill: "Not reviewed yet" / "ابھی ادارتی جائزہ نہیں ہوا", or when QA flagged it and nobody has
+    reviewed it "Check raised a question" / "خودکار جانچ میں سوال اٹھا", or "Reviewed" / "جائزہ شدہ". The story page
+    gives the full line ("Not yet reviewed by an editor" or "Reviewed by <name> · <date, time>") and, for a flagged
+    story, the automatic check's note in plain words ("An automatic check noted: …"; after review "An automatic check
+    had noted: … An editor has since reviewed the story."), never hidden. The edition header says "N of M stories
+    reviewed by an editor". Feeds (a category and the line; `_review` in JSON Feed), the print sheet, the
+    self-contained HTML download and the offline copies (the manifest gives each kept page a review token, so a
+    story reviewed after it was kept is fetched again) show the same. An editor's manual entry (D12) carries no
+    review state: its own tag and disclosure say an editor wrote it, and the header then counts "AI-written" stories.
+  - **Withdrawn stories** leave the edition page, the section and topic pages, the Editor's desk, feeds, search,
+    downloads, the Saved shelf, offline copies (the manifest's `drop` list deletes them from the device) and the X
+    board's story links; their images are no longer served. The story's address shows only "This story was
+    withdrawn by the editors" / "ایڈیٹرز نے یہ خبر واپس لے لی ہے", the date and the note, never its text or title.
+  - **Disclosures.** The site-wide footer no longer claims AI authorship or human review for every story: "Stories are
+    written by AI from the listed sources, except those marked as manual entries, which an editor wrote. Each
+    AI-written story shows whether an editor has reviewed it yet. Every claim links to its source." (Settings
+    `disclosure_en`/`_ur`; the old shipped text was replaced only where it was unchanged). Each AI story carries its own
+    line, "Written by AI from N sources. <review line>. Every claim links to its source."; a manual story keeps its
+    editor disclosure and nothing on its page says it was written by AI. `editor_name` is now "Editor in charge:
+    <name>" in the footer, never a claim that this person reviewed every story.
+  - **Admin → Review** (`/admin/review`, editors and owners; `lib/admin/review.ts`): the published AI-written stories
+    nobody has reviewed, grouped by edition (newest first), flagged first, each with its QA note, sources, both
+    languages and image. Actions: Mark reviewed (one story, or all shown for an edition), Add correction (the existing
+    correction flow), Withdraw story (a reason in English and/or Urdu, then a confirm box); owners can undo a review
+    or a withdrawal (tabs "Reviewed" and "Withdrawn"). The nav and the dashboard show how many stories await review
+    and how many of them were flagged. A published edition's admin page shows each story's review state and can
+    withdraw it too (manual stories included).
+
+- **D7 Filter menus that work everywhere.** On `/ur/search` in the Kaghaz palette the native `<select>` for the group
+  ("شعبہ") opened a blank white list with only the highlight bar showing. The root cause is fixed for every `<select>`
+  on the reader site and in the admin, in every palette (light and dark), in Wazeh and in both directions. Wazeh
+  discourages pull-down menus (see the Wazeh specification below), so in Wazeh, and wherever it reads better, the
+  search filters may be accessible chip or radio groups instead.
+
+  Done: the open list of a native `<select>` is drawn by the browser outside the page, from the select's colours,
+  each option's own colours and the desktop's menu colours; on the owner's dark GNOME desktop it lost its text.
+  The page no longer depends on that popup: every `option` and `optgroup` carries the palette's paper and ink
+  (so an engine that draws a native list copies a readable pair), Chrome and Edge 135+ draw the list inside the
+  page (`appearance: base-select`, palette colours, page fonts and direction, Wazeh-sized rows), and the reader
+  site's search filters (section and topic) are chip radio groups (`components/choice-group.tsx`, `.choices`),
+  so the reader site has no `<select>` left; the admin keeps its selects with the same styling.
+- **D8 Relevance feedback, not approval.** Every story has two clearly labelled buttons, "Relevant to me" /
+  "مجھ سے متعلق" and "Show less like this" / "ایسی خبریں کم", never bare thumbs that read as approving or disapproving
+  the event. One vote per reader per story, changeable and removable (`story_feedback`, value 1 or -1). "Show less"
+  offers optional reasons: topic, outlet, too much of this, not for me (`topic`, `outlet`, `too_much`, `not_for_me`).
+  A separate "Report a mistake" / "غلطی کی نشاندہی" sends free text to an editors' queue (`story_reports`: open,
+  resolved, dismissed); it is not a vote. The data feeds Insights, a per-reader interest profile, and later a personal
+  "For you" ordering that may reweight topics and groups only: it never hides a story from the shared edition and never
+  personalises away an outlet's perspective. No personal ranking ships yet.
+- **D9 Full Urdu translation on request (the one exception to "snippets and links").** The owner chose a full
+  translation over a condensed one. On a story's source list, each cited item not in Urdu offers "Read the full
+  article in Urdu" / "پورا مضمون اردو میں". The first request queues a `translate_article` job; the worker fetches the
+  full article (robots.txt, 429 cooldowns, one request per host, the source's route; a paywalled, robots-disallowed
+  or unreachable article gives "could not get the full text, here is the link", never a bypass), extracts the text,
+  translates it faithfully and completely into Urdu (news register, the locked glossary for names, Urdu code points),
+  runs a cheap faithfulness check (numbers, names, quotes, nothing added or dropped) and stores it
+  (`article_translations`, one per item). Later readers get the stored translation at once. It is shown only to
+  signed-in readers, inside Tabayyun, on its own page, labelled "AI translation of <outlet>'s article · may contain
+  errors" with the original link and date; never in feeds, downloads, search or the X board. Each reader has a daily
+  request limit (new translation work their requests made since local midnight; setting `translate_daily_limit`,
+  10 by default, editable under Admin → Settings; editors and owners get at least 25), and translation usage counts
+  toward the daily usage budget (D13).
+- **D10 X board.** A reader page, "X board" / "ایکس بورڈ", shows recent posts from the watched handles (X and Bluesky,
+  with a platform badge) in per-group tabs, ranked by relevance to the latest published edition (entity, keyword and
+  topic matches), then engagement and recency; replies and bare reposts are de-emphasised. Text verbatim, author, time,
+  a link to the original, and a link to the story when a post is cited; never paraphrased; no images from posts.
+  `teenpehr collect-x` (every 30 minutes) reads the X Lists and, since this batch, every watched Bluesky account
+  through Bluesky's public API (no login, one account at a time, a 429 stops the rest until the next run). A post an
+  approved X List carried is filed under that list's group even when its author is not a watched handle
+  (`posts.raw.x_list_id`), so an approved public list's members show on the board and reach the edition. The
+  owner asked for existing public X Lists per group: they are researched and verified live through the syndication
+  list endpoint and written as proposals (`x_list_proposals`) for approval. Nothing writes list ids into
+  `groups.x_list_ids` except an owner's "Add to group" in the admin.
+- **D11 Coverage from every legitimate technique.** Verify and activate every seeded source that works (62 of 182
+  were active; all 43 YouTube channels were off), add missing top publishers per group with verified feeds, Google
+  News `site:` and topic queries for wires without RSS (Reuters, AP, AFP), publishers' Google News sitemaps (source
+  kind `sitemap`), the GDELT DOC API as a discovery kind (`gdelt`) if it works live, YouTube channel feeds and
+  Bluesky. Telegram only where reachable: it is blocked from Pakistan without the Germany route, so such sources are
+  marked "needs germany". Within the etiquette: RSS first, robots.txt, one request per host, no stealth.
+
+  Done on 29 September 2026 (details and every table in `docs/RESEARCH.md` § Coverage audit): each seed row in
+  `web/db/seed/sources.json` carries the result of a live check by the worker's own reader
+  (`python -m teenpehr.fetch.audit`), and `npm run sources:apply` activates a source only when its check is `ok`
+  (a passing failure such as a 429 or a timeout leaves an existing row as it is). The dev database went from 62
+  active of 182 sources to 253 active of 271 (after the review: seven rows that answer directly moved off the
+  Germany route, both AFP sources now search AFP's own site rather than any outlet mentioning AFP, a sitemap's
+  links must be on the publisher's own site, which turned Bol News off, and Malay Mail World stays off by
+  choice): 89 new sources (31 RSS, 15 news sitemaps, 29 Google News `site:`
+  queries, 11 YouTube channels, 3 GDELT), 11 existing rows fixed (a moved URL, a dead feed replaced by the
+  publisher's news sitemap, a route or language corrected), 41 of the 43 seeded YouTube channels switched on (two
+  are dormant), and 14 Bluesky outlet accounts added to `handles.json`. Still off: hosts that reset connections
+  from Pakistan (The Hindu, Times of India, ThePrint, The Quint, Newslaundry, Siasat, 5Pillars, The Daily Star, Al
+  Jazeera's RSS; each has a Google News or other replacement except Siasat's English site and 5Pillars), +972
+  Magazine's feed (a Cloudflare challenge), two dormant YouTube channels, ReliefWeb's empty feed and the three
+  GDELT sources. GDELT answered HTTP 429 to
+  single requests 15 minutes apart from this connection all morning, so it is implemented but unverified (its
+  sources stay off until an audit reads them). The public X Lists found (Dawn's Pakistan journalists, the NYT's
+  foreign correspondents and others) exist only as old owner/slug addresses; the syndication endpoint serves list
+  ids but answered 429 to every slug request, so none of them could be verified until an owner copies the numeric
+  ids while signed in to x.com and runs `python -m teenpehr.fetch.xlist_audit` (see § Coverage audit). One list
+  found by its id, the Financial Times' "FT journalists", was verified live and is the one proposal in
+  `x-list-proposals.json` (World), awaiting the owner's decision. Telegram times out on connect from Pakistan: needs germany. The
+  curation list per group (120 articles) is now filled round robin over the group's feeds when it would overflow,
+  so a source late in the list is not cut entirely.
+- **D12 Editors can add a story by hand.** Editors and owners only, logged (`audit_log`). The link is required
+  (http/https; fetched once server-side through the SSRF-safe public fetch to confirm it exists and prefill title,
+  description and image; the site's robots.txt is read first, and a page it disallows, or a site that answers 429,
+  is not fetched: the editor may still add it as an unchecked link, with nothing prefilled); then title, summary, optional why it matters, optional contested line, group, tag, and an
+  optional image (an upload, re-encoded and stripped like I2, or "use the article's image", a `story_image` job), in
+  English and/or Urdu. A missing language is filled by the worker from the editor's text only, no new facts
+  (`fill_language` job), and marked (`stories.language_filled`). Every manual story is tagged "Manual entry · added by
+  <name>" / "دستی اندراج · <name>" and carries its own disclosure line (written by an editor, not AI); its link is its
+  cited source (an item under a matched or new inactive `manual` source, so citations stay real), and it is never
+  AI-verified (`qa_status` `manual`). Per entry the editor chooses:
+  - **add to an edition** (`placement` `edition`): the upcoming edition or a held one; it is published with it, and
+    worker reruns keep it (the edition PUT replaces only `origin` `ai` stories);
+  - **publish now** (`placement` `desk`): it goes live at once in an "Editor's desk" strip on the front page and joins
+    the next edition that publishes.
+
+  How the Editor's desk works (`web/lib/desk.ts`): every story still belongs to an edition row, so reader queries keep
+  their shape. A desk story is hosted in the upcoming unpublished edition's row; `stories.desk_at` is when it went
+  live, and from then on it is immutable like a published story. The strip lists desk stories whose edition is not yet
+  published. When any edition publishes, every live desk story in another unpublished edition moves into it, so it
+  joins whichever edition publishes next, even when a slot is skipped or a held edition is released first. A manual
+  story is not ready while it misses a language or while a `fill_language` or `story_image` job for it is queued or
+  running: a desk story goes live only when ready, and an edition that publishes while one of its manual stories is
+  not ready sends that story on to the upcoming edition instead of publishing it half-made.
+- **D13 Daily usage budget 12.** `DAILY_BUDGET_USD` (API-equivalent dollars on the subscription) defaults to 12, up
+  from 6, to make room for translations and manual-story jobs, which count toward it.
+
 ## Decisions of 28 September 2026 (they override anything below)
 
 The owner made six decisions after the first build. The rest of this document is kept as the history of how
@@ -84,13 +236,13 @@ The product is a bilingual newspaper that comes out three times a day, written b
 
 **Bilingual everything.** One switch (English or Urdu) applies to UI strings, dates, digits, story text and direction. The choice is remembered. Both languages are generated in the same run so the Urdu edition is never behind.
 
-**Admin panel.** Sources (URL, kind, group, language, perspective label, active flag, health), groups and briefs, X handles per group, topic keywords, edition schedule, a review queue that can hold an edition for approval before it goes public, run logs with per-source success and cost, manual corrections, and theme defaults.
+**Admin panel.** Sources (URL, kind, group, language, perspective label, active flag, health), groups and briefs, X handles per group, topic keywords, edition schedule, a review queue (since D14 editions publish first and editors review each story afterwards; holding an edition for approval is an optional policy), run logs with per-source success and cost, manual corrections, and theme defaults.
 
 **Themes.** Colour palettes (classic, night, kaghaz, sabz, chandni, shab, or follow the device) and, on top of any of them, the Wazeh reading mode: larger type with a three-step size control, one column, bigger buttons, underlined links; read-aloud is planned (D4). High contrast is a separate switch for any palette and mode, on by default when the device asks for more contrast (`prefers-contrast: more`). The admin sets the site's default palette and mode (Settings, `default_theme` and `default_mode`); a reader's own choices apply at once on the device and, signed in, are saved to their account so they follow them to other devices. More palettes can be added as CSS token sets (`web/scripts/contrast-check.mjs` checks each one).
 
-**Readers.** Family and community readers in Pakistan and the diaspora, many of whom read Urdu more comfortably than English. Reader accounts are in v1, by invitation only (D2), with a Saved shelf, downloads and offline reading (D3); comments and a personalised feed stay out of scope until the editions themselves are excellent.
+**Readers.** Family and community readers in Pakistan and the diaspora, many of whom read Urdu more comfortably than English. Reader accounts are in v1, by invitation only (D2), with a Saved shelf, downloads and offline reading (D3); comments stay out of scope, and a personalised feed waits until the editions themselves are excellent: readers' relevance feedback is collected now (D8) for a later "For you" ordering that never touches the shared edition.
 
-**Non-negotiables.** Never invent a fact that is not in a source. Show the outlets and their leanings on every story. Disclose that the text is AI-written from listed sources. Keep the three-edition rhythm even when a breaking story tempts a fourth.
+**Non-negotiables.** Never invent a fact that is not in a source. Show the outlets and their leanings on every story. Disclose that the text is AI-written from listed sources (an editor's manual story says it was written by an editor, D12). Keep the three-edition rhythm even when a breaking story tempts a fourth (the Editor's desk strip, D12, is the editor's own exception, and its stories join the next edition).
 
 ## Fetching stack and bot checks
 
@@ -125,7 +277,7 @@ Skip: FlareSolverr (its README admits no solver works on 2026 Cloudflare), rebro
 
 The Claude in Chrome extension pauses on CAPTCHAs by design and is fingerprintable, so stealth fetching belongs in worker code, not in Claude clicking through challenges.
 
-Legal and etiquette: Cloudflare's 15 September 2026 defaults block declared AI agents on ad-bearing pages of free-plan zones, so an undeclared stealth browser is impersonating a human; keep volume low, cache, honour robots.txt disallows and crawl delays, obey 429s, store links and short extracts rather than full text, and never circumvent paywalls. US courts (hiQ v LinkedIn 2022, Meta v Bright Data 2024) treat logged-out reading of public pages as lawful; logging in creates clickwrap exposure, so never automate a personal social account. zendriver is AGPL and Firecrawl self-hosted is AGPL, fine for an internal worker.
+Legal and etiquette: Cloudflare's 15 September 2026 defaults block declared AI agents on ad-bearing pages of free-plan zones, so an undeclared stealth browser is impersonating a human; keep volume low, cache, honour robots.txt disallows and crawl delays, obey 429s, store links and short extracts rather than full text (the one exception is a reader-requested full Urdu translation of a cited article, shown only inside the site, D9), and never circumvent paywalls. US courts (hiQ v LinkedIn 2022, Meta v Bright Data 2024) treat logged-out reading of public pages as lawful; logging in creates clickwrap exposure, so never automate a personal social account. zendriver is AGPL and Firecrawl self-hosted is AGPL, fine for an internal worker.
 
 ## X/Twitter handles
 
@@ -175,7 +327,7 @@ The recommended mix lands around 50 to 70 dollars a month before X costs. An age
 
 Laptop preparation, all one-time: enable linger, tell logind to ignore the lid switch (the default ignores inhibitors when the lid closes), set GNOME's on-AC sleep to nothing, wrap each run in `systemd-inhibit`, use `KillSignal=SIGINT` so an interrupted turn ends cleanly, lock with `flock`, and add an `OnFailure` unit that posts the last 40 log lines to ntfy or a Telegram bot. A missed heartbeat should alert too, so a silently skipped run is noticed.
 
-Reliability rules the worker enforces in code: a run id of date plus slot so reruns are idempotent; reject any story that cites a URL not present in the input; require at least one source per story; a QA pass that sends anything below a confidence threshold to the review queue instead of the front page; a daily spend ceiling that skips a run; and a catch-up policy where a slot more than two hours late runs as a backfill without notifications.
+Reliability rules the worker enforces in code: a run id of date plus slot so reruns are idempotent; reject any story that cites a URL not present in the input; require at least one source per story; a QA pass that flags anything below a confidence threshold for the editors (since D14 it is published marked "Check raised a question", with the check's note, until an editor reviews it; the `auto` and `hold` policies still hold the edition instead); a daily spend ceiling that skips a run; and a catch-up policy where a slot more than two hours late runs as a backfill without notifications.
 
 Others who run Claude on a timer converged on the same shape: pre-fetch in code, keep Claude's input small, cap turns and budget, log every run, and treat a green run as different from a correct edition. Examples are linked on the Research tab.
 
@@ -200,7 +352,7 @@ Each run is keyed by edition (date plus slot). Rerunning a slot overwrites its d
 2. **Dedupe and window.** Canonicalise URLs (strip tracking parameters, Google News redirects), drop exact and near-duplicate titles, cap items per source, and attach each group's perspective labels. Optional: a small embedding pass to pre-group near-duplicates so Claude sees fewer, cleaner items.
 3. **Curate per group (Claude).** Input: the numbered items with perspective labels, the group's editor brief, and the previous edition's story threads (id and title). Output: the JSON below. This is today's contract plus thread linking and attached posts. One call per group, run in parallel.
 4. **Write Urdu (Claude, separate pass).** Input: the English stories, an Urdu style guide (news register, short sentences, no calques) and the glossary of names and transliterations. Output: Urdu title, summary, why-it-matters and contested line per story, plus any new glossary entries. A separate pass gives better Urdu and lets the glossary enforce consistent spellings for people and places.
-5. **QA (Claude).** For each story: is every claim traceable to a listed item, do the numbers match, is the Urdu faithful to the English, is any wording loaded? Output a status per story (verified, flagged with reason). Flagged stories go to the review queue or below the fold, never silently to the front page.
+5. **QA (Claude).** For each story: is every claim traceable to a listed item, do the numbers match, is the Urdu faithful to the English, is any wording loaded? Output a status per story (verified, flagged with reason). Flagged stories are never silent: since D14 they are published with a "Check raised a question" pill and the check's note until an editor reviews them (Admin → Review), or, under the `auto` policy, they hold the edition for review.
 6. **Publish.** Write the edition and its stories through the authenticated publish API, mark it published, trigger the web app's revalidation, snapshot the edition JSON to disk so the archive survives any database problem.
 7. **Notify and report.** Send the edition to the delivery channels, then write the run log: per-source success, items collected, tokens and cost, duration, and anything flagged. A failed run pings you.
 
@@ -232,12 +384,12 @@ Postgres holds everything the worker produces and everything the admin configure
 | Entity | Key fields | Notes |
 | --- | --- | --- |
 | Group | slug, name\_en, name\_ur, order, brief, story\_count, hidden\_in\_themes | One per category (Pakistan, India, Afghanistan, Middle East, Muslim World, World) |
-| Source | group, name, kind (rss, html, x, telegram, youtube), url, lang, perspective, fetcher\_tier, active, last\_ok\_at, fail\_streak | Perspective label is shown to readers; fetcher\_tier is auto-escalated when a tier keeps failing |
+| Source | group, name, kind (rss, html, gnews, youtube, telegram, sitemap, gdelt, manual), url, lang, perspective, fetcher\_tier, active, last\_ok\_at, fail\_streak | Perspective label is shown to readers; fetcher\_tier is auto-escalated when a tier keeps failing; `manual` sources hold editors' links (D12) |
 | Handle | group, platform (x, bluesky, telegram), handle, display\_name, role (journalist, official, outlet), active | Watched for latest relevant posts |
 | Topic | group, keywords\_en, keywords\_ur, boost | Steers relevance; not a hard filter |
 | Item | source, url\_canonical, title, text, published\_at, lang, content\_hash, run, feed metadata | Raw fetched article, kept forever; headline changes in item revisions |
 | Edition | date, slot (subh, dopahar, shaam), status (draft, review, published), published\_at, run, snapshot\_path | Immutable after publish |
-| Story | edition, group, thread, title\_en, title\_ur, summary\_en, summary\_ur, why\_en, why\_ur, tag, coverage, contested\_en, contested\_ur, angles (json), qa\_status, qa\_note, order | The editorial contract, bilingual |
+| Story | edition, group, thread, title\_en, title\_ur, summary\_en, summary\_ur, why\_en, why\_ur, tag, coverage, contested\_en, contested\_ur, angles (json), qa\_status, qa\_note, order, origin (ai, manual), created\_by, placement (edition, desk), desk\_at, language\_filled, reviewed\_at, reviewed\_by, withdrawn\_at, withdrawn\_by, withdraw\_note\_en, withdraw\_note\_ur | The editorial contract, bilingual; manual stories and the Editor's desk (D12); editorial review and withdrawal, metadata only (D14) |
 | StorySource / StoryPost | story, item, is\_primary | Many-to-many links to the items behind a story |
 | Thread | slug, title\_en, title\_ur, first\_seen, last\_seen | A developing story across editions |
 | Glossary | term\_en, term\_ur, kind (person, place, org), locked | Enforced spellings for the Urdu pass |
@@ -246,6 +398,10 @@ Postgres holds everything the worker produces and everything the admin configure
 | Correction | story, text\_en, text\_ur, created\_at | Appended to a published story, never overwrites |
 | Setting | key, value | Schedule, default theme, notification targets |
 | User | email, name, role (owner, editor, reader), status, password hash, prefs | Invite-only accounts with sessions (D2); replaced the planned AdminUser |
+| StoryFeedback / StoryReport | reader, story, value (1, -1), reasons / text, status (open, resolved, dismissed) | Relevance votes and mistake reports (D8) |
+| WorkerJob | kind (translate\_article, fill\_language, story\_image), payload, dedupe\_key, status, attempts, lease, result | Work the site asks of the worker between editions (docs/API.md § Jobs) |
+| ArticleTranslation | item, lang (ur), status, title, body, faithfulness check, cost | Reader-requested full Urdu translations (D9) |
+| XListProposal / AuditLog | group, list id, verification; who did what in the admin | Proposed public X Lists awaiting an owner (D10); the admin's log (D12) |
 
 Admin panel screens, in the order you will use them:
 
@@ -253,7 +409,8 @@ Admin panel screens, in the order you will use them:
 - **Groups and briefs.** Reorder groups, edit the editor brief in English, set the story count, choose which themes show the group.
 - **Handles.** Add X, Bluesky or Telegram handles to a group, see the last post fetched and when.
 - **Topics and glossary.** Keywords per group; the glossary of names with a lock so a spelling never drifts.
-- **Editions.** Calendar of editions with status; open a draft to reorder, edit, drop or unflag stories in either language; publish or hold. This is the review queue.
+- **Editions.** Calendar of editions with status; open a draft to reorder, edit, drop or unflag stories in either language; publish or hold (held editions exist under the `auto` and `hold` policies).
+- **Review (D14).** Published AI-written stories nobody has reviewed yet, flagged first: mark reviewed, add a correction, or withdraw.
 - **Runs.** Every run with cost, duration, per-source results and the raw log; a "run now" button for a slot.
 - **Settings.** Edition times, notification channels, default theme, AI disclosure text.
 
@@ -321,6 +478,8 @@ The Wazeh specification starts from WCAG 2.2 AAA where it is cheap and from Chin
 
 **Layout and interaction.** Sticky top bar with three big controls: text size, read aloud, contrast. Every target at least 48 by 48 CSS px with 8 px gaps; primary buttons full width and 56 px tall on mobile; a bottom navigation of at most four items at 64 px with an icon and an Urdu label; a back-to-top button after one and a half screens; a "more news" button instead of infinite scroll; no carousels, no auto-advance, no hover-only controls, no modals except confirmations. Every story shows the date and time in words plus the relative time, and a "new since your last visit" badge from a stored timestamp. Links are underlined with 6 px separation; icons always carry a label; the theme forces `animation: none` and honours reduced motion; keyboard focus is never hidden under the sticky bars.
 
+**On phones (29 September 2026, after the owner's test: the masthead was 600 px tall at 360 px in Wazeh A++).** Under 640 px, in standard and Wazeh alike, the top bar is one sticky row of the Tabayyun name (home), the other language and a labelled Menu button, 56 px tall (64 px in Wazeh); its type stays at Wazeh's UI size whatever the text size, so it never grows. Signed in, the bottom navigation holds Today, Search, the X board and Menu (56 px, 64 px in Wazeh, above the home indicator). Menu opens a full-screen sheet, the one modal besides confirmations: a native modal dialog (focus kept inside and given back, Escape and a large Close button) with the Wazeh text size at its very top (on a 360 px phone the bar cannot also hold it without dropping the language switch), then Wazeh on or off, the other pages (Saved, Archive, How this is made), the account (account page, the admin for editors, sign out) and every display choice. Signed out (sign-in, invite, reset) the bar shows the name, the language and Display, which opens the same sheet with the display choices only; there is no bottom navigation. On phones the edition's and a story's own headers are also tightened (small meta type run together, smaller chips sharing rows, a 16 px page gutter in Wazeh instead of 28 px), so an edition's title starts within about 180 px of the top at A++. On phones an edition's Save, Save as PDF and Download buttons sit at its end, under "You have read all of …", and the previous/next edition chips show only their arrows (the words stay for screen readers). On every screen a story's headline comes before its tags (must-read, developing story, manual entry, review, coverage), on its page and on its card; on phones the breadcrumb uses a short date. Measured at 360×740 and 390×844: the first story's headline starts at 523–611 px on an edition page (the bottom bar begins at 674 px) and at 110–165 px on a story page, in both languages, standard and Wazeh at every size. Tablets and desktops keep the full masthead (in Wazeh at A++ on a 768 px tablet it is still about 425 px tall; a follow-up could give Wazeh tablets the phone bar). Code: `web/components/masthead.tsx`, `site-menu.tsx`, `edition-header.tsx`, `edition-view.tsx`, `story-card.tsx`, `app/[locale]/story/[id]/page.tsx`, `app/globals.css` (phones).
+
 **Content changes, not just chrome.** Wazeh shows three groups by default (Pakistan, Muslim World, World), the "need to know" tier first, the Aasaan Urdu variant of each story (shorter sentences, a glossary), and the PDF and audio buttons before anything else.
 
 **Read aloud.** Pre-generate one MP3 per story at publish time and stream it with paragraph highlighting. Voice: Azure `ur-PK-AsadNeural` or `ur-PK-UzmaNeural`, the only Pakistani-accent Urdu at a major cloud, at 15 dollars per million characters and a speaking rate of 0.9. Google's `ur-IN-Chirp3-HD` voices are the most natural but Indian-accented; ElevenLabs Urdu (v3 and Multilingual v2 only) costs about six times more and is worth it only for a cloned anchor voice. Budget: audio for the 15 Wazeh-visible stories per edition, about 2 million characters a month, lands near 30 dollars. The browser's own `speechSynthesis` cannot be relied on, since Urdu voices ship only on some operating systems.
@@ -346,8 +505,8 @@ The best digests win on format discipline and visible provenance, not on more st
 
 Trust and provenance checklist for launch:
 
-- Disclosure on every story: "Written by AI from N sources. Reviewed by \[name\]. Code19 is editorially responsible." A 2025 study found a bare "AI-generated" label lowered the credibility of true items, so pair the label with the verification statement.
-- EU AI Act Article 50 applies if diaspora readers in the EU are served: AI text published to inform the public must be disclosed unless it had human review under a named editorially responsible entity. The review queue plus the named editor line satisfies this.
+- Disclosure on every story: "Written by AI from N sources. Reviewed by \[name\]. Code19 is editorially responsible." A 2025 study found a bare "AI-generated" label lowered the credibility of true items, so pair the label with the verification statement. Since D14 the review half is per story and honest: "Not yet reviewed by an editor" until someone reviews it, then "Reviewed by <name> · <date>".
+- EU AI Act Article 50 applies if diaspora readers in the EU are served: AI text published to inform the public must be disclosed unless it had human review under a named editorially responsible entity. Since D14 every AI-written story is disclosed as such, with whether and by whom it was reviewed, so the disclosure duty is met for unreviewed stories too.
 - Every claim links to a numbered source; an N-sources chip on every story; timestamps per story and per edition; a "since last edition" delta box.
 - Confidence labels where sources conflict: "single source, unconfirmed", "disputed", "confirmed by three or more independent outlets".
 - A corrections log per story, appended and dated, and a methodology page with the full source list and every X handle watched (for every signed-in reader; since D2 nothing is public).
@@ -400,9 +559,9 @@ The two risks that could stop the product are X closing its embed endpoint and A
 | Anthropic changes subscription automation rules again | Medium; changed three times in 2026 | The worker runs on the subscription through Claude Code with a daily usage ceiling; `teenpehr health` shows whether it is signed in. If the rules change, the fallback is an API key, which today's code refuses by design, so it would be a deliberate code change |
 | Telegram blocked in Pakistan | Certain | Post from the cloud publish hook; WhatsApp channel and PDF are the Pakistani reach |
 | Font licensing | Certain if Jameel Noori is embedded | OFL fonts only; Mehr only with counsel on share-alike |
-| Legal exposure from scraping and reuse | Low at this volume | Snippets and links only, logged-out endpoints, no personal accounts, robots.txt and rate limits honoured, a methodology page for every reader |
-| Cost creep | Medium | Daily spend ceiling in the worker, per-run cost in the admin, one dry-run week before each model change |
-| EU AI Act if diaspora readers are served | Low | Disclosure line with a named editor and human review of flagged stories |
+| Legal exposure from scraping and reuse | Low at this volume | Snippets and links only (except reader-requested full Urdu translations of cited articles, kept inside the login wall and labelled, D9), logged-out endpoints, no personal accounts, robots.txt and rate limits honoured, paywalls never bypassed, a methodology page for every reader |
+| Cost creep | Medium | Daily usage ceiling in the worker (`DAILY_BUDGET_USD`, 12 API-equivalent dollars since D13, translations and jobs included), per-run cost in the admin, per-reader translation limits, one dry-run week before each model change |
+| EU AI Act if diaspora readers are served | Low | Per-story disclosure (written by AI, reviewed or not, and by whom, D14), named editor in charge, human review of flagged stories first |
 | Indian and some Middle East hosts unreachable from Pakistani ISPs | Certain today | Per-source SOCKS route through the Hetzner server in Germany, which also resolves DNS there; Google News site queries for Indian Express and Al Jazeera, which block datacenter IPs |
 
 Decisions only you can make:
@@ -410,11 +569,11 @@ Decisions only you can make:
 - [x] Name: Tabayyun (تبیُّن), decided 28 September 2026 (D1). Teen Pehr, Sarnama and Nashriyat were the earlier candidates.
 - [ ] Edition times: 07:00, 13:00 and 19:30 Pakistan time are proposed.
 - [ ] Wazeh body default: Naskh (recommended by the evidence) or Nastaliq (the familiar look); decide after the five-reader test.
-- [ ] Publishing policy: auto-publish with flagged stories held (recommended) or hold every edition for approval.
+- [x] Publishing policy: publish every edition at once and review afterwards, story by story (D14, 29 September 2026); holding when a story is flagged (`auto`) or always (`hold`) stays selectable.
 - [ ] Groups at launch: the six proposed; keep deskboard's AI, robotics and science topics as a private "Tech" group or leave them in deskboard only.
 - [x] Billing: the Claude subscription through Claude Code on this laptop, later a dedicated one (decided 28 September 2026); no API key. Usage limits are shared with interactive Claude Code use on the same account.
 - [ ] Hosting: Vercel or Cloudflare for the app; Neon or Supabase for Postgres.
-- [ ] The named human editor on every story's disclosure line.
+- [x] The named human editor: each reviewed story names its reviewer (D14); Settings' editor name is the "editor in charge" in the footer.
 - [ ] Urdu digits: Western by default (CLDR) or Urdu digits, at least for Wazeh (each reader can now choose, D4).
 - [ ] Landing language: Urdu first or English first for a new visitor.
 
