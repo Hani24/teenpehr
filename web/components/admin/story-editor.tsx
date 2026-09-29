@@ -1,24 +1,38 @@
+import Link from "next/link";
 import { updateStory, addCorrection, hideStoryImage } from "@/lib/admin/actions";
 import { Field, Input, Textarea, Select, Button } from "@/components/admin/form";
 import type { StoryFull } from "@/lib/queries";
 import { fmtDate } from "@/lib/admin/util";
 import { mediaUrl, sortedVariants } from "@/lib/media";
+import { WithdrawForm } from "./withdraw-form";
 
 /**
  * One story in the edition editor. `hiderName`: who hid its image, when it is hidden (a published story).
+ * `owner`: the viewer is an owner (the withdraw form says who can undo it).
  */
-export function StoryEditor({ story, editionId, editable, hiderName }: { story: StoryFull; editionId: number; editable: boolean; hiderName?: string | null }) {
+export function StoryEditor({ story, editionId, editable, hiderName, owner = false }: { story: StoryFull; editionId: number; editable: boolean; hiderName?: string | null; owner?: boolean }) {
   const s = story;
+  // Readers can see it (published, or live on the Editor's desk): review state and withdrawal apply (D14).
+  const live = !editable || !!s.deskAt;
   return (
-    <article id={`story-${s.id}`} className="card p-4">
+    <article id={`story-${s.id}`} className={`card p-4 ${s.withdrawnAt ? "opacity-70" : ""}`}>
       <header className="mb-2 flex flex-wrap items-center gap-2">
         <span className="meta">#{s.id} · order {s.order}</span>
+        {s.origin === "manual" && <span className="pill pill-soft">manual entry{s.createdByName ? ` · added by ${s.createdByName}` : ""}{s.placement === "desk" ? " · Editor's desk" : ""}</span>}
         <span className={`pill ${s.tag === "must-read" ? "pill-accent" : "pill-soft"}`}>{s.tag}</span>
         <span className={`pill pill-soft ${s.qaStatus === "flagged" ? "text-accent" : ""}`}>qa: {s.qaStatus}</span>
         {s.thread && <span className="pill pill-soft">thread: {s.thread.slug}</span>}
         {s.qaNote && <span className="meta">{s.qaNote}</span>}
       </header>
-      {editable ? (
+      {live && <ReviewState s={s} editionId={editionId} />}
+      {editable && s.origin === "manual" ? (
+        // D12: an editor's story has its own editor (language fill, placement, qa 'manual'); not this form.
+        <div className="grid gap-3 sm:grid-cols-2">
+          <p className="text-sm sm:col-span-2">An editor wrote this story by hand. <Link href={`/admin/stories/${s.id}`} className="font-semibold">Edit the manual story</Link> (its missing language is refilled from the editor&apos;s text there).</p>
+          <div><h3 className="font-semibold">{s.titleEn || "—"}</h3><p className="mt-1 text-sm">{s.summaryEn}</p></div>
+          <div lang="ur" dir="rtl"><h3 className="font-semibold leading-[2]">{s.titleUr || "—"}</h3><p className="mt-1 text-sm leading-[2.2]">{s.summaryUr}</p></div>
+        </div>
+      ) : editable ? (
         <form action={updateStory} className="grid gap-2 sm:grid-cols-2">
           <input type="hidden" name="story_id" value={s.id} /><input type="hidden" name="edition_id" value={editionId} />
           <Field label="Title (EN)"><Input name="title_en" defaultValue={s.titleEn} required /></Field>
@@ -56,6 +70,7 @@ export function StoryEditor({ story, editionId, editable, hiderName }: { story: 
       {s.corrections.length > 0 && (
         <ul className="mt-2 text-sm">{s.corrections.map((c) => <li key={c.id}><span className="meta">{fmtDate(c.createdAt)}</span> · {c.textEn}</li>)}</ul>
       )}
+      {live && !s.withdrawnAt && <div className="mt-3"><WithdrawForm storyId={s.id} back={`/admin/editions/${editionId}#story-${s.id}`} owner={owner} /></div>}
       {!editable && (
         <form action={addCorrection} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <input type="hidden" name="story_id" value={s.id} /><input type="hidden" name="edition_id" value={editionId} />
@@ -65,6 +80,27 @@ export function StoryEditor({ story, editionId, editable, hiderName }: { story: 
         </form>
       )}
     </article>
+  );
+}
+
+/** Where a live story's editorial review stands (D14), with the way to the Review page. */
+function ReviewState({ s, editionId }: { s: StoryFull; editionId: number }) {
+  if (s.withdrawnAt) {
+    return (
+      <p className="mb-2 rounded border border-accent p-2 text-sm">
+        <span className="pill pill-accent me-1">withdrawn</span> {fmtDate(s.withdrawnAt)}: readers see only that it was withdrawn and why.
+        {s.withdrawNoteEn && <> Note: {s.withdrawNoteEn}</>}{s.withdrawNoteUr && <span lang="ur" dir="rtl" className="ms-2">{s.withdrawNoteUr}</span>}{" "}
+        <Link href="/admin/review?show=withdrawn">Withdrawn stories</Link>
+      </p>
+    );
+  }
+  if (s.origin === "manual") return null; // an editor wrote it: no review state
+  return (
+    <p className="mb-2 text-sm">
+      {s.reviewedAt
+        ? <><span className="pill pill-soft text-ok">✓ reviewed</span> {fmtDate(s.reviewedAt)}{s.reviewer?.name ? ` by ${s.reviewer.name}` : ""}</>
+        : <><span className={`pill ${s.qaStatus === "flagged" ? "border border-warn text-warn" : "pill-soft"}`}>not reviewed</span> readers see &ldquo;{s.qaStatus === "flagged" ? "Check raised a question" : "Not reviewed yet"}&rdquo; · <Link href={`/admin/review?edition=${editionId}#story-${s.id}`}>Review it</Link></>}
+    </p>
   );
 }
 
