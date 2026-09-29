@@ -4,6 +4,8 @@ import { MARK_END, MARK_START, PAGE_SIZE, type StoryHit } from "@/lib/search";
 import { formatDate, langAttrs, localDigits, slotNames, type Locale, type UrduDigits } from "@/lib/urdu";
 import { dateAt } from "@/lib/view";
 import { TopicChips } from "@/components/topic-chips";
+import { ManualBadge } from "@/components/manual-badge";
+import { ReviewPill } from "@/components/review-badge";
 
 /** Text from ts_headline with its matches as <mark> (bold as well as tinted, so not by colour alone). */
 export function Marked({ text }: { text: string }) {
@@ -35,6 +37,9 @@ export async function StoryHits({ hits, locale, digits, groupNames }: { hits: St
               {" · "}{slotNames[h.slot][locale]}
               {groupNames !== false && <>{" · "}{locale === "ur" ? h.groupUr : h.groupEn}</>}
             </p>
+            {h.origin === "manual"
+              ? <p className="ui mt-2"><ManualBadge story={{ origin: h.origin, createdByName: h.createdByName, languageFilled: null }} /></p>
+              : <p className="ui mt-2"><ReviewPill story={{ origin: h.origin, qaStatus: h.qaStatus, reviewedAt: h.reviewedAt }} /></p>}
             {h.snippet && <p className="prose mt-2 text-ink-2" {...langAttrs(h.snippetLang, locale)}><Marked text={h.snippet} /></p>}
             <div className="mt-2"><TopicChips topics={h.topics} locale={locale} label={t("inStory")} max={3} /></div>
           </li>

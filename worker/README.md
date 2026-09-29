@@ -38,7 +38,8 @@ Environment (all optional except `SITE_URL` and `WORKER_TOKEN`; `edition` also n
 CLI signed in, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, and exits 2 without it, dry runs
 included): `NEWS_MODEL_CURATE` / `NEWS_MODEL_URDU` / `NEWS_MODEL_QA`, `BUDGET_CURATE_USD` /
 `BUDGET_URDU_USD` / `BUDGET_QA_USD` (per Claude call, API-equivalent dollars), `DAILY_BUDGET_USD` (a
-daily usage ceiling in API-equivalent dollars: a run is skipped past it, and the image check stops),
+daily usage ceiling in API-equivalent dollars, default 12 (D13): a run is skipped past it, and the image check stops;
+jobs such as full-article translations count toward it),
 `IMAGES` (`0` turns story images off), `IMAGE_CHECK` (`0` skips the vision check; every image is then
 sent as graphic, i.e. blurred, unless `IMAGES_TRUST_UNCHECKED=1`), `NEWS_MODEL_IMAGE_CHECK` (default
 `NEWS_MODEL_QA`, Haiku 4.5), `BUDGET_IMAGE_CHECK_USD` (per check, default 0.05),
@@ -55,11 +56,13 @@ the fallback when a host is unreachable), `LOOKBACK_HOURS` (override the compute
 | --- | --- |
 | `teenpehr edition [--slot subh\|dopahar\|shaam] [--date YYYY-MM-DD] [--groups a,b] [--dry-run]` | One edition run. Without `--slot`, the latest slot that has passed (yesterday's shaam before 07:00), and afterwards any slot that fell due while it ran (at most two more; see *Catch-up* below). `--date` needs `--slot`. A run more than 2 h after its slot is a backfill: it still publishes but sends no notifications. A slot that is already published or held for review is skipped before anything is fetched or Claude is called (release a hold in the admin to redo it). `--groups` on a live run replaces only those groups in the draft (`"partial": true`); the other groups stay, and the edition is published only once it has every group (a `--groups` run that creates the edition leaves it a draft). |
 | `teenpehr edition --scheduled` | What the timer runs every 10 minutes: the latest slot due by the admin's edition times, once (see *The timer* below). Takes no other option. |
-| `teenpehr collect-x [--dry-run]` | Read every group's public X Lists via the syndication endpoint (5 s spacing) and store the posts. Runs every 30 minutes. |
+| `teenpehr collect-x [--dry-run]` | Read every group's public X Lists via the syndication endpoint (5 s spacing) and every watched Bluesky account via Bluesky's public API (`getAuthorFeed`, no login; 1 s spacing, `BLUESKY_SPACING_S`; a 429 stops the rest until the next run), and store the posts (the X board, D10). Runs every 30 minutes. |
 | `teenpehr check-sources [--group slug]` or `--url URL [--url URL]` | Fetch feeds once and print a table (route used, HTTP status, items, ms, newest item age). No writes. |
 | `teenpehr check-x <list_id>` | Fetch one X List and summarise it. |
 | `teenpehr resubmit out/failed-<run_id>.json [--no-publish]` | PUT (and publish) an edition whose delivery failed, without calling Claude again. The file is renamed to `resubmitted-…` on success. An edition held for review is refused (release the hold first); a file saved by an incomplete `--groups` run is only PUT. |
 | `teenpehr health` | Check the API is reachable with this token and that the Claude Code CLI is signed in (`claude auth status`: auth mode `login` or `oauth_token`, method, plan; no model call, no tokens). Exits 1 if either fails. |
+| `teenpehr jobs [--once]` | The job runner (`teenpehr-jobs.service`): readers' full-article Urdu translations and manual stories' missing language and image. See *Jobs* below. |
+| `teenpehr translate-url URL [--fetch-only]` | Fetch (and translate) one article locally, exactly as a translation job would; no writes to the web app. See *Jobs* below. |
 
 ## How an edition run works
 
@@ -69,7 +72,7 @@ the fallback when a host is unreachable), `LOOKBACK_HOURS` (override the compute
    direct fetch that fails twice with a DNS or connection error is retried through Germany.
    Google News titles lose their outlet suffix and links are decoded to the publisher URL, in
    one batch per feed through the same fetcher (host lock, fingerprint, 429 cooldown). Feed blurbs
-   under 200 characters get the article body (trafilatura, capped, at most `ARTICLE_FETCH_LIMIT`
+   under 200 characters get the article body (trafilatura, capped, at most `ARTICLE_FETCH_LIMIT`, default 150,
    per run) when the site's robots.txt allows the page, spaced by its Crawl-delay. A host that
    answers 429 is left alone for its Retry-After (15 minutes without one), across runs.
    Every request, and every redirect hop (followed by the fetcher, not by curl), goes to the
@@ -91,8 +94,11 @@ the fallback when a host is unreachable), `LOOKBACK_HOURS` (override the compute
    is dropped, and a group whose curation fails falls back to raw headlines. Then **Urdu**
    (`prompts/urdu.md`, locked glossary spellings mandatory, output normalised to Urdu code points)
    and **QA** (`prompts/qa.md`, verified or flagged per story). Fallback headlines, stories the
-   Urdu pass or QA left out, and every story of a failed pass are flagged, so the publish sends the
-   edition to review (with an ntfy note) instead of the front page.
+   Urdu pass or QA left out, and every story of a failed pass are flagged. Under the default publish
+   policy (`publish`, decision D14 in `docs/PLAN.md`) the edition still goes out: each flagged story
+   shows readers "Check raised a question" with the QA note, every story "Not reviewed yet", until an
+   editor reviews it on the admin's Review page. Under `auto` a flagged story sends the edition to
+   review instead (and `hold` holds every edition); the policy is the site's (Admin → Settings).
 5. **Images** (decision D6, `images/`), for every story, at most two downloads at a time and one per
    host: the image of what the story cites and nothing else. Candidates in order: the primary cited
    item's lead image (feed media, or the image its page gave during collection), else that article
@@ -122,7 +128,10 @@ the fallback when a host is unreachable), `LOOKBACK_HOURS` (override the compute
    without them.
 6. `PUT /editions/{date}/{slot}` then `POST /editions/{date}/{slot}/publish`; new glossary
    terms are proposed; the run row gets per-source results, tokens and cost; failures post to
-   ntfy. If the PUT or the publish fails (API error or web app unreachable), the finished
+   ntfy. After a publish, ntfy gets "<run> published, N flagged" with how many flagged stories await
+   review whenever QA flagged any (the success summary, with NTFY_ON_SUCCESS, otherwise); an edition
+   held for review (`auto`/`hold`) always gets "<run> held for review"; a backfill sends no success
+   message. If the PUT or the publish fails (API error or web app unreachable), the finished
    edition is written to `out/failed-<run_id>.json` and the run is marked failed; replay it with
    `teenpehr resubmit`. Item and post ids in that file are server ids (items are stored before
    curation), so nothing is re-fetched or re-written.
@@ -206,6 +215,68 @@ and later firings retry quietly until the app is back. `x-collector.timer` runs
 `uv run teenpehr collect-x` every 30 minutes; `germany-proxy.service` keeps the SOCKS proxy up.
 Both worker units pull in `teenpehr-web.service` and alert through ntfy on a non-zero exit. See
 `infra/README.md`.
+
+## Jobs: readers' translations and manual stories
+
+`teenpehr jobs` (the long-running `teenpehr-jobs.service`) does what the site queues between editions
+(`docs/API.md` § Jobs, `jobs/`): it claims one job at a time (`JOBS_CONCURRENCY`), reads its context,
+runs its handler and reports `done` or `fail`; idle it asks every `JOBS_POLL_S` (3) seconds.
+
+- **`translate_article`** (D9, a reader asked for a cited article in full in Urdu). `jobs/fulltext.py`
+  fetches the page once on the source's route: robots.txt for `teenpehr` and for `Claude-User` (either
+  disallowing it is `robots_disallowed`), Crawl-delay, 429 cooldowns, one request per host, each
+  redirect hop checked the same way; a hop to a sign-in or subscription page, a 401/402, a page its
+  publisher marks as not free (`isAccessibleForFree: false`, `article:content_tier` locked or metered) or
+  a teaser beside subscription prompts is `paywalled`; `noai` in the robots meta tag or X-Robots-Tag is
+  `robots_disallowed`; a host blocked from Pakistan with the Germany route down is `needs_germany`; a
+  403/404 is `unreachable` (never retried another way); an Urdu page, a video or a non-HTML file is
+  `not_article`; under `TRANSLATE_MIN_WORDS` (60) is `no_text`; over `TRANSLATE_MAX_WORDS` (8000) is
+  `too_long`. These go back as a `blocked` result (the reader gets the link instead). A 5xx, timeout
+  or 429 is retried later; on the job's last attempt it is `unreachable`. trafilatura extracts the text
+  one paragraph per line (its cross-call deduplication is off, so a retry never loses paragraphs).
+  `translate.py` then translates it with the Urdu model (`NEWS_MODEL_TRANSLATE`, default
+  `NEWS_MODEL_URDU`; `prompts/translate.md`) in chunks of about `TRANSLATE_CHUNK_WORDS` (900), in order,
+  every paragraph numbered in and out (a chunk that comes back incomplete is asked again once, then the
+  job fails and is retried), the locked glossary mandatory, the names earlier chunks used passed on,
+  figures kept in the source's digits, output normalised to Urdu code points. Checks: in code, every
+  figure of each source paragraph must be in its translation and no substantial paragraph may shrink
+  below 40% of its length; then Haiku (`NEWS_MODEL_TRANSLATE_CHECK`, default `NEWS_MODEL_QA`;
+  `prompts/translate_check.md`) compares every pair, headline included, for numbers, names, quotes,
+  omissions, additions and meaning. Flagged paragraphs are translated again once (`TRANSLATE_REPAIR`),
+  the checks run again, and the result's `check_ok` and `check_note` say what they found (the note
+  also lists what the first check flagged). The body is plain text, paragraphs separated by a blank
+  line, in the source's order; `source_text_hash` is the SHA-256 of the extracted text, so an unchanged
+  article with a done translation is not redone. Per call `BUDGET_TRANSLATE_USD` (1.0) and
+  `BUDGET_TRANSLATE_CHECK_USD` (0.3); per article `TRANSLATE_MAX_USD` (3.0): an article that reaches it
+  before it is done is `too_long`, final, so it is never paid for twice. A 400-word Dawn article
+  cost about $0.13 API-equivalent (translation, check, one repaired paragraph, second check).
+- **`fill_language`** (D12, a manual story's missing side). Written from the editor's fields only
+  (`prompts/fill_language.md`; model `NEWS_MODEL_FILL`, default the Urdu model for Urdu and the curate
+  model for English): a field the editor left empty stays empty, and a text with a figure the editor did
+  not write is asked again once and then refused, so an editor writes that side. A live or non-manual
+  story, or one whose source side lacks a title and summary, is refused without a Claude call.
+- **`story_image`** (D12). The linked page's lead image through `images/` exactly as an edition's
+  story image (robots.txt, Crawl-delay, the source's route, 8 MB cap, re-encoded stripped WebP, the
+  vision check, graphic when unchecked), uploaded as the item's image; none usable is a normal
+  `image_id: null` with the reason.
+
+Every job's Claude usage is added to today's spend (`out/state/spend-<date>.json`, the file edition
+runs use, under a lock), so `DAILY_BUDGET_USD` caps both. Over the ceiling, or with the Claude Code CLI
+signed out, translations and fills are not claimed (they wait queued; `story_image` still runs, its
+check failing safe). While `news-worker.service` is active, translations and images wait
+(`JOBS_PAUSE_DURING_EDITIONS`), so two processes never read one publisher at once. The first SIGINT or
+SIGTERM lets the current job finish for up to `JOBS_STOP_GRACE_S` (120) seconds; then, or on a second
+signal, it is cancelled and queued again. A report the web app could not take waits in
+`out/state/job-outbox/` and is sent before the next claim. Leases last `JOBS_LEASE_S` (1800) seconds;
+the site cannot extend one, so a job still running 90 seconds before its lease ends is cancelled and
+queued again rather than risk a second claim doing the same work. "Active" for the edition run means
+its unit's ActiveState (`activating` for the whole run of a oneshot unit), not `systemctl is-active`;
+an edition run started by hand outside systemd is not seen.
+
+| Command | What it does |
+| --- | --- |
+| `teenpehr jobs [--once] [--kinds a,b] [--concurrency N] [--max-jobs N]` | Run the job loop (the service), or with `--once` claim and do at most one job and print a report (exit 1 when it failed or the web app did not answer). |
+| `teenpehr translate-url URL [--route direct\|germany] [--title T] [--fetch-only] [--out file]` | The same fetch and translation for any article, locally: nothing is sent to the web app, the result goes to `out/translate-<hash>.json`. `--fetch-only` makes no Claude call (try the fetch rules on a site). The glossary is read from the web app when `WORKER_TOKEN` is set; the calls count toward the daily ceiling. |
 
 ## Development
 

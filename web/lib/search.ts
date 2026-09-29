@@ -66,6 +66,10 @@ export type StoryHit = {
   titleMarked: string | null;
   topics: string[]; eventType: string | null; date: string; slot: Slot;
   groupSlug: string; groupEn: string; groupUr: string;
+  /** D12: an editor's manual story carries its "Manual entry · added by <name>" tag in every list. */
+  origin: "ai" | "manual"; createdByName: string;
+  /** D14: an AI story's review pill in every list, as on the edition cards. */
+  qaStatus: string; reviewedAt: Date | null;
 };
 export type SearchResult = { hits: StoryHit[]; total: number; mode: "fts" | "fuzzy" | "browse" };
 
@@ -75,12 +79,15 @@ const toHit = (r: Row): StoryHit => ({
   titleMarked: typeof r.title_hl === "string" ? r.title_hl : null,
   topics: (r.topics as string[] | null) ?? [], eventType: (r.event_type as string | null) ?? null, date: String(r.date), slot: r.slot as Slot,
   groupSlug: String(r.group_slug), groupEn: String(r.group_en), groupUr: String(r.group_ur),
+  origin: r.origin === "manual" ? "manual" : "ai", createdByName: String(r.created_by_name ?? ""),
+  qaStatus: String(r.qa_status ?? ""), reviewedAt: r.reviewed_at ? new Date(r.reviewed_at as string | Date) : null,
 });
 const rows = async (q: SQL) => (await db.execute(q)) as unknown as Row[];
 
 /** Filters shared by search and browsing: published only, then group, topic, entity and date range. */
 function filterSql(p: Pick<SearchParams, "group" | "topic" | "entity" | "from" | "to">): SQL {
-  const parts: SQL[] = [sql`ed.status = 'published'`];
+  // Published, and not withdrawn by the editors (D14).
+  const parts: SQL[] = [sql`ed.status = 'published' and s.withdrawn_at is null`];
   if (p.group) parts.push(sql`g.slug = ${p.group}`);
   if (p.topic) parts.push(sql`s.topics @> array[${p.topic}]::text[]`);
   if (p.entity) parts.push(sql`exists (select 1 from story_entities se join entities en on en.id = se.entity_id where se.story_id = s.id and en.slug = ${p.entity})`);
@@ -103,7 +110,7 @@ export async function searchStories(p: SearchParams, locale: Locale): Promise<Se
   const where = filterSql(p);
   const offset = (p.page - 1) * PAGE_SIZE;
   const base = sql`from stories s join editions ed on ed.id = s.edition_id join groups g on g.id = s.group_id`;
-  const cols = sql`s.id, s.title_en, s.title_ur, s.topics, s.event_type, ed.date::text as date, ed.slot::text as slot, g.slug as group_slug, g.name_en as group_en, g.name_ur as group_ur`;
+  const cols = sql`s.id, s.title_en, s.title_ur, s.topics, s.event_type, ed.date::text as date, ed.slot::text as slot, g.slug as group_slug, g.name_en as group_en, g.name_ur as group_ur, s.origin::text as origin, s.created_by_name, s.qa_status::text as qa_status, s.reviewed_at`;
   if (!q) {
     const r = await rows(sql`select ${cols}, count(*) over() as total,
         case when ${locale} = 'ur' and s.summary_ur <> '' then 'ur' else 'en' end as snippet_lang,
@@ -176,11 +183,11 @@ const scopeSql = (s: Scope) => ("topic" in s
 /** Published stories in a topic or naming an entity, newest edition first. */
 export async function scopedStories(scope: Scope, page: number, locale: Locale): Promise<{ hits: StoryHit[]; total: number }> {
   const r = await rows(sql`select s.id, s.title_en, s.title_ur, s.topics, s.event_type, ed.date::text as date, ed.slot::text as slot,
-      g.slug as group_slug, g.name_en as group_en, g.name_ur as group_ur, count(*) over() as total,
+      g.slug as group_slug, g.name_en as group_en, g.name_ur as group_ur, s.origin::text as origin, s.created_by_name, s.qa_status::text as qa_status, s.reviewed_at, count(*) over() as total,
       case when ${locale} = 'ur' and s.summary_ur <> '' then 'ur' else 'en' end as snippet_lang,
       left(case when ${locale} = 'ur' and s.summary_ur <> '' then s.summary_ur else s.summary_en end, 320) as snippet
     from stories s join editions ed on ed.id = s.edition_id join groups g on g.id = s.group_id
-    where ed.status = 'published' and ${scopeSql(scope)}
+    where ed.status = 'published' and s.withdrawn_at is null and ${scopeSql(scope)}
     order by ed.date desc, ed.slot desc, s.group_id, s.order, s.id limit ${PAGE_SIZE} offset ${(page - 1) * PAGE_SIZE}`);
   return { hits: r.map(toHit), total: Number(r[0]?.total ?? 0) };
 }
@@ -193,7 +200,7 @@ export async function weeklyCounts(scope: Scope, weeks = 12): Promise<WeekCount[
                              date_trunc('week', (now() at time zone 'Asia/Karachi')::date), interval '1 week')::date as week)
     select w.week::text as week, count(s.id)::int as count from w
     left join editions ed on ed.status = 'published' and date_trunc('week', ed.date)::date = w.week
-    left join stories s on s.edition_id = ed.id and ${scopeSql(scope)}
+    left join stories s on s.edition_id = ed.id and s.withdrawn_at is null and ${scopeSql(scope)}
     group by w.week order by w.week`);
   return r.map((x) => ({ week: String(x.week), count: Number(x.count) }));
 }
@@ -204,7 +211,7 @@ export async function relatedEntities(scope: Scope, limit = 12): Promise<EntityR
   const self = "entityId" in scope ? sql`and en.id <> ${scope.entityId}` : sql``;
   const r = await rows(sql`select en.slug, en.name_en, en.name_ur, en.kind::text as kind, count(distinct s.id)::int as count
     from stories s join editions ed on ed.id = s.edition_id join story_entities se on se.story_id = s.id join entities en on en.id = se.entity_id
-    where ed.status = 'published' and ${scopeSql(scope)} ${self}
+    where ed.status = 'published' and s.withdrawn_at is null and ${scopeSql(scope)} ${self}
     group by en.id order by count desc, max(ed.date) desc limit ${limit}`);
   return r.map((x) => ({ slug: String(x.slug), nameEn: String(x.name_en), nameUr: String(x.name_ur), kind: String(x.kind), count: Number(x.count) }));
 }
@@ -214,7 +221,7 @@ export async function relatedTopics(scope: Scope, limit = 8): Promise<Array<{ to
   const self = "topic" in scope ? sql`and t.topic <> ${scope.topic}` : sql``;
   const r = await rows(sql`select t.topic, count(*)::int as count
     from stories s join editions ed on ed.id = s.edition_id cross join lateral unnest(s.topics) as t(topic)
-    where ed.status = 'published' and ${scopeSql(scope)} ${self}
+    where ed.status = 'published' and s.withdrawn_at is null and ${scopeSql(scope)} ${self}
     group by t.topic order by count desc limit ${limit}`);
   return r.map((x) => ({ topic: String(x.topic), count: Number(x.count) })).filter((x) => isTopic(x.topic));
 }
@@ -227,7 +234,7 @@ export async function getEntityBySlug(slug: string): Promise<EntityPage | null> 
       count(distinct s.id)::int as mentions, min(ed.published_at) as first, max(ed.published_at) as last
     from entities en join story_entities se on se.entity_id = en.id join stories s on s.id = se.story_id
     join editions ed on ed.id = s.edition_id and ed.status = 'published'
-    where en.slug = ${slug} group by en.id`);
+    where en.slug = ${slug} and s.withdrawn_at is null group by en.id`);
   if (!r) return null;
   const date = (v: unknown) => (v ? new Date(v as string) : null);
   return { id: Number(r.id), slug: String(r.slug), kind: String(r.kind), nameEn: String(r.name_en), nameUr: String(r.name_ur), aliases: (r.aliases as string[]) ?? [], mentions: Number(r.mentions), first: date(r.first), last: date(r.last) };
@@ -236,7 +243,7 @@ export async function getEntityBySlug(slug: string): Promise<EntityPage | null> 
 /** Published stories per topic, for the topic index on the search page. */
 export const topicCounts = cache(async (): Promise<Map<string, number>> => {
   const r = await rows(sql`select t.topic, count(*)::int as count from stories s join editions ed on ed.id = s.edition_id
-    cross join lateral unnest(s.topics) as t(topic) where ed.status = 'published' group by t.topic`);
+    cross join lateral unnest(s.topics) as t(topic) where ed.status = 'published' and s.withdrawn_at is null group by t.topic`);
   return new Map(r.map((x) => [String(x.topic), Number(x.count)]));
 });
 

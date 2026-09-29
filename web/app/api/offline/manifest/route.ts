@@ -6,8 +6,11 @@ import { db, schema } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { isMediaFileName, mediaUrl, sortedVariants } from "@/lib/media";
 import { wantsImages } from "@/lib/offline-html";
-import { offlineManifest, type OfflineManifest } from "@/lib/saved";
-import type { Slot } from "@/lib/urdu";
+import { offlineManifest, OFFLINE_MAX_PAGES, type OfflineManifest, type OfflinePage } from "@/lib/saved";
+import { getDeskStories } from "@/lib/queries";
+import { storyVisibleSql } from "@/lib/desk";
+import { storyRev } from "@/lib/review-state";
+import { picked, type Locale, type Slot } from "@/lib/urdu";
 
 /*
  * GET /api/offline/manifest?locale=en|ur: the pages the service worker keeps for offline reading
@@ -43,7 +46,7 @@ async function mediaFor(storyIds: number[]): Promise<string[]> {
   const rows = await db.select({ id: stories.id, variants: images.variants }).from(stories)
     .innerJoin(images, eq(images.id, stories.imageId))
     .innerJoin(editions, eq(editions.id, stories.editionId))
-    .where(and(inArray(stories.id, storyIds), isNull(stories.imageHiddenAt), eq(editions.status, "published"), cited));
+    .where(and(inArray(stories.id, storyIds), isNull(stories.imageHiddenAt), storyVisibleSql, cited)); // published, or live on the Editor's desk
   const byStory = new Map(rows.map((r) => [r.id, r.variants]));
   const out: string[] = [];
   const seen = new Set<string>();
@@ -58,6 +61,22 @@ async function mediaFor(storyIds: number[]): Promise<string[]> {
     if (out.length >= MEDIA_MAX) break;
   }
   return out;
+}
+
+/** Put the desk stories' pages into `manifest` after its editions (in place, within the page cap); their ids. */
+async function addDeskPages(manifest: OfflineManifest, locale: Locale): Promise<number[]> {
+  const desk = await getDeskStories();
+  const known = new Set(manifest.pages.map((p) => p.url));
+  const room = Math.max(0, OFFLINE_MAX_PAGES - manifest.pages.length);
+  const pages: OfflinePage[] = desk.map((s): OfflinePage => {
+    const t = picked(s, "title", locale);
+    return { url: `/${locale}/story/${s.id}`, kind: "story", title: t.text, ...(t.lang === locale ? {} : { lang: t.lang }), rev: storyRev(s) };
+  }).filter((p) => !known.has(p.url)).slice(0, room);
+  if (!pages.length) return [];
+  let at = 0;
+  manifest.pages.forEach((p, i) => { if (p.kind !== "story") at = i + 1; });
+  manifest.pages.splice(at, 0, ...pages);
+  return pages.map((p) => Number(STORY_PATH.exec(p.url)?.[1]));
 }
 
 export async function GET(req: Request) {
@@ -76,8 +95,12 @@ export async function GET(req: Request) {
     offline: to("title"),
     edition: (slot: Slot) => ts(`${slot}Long`),
   });
+  // The Editor's desk (D12): the kept front page links to these stories before their edition is published,
+  // so they are kept too, right after the editions (the list is capped).
+  const deskIds = await addDeskPages(manifest, locale);
   const storyIds = manifest.pages.filter((p) => p.kind === "story").map((p) => Number(STORY_PATH.exec(p.url)?.[1])).filter((n) => Number.isSafeInteger(n) && n > 0);
   const media = wantsImages(user.prefs, req) ? await mediaFor(storyIds) : [];
-  const body: OfflineManifest & { media: string[] } = { ...manifest, version: `${manifest.version}.${media.length}`, media };
+  const deskTag = deskIds.length ? `.d${deskIds.join("_")}` : "";
+  const body: OfflineManifest & { media: string[] } = { ...manifest, version: `${manifest.version}${deskTag}.${media.length}`, media };
   return NextResponse.json(body, noStore);
 }

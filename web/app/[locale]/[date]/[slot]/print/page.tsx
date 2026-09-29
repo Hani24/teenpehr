@@ -8,6 +8,9 @@ import { isEditionDate, safeHref, sourcesByOutlet } from "@/lib/offline-html";
 import { dateAt, distinctSourceCount, outletsOf, storiesByGroup } from "@/lib/view";
 import { formatDate, formatHijri, formatTime, isLocale, langAttrs, localDigits, picked, SLOTS, type Locale, type Slot, type UrduDigits } from "@/lib/urdu";
 import { disclosureText } from "@/components/site-footer";
+import { manualDisclosure, manualTag } from "@/lib/manual-text";
+import { reviewCounts, reviewState } from "@/lib/review-state";
+import { reviewLineText, reviewPillText } from "@/lib/review-text";
 import { StoryImage } from "@/components/story-image";
 import { PrintButton } from "./print-button";
 import "@/app/print.css";
@@ -58,7 +61,10 @@ export default async function PrintPage({ params }: { params: Params }) {
   const now = new Date();
   const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
   const online = `${site}/${l}/${ed.date}/${ed.slot}`;
-  const reviewed = prefs.editorName ? t("edition.reviewedBy", { name: prefs.editorName }) : "";
+  // D14: how far editorial review has got, and the editor in charge (who is not claimed to have reviewed it all).
+  const review = reviewCounts(ed.stories);
+  const reviewedLine = review.total ? num(t(review.manual ? "review.editionCountAi" : "review.editionCount", { reviewed: review.reviewed, total: review.total })) : "";
+  const editor = prefs.editorName ? t.markup("review.editorInCharge", { name: prefs.editorName, n: (c) => c }) : "";
 
   return (
     <div className="print-doc mx-auto max-w-4xl px-[var(--gutter)] pb-16">
@@ -81,7 +87,7 @@ export default async function PrintPage({ params }: { params: Params }) {
           </p>
           <p className="print-meta">
             {ed.publishedAt && num(t("edition.compiledAt", { time: formatTime(ed.publishedAt, l, digits), count: distinctSourceCount(ed) }))}
-            {reviewed && <> · {reviewed}</>}
+            {reviewedLine && <> · {reviewedLine}</>}
           </p>
         </header>
 
@@ -97,7 +103,8 @@ export default async function PrintPage({ params }: { params: Params }) {
         })}
 
         <footer className="print-colophon">
-          <p>{disclosure}{reviewed ? ` ${reviewed}.` : ""}</p>
+          <p>{disclosure}</p>
+          {editor && <p>{editor}</p>}
           <p>{t("download.printedOn", { date: `${formatDate(now, l, { dateStyle: "long" }, digits)} · ${formatTime(now, l, digits)}` })}</p>
           <p>{t("download.onlineAt")} <span className="print-url" lang="en" dir="ltr">{online}</span></p>
         </footer>
@@ -123,9 +130,10 @@ function PrintStory({ story: s, locale: l, digits, labels, t }: { story: StoryFu
   return (
     <article className="print-story" aria-labelledby={`ps-${s.id}`}>
       <p className="print-tags">
+        {s.origin === "manual" && <><span className="print-pill">{manualTag(t, s)}</span> · </>}
         {s.tag === "must-read" && <><span className="print-pill">{t("tags.must-read")}</span> · </>}
         {s.thread && <>{t("story.thread")} · </>}
-        {s.qaStatus === "flagged" && <>{t("qa.flagged")} · </>}
+        {reviewState(s) === "flagged" ? <><b>{reviewPillText(t, s)}</b> · </> : reviewState(s) && <>{reviewPillText(t, s)} · </>}
         {t(`coverage.${cov}`)} · {num(t("story.sources", { count: outlets.length }))}
       </p>
       <h3 id={`ps-${s.id}`} {...langAttrs(title.lang, l)}>{title.text}</h3>
@@ -201,6 +209,13 @@ function PrintStory({ story: s, locale: l, digits, labels, t }: { story: StoryFu
             })}
           </ul>
         </>
+      )}
+      {/* An editor's story carries its own disclosure (D12); an AI story says so, and where its review stands (D14). */}
+      {s.origin === "manual"
+        ? <p className="print-small">{manualDisclosure(t, s)}</p>
+        : <p className="print-small">{num([t("review.aiWritten", { count: outlets.length }), reviewLineText(t, s, l, digits)].join(l === "ur" ? "۔ " : ". ") + (l === "ur" ? "۔" : "."))}</p>}
+      {s.origin !== "manual" && s.qaStatus === "flagged" && (
+        <p className="print-small">{s.reviewedAt ? t("review.checkHadNoted") : t("review.checkNoted")}{s.qaNote.trim() && <> <bdi className="latin" lang="en" dir="ltr">{s.qaNote.trim()}</bdi></>}</p>
       )}
     </article>
   );

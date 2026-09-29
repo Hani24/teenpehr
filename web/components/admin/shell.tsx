@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { getCurrentUser, roleAtLeast } from "@/lib/auth";
+import { reviewQueueCounts } from "@/lib/admin/review";
 import { Flash } from "./flash";
 
 const nav = [
-  ["/admin", "Dashboard"], ["/admin/editions", "Editions"], ["/admin/runs", "Runs"], ["/admin/insights", "Insights"], ["/admin/sources", "Sources"],
+  ["/admin", "Dashboard"], ["/admin/editions", "Editions"],
+  // D14: published stories no editor has reviewed yet (the count is shown beside it).
+  ["/admin/review", "Review"],
+  // D12 manual stories, D8 reports and feedback, D9 translations, and the worker's job queue.
+  ["/admin/stories", "Manual stories"], ["/admin/reports", "Reports"],
+  ["/admin/runs", "Runs"], ["/admin/jobs", "Jobs"], ["/admin/translations", "Translations"],
+  ["/admin/insights", "Insights"], ["/admin/feedback", "Feedback"], ["/admin/sources", "Sources"],
   ["/admin/groups", "Groups"], ["/admin/handles", "Handles"], ["/admin/glossary", "Glossary"], ["/admin/settings", "Settings"],
 ] as const;
 
 export async function AdminShell({ title, children, flash, actions }: { title: string; children: React.ReactNode; flash?: { ok?: string; error?: string }; actions?: React.ReactNode }) {
   const user = await getCurrentUser();
   const owner = !!user && roleAtLeast(user.role, "owner");
+  const review = user && roleAtLeast(user.role, "editor") ? await reviewQueueCounts() : null;
   return (
     <div className="flex min-h-dvh">
       <a href="#admin-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-ink">Skip to content</a>
@@ -18,7 +26,19 @@ export async function AdminShell({ title, children, flash, actions }: { title: s
         <p className="meta mb-4">admin</p>
         <nav aria-label="Admin">
           <ul className="space-y-1">
-            {nav.map(([href, label]) => <li key={href}><Link href={href} className="block rounded px-2 py-1 no-underline hover:bg-surface hover:underline">{label}</Link></li>)}
+            {nav.map(([href, label]) => (
+              <li key={href}>
+                <Link href={href} className="block rounded px-2 py-1 no-underline hover:bg-surface hover:underline">
+                  {label}
+                  {href === "/admin/review" && review && review.unreviewed > 0 && (
+                    <span className="ms-1 text-sm tabular-nums" title={`${review.unreviewed} published stories not reviewed yet, ${review.flagged} of them flagged by QA`}>
+                      <span className="pill pill-soft">{review.unreviewed}</span>
+                      {review.flagged > 0 && <span className="pill border border-warn text-warn ms-1">{review.flagged} flagged</span>}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
             {owner && <li><Link href="/admin/export" className="block rounded px-2 py-1 no-underline hover:bg-surface hover:underline">Exports</Link></li>}
             {owner && <li><Link href="/admin/users" className="block rounded px-2 py-1 no-underline hover:bg-surface hover:underline">Users</Link></li>}
           </ul>

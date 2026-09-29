@@ -32,9 +32,10 @@ import httpx
 from . import log
 from .api import ApiError, WorkerApi
 from .config import Settings
-from .fetch import article, gnews, rss, youtube
+from .fetch import article, gnews, kinds, rss
 from .fetch.http import Fetcher, FetchResult
 from .images import ImagePicker, ItemRef, PostRef, item_ref, post_ref, reused_urls
+from .jobs import budget
 from .llm import LLM, LLMError, LLMResult, load_prompt
 from .models import (
     AngleIn,
@@ -50,6 +51,7 @@ from .models import (
     ItemIn,
     ItemRecord,
     LlmStory,
+    PublishOut,
     QaOut,
     RunFinish,
     RunOutputIn,
@@ -223,6 +225,15 @@ def in_window(published: datetime | None, since: datetime, until: datetime | Non
     return published >= since and (until is None or published <= until)
 
 
+def round_robin[T](lists: list[list[T]]) -> list[T]:
+    """Every list's first element (in list order), then every list's second, and so on."""
+    out: list[T] = []
+    depth = max((len(xs) for xs in lists), default=0)
+    for i in range(depth):
+        out.extend(xs[i] for xs in lists if i < len(xs))
+    return out
+
+
 class Collector:
     """Fetch every feed, keep what falls in the window, dedupe per group.
 
@@ -269,8 +280,10 @@ class Collector:
         try:
             # A bounded (backfill) window fetches in full and leaves the validators alone: it stores
             # nothing published after `until`, so validators it recorded would make the next on-time
-            # run's 304 hide those entries, which the server never got.
-            res = self.fetcher.get(source.url, route=source.route, conditional=until is None)
+            # run's 304 hide those entries, which the server never got. Sitemaps and GDELT go through
+            # robots.txt first (fetch/kinds.py: feeds are fetched as feeds, the rest only where allowed).
+            feed = kinds.read(self.fetcher, source, conditional=until is None, allowed=self.articles.allowed)
+            res = feed.res
         except Exception as e:  # noqa: BLE001
             result.error = f"{type(e).__name__}: {str(e)[:200]}"
             result.ms = int((time.monotonic() - t0) * 1000)
@@ -285,19 +298,15 @@ class Collector:
             batch = SourceBatch(source, [], result)
             batch.timed_out = res.timed_out
             return batch
-        try:
-            if source.kind == "youtube":
-                entries = youtube.parse_channel_feed(res.content)
-            else:
-                entries = rss.parse_feed(res.content, feed_url=res.url)
-        except Exception as e:  # noqa: BLE001
-            result.error = f"parse: {type(e).__name__}: {str(e)[:200]}"
+        if feed.error is not None or feed.entries is None:
+            result.error = feed.error or "parse: nothing readable"
             # Validators recorded for a body nothing came out of would make the next run's 304 hide
             # these items for good; the next run fetches the feed in full instead.
             forget = getattr(self.fetcher, "forget", None)  # duck-typed test fetchers may not have it
             if forget:
                 forget(source.url)
             return SourceBatch(source, [], result)
+        entries = feed.entries
 
         items: list[ItemIn] = []
         also_seen: list[ItemIn] = []
@@ -418,13 +427,18 @@ class Collector:
         b.result.items = len(b.items)
 
     def collect(self, sources: list[Source], since: datetime, until: datetime | None = None) -> list[SourceBatch]:
-        fetchable = [s for s in sources if s.kind in ("rss", "gnews", "youtube")]
+        fetchable = [s for s in sources if s.kind in kinds.FETCHABLE_KINDS]
         skipped = [s for s in sources if s not in fetchable]
         for s in skipped:
             logger.info("skipping %s: kind %s not fetchable by this worker yet", s.name, s.kind)
         ex = ThreadPoolExecutor(max_workers=self.s.fetch_workers)
+        # One host's feeds go one at a time (host lock; GDELT's 5 s pace), so they are started in turn
+        # with other hosts' feeds rather than back to back, which would tie every thread to one lock.
+        # The batches come back in the sources' own order.
+        order = kinds.interleave_by_host([s.url for s in fetchable])
         try:
-            batches = list(ex.map(lambda s: self.fetch_source(s, since, until), fetchable))
+            done = list(ex.map(lambda i: self.fetch_source(fetchable[i], since, until), order))
+            batches = [b for _, b in sorted(zip(order, done, strict=True), key=lambda p: p[0])]
         except BaseException:
             # Interrupted (SIGINT from systemd): drop the queued feeds so the run can record itself
             # before the stop timeout, instead of waiting for every remaining fetch.
@@ -481,9 +495,10 @@ class GroupWork:
 
 
 def flag(story: StoryIn, note: str) -> None:
-    """Hold a story for the editor. The publish route sends an edition with any flagged story to
-    review instead of the front page; an unchecked story must never publish as "pending". Notes
-    accumulate (the API keeps 1000 characters)."""
+    """Mark a story for the editor. Under the default publish policy (D14, "publish") the edition still
+    goes out and the story shows readers "Check raised a question" with this note until an editor reviews
+    it; under "auto" the publish route holds the edition instead. An unchecked story must never publish
+    as "pending". Notes accumulate (the API keeps 1000 characters)."""
     story.qa_status = "flagged"
     story.qa_note = "; ".join(n for n in (story.qa_note, note.strip()) if n)[:1000]
 
@@ -494,7 +509,8 @@ def fallback_stories(gw: GroupWork, limit: int, *, digits: str = "latn", reason:
     Each keeps the outlet's own words in the outlet's own language: an Urdu source fills the Urdu
     fields (its English fields only say where it comes from, since the API requires them), any other
     source fills the English ones. Nothing here was written or checked by the editorial passes, so
-    every story is flagged and the edition waits for the editor instead of publishing unchecked."""
+    every story is flagged: readers see the automatic check's note on it until an editor reviews it (or,
+    under publish_policy "auto", the edition waits for the editor)."""
     ranked = sorted(gw.articles, key=lambda i: i.published or datetime.min.replace(tzinfo=UTC), reverse=True)
     note = "headline fallback, not written or checked by the editorial passes" + (f" ({reason})" if reason else "")
     stories: list[StoryIn] = []
@@ -877,18 +893,14 @@ class EditionRun:
         return path
 
     def _spend_today(self) -> float:
-        f = self.s.state_dir / f"spend-{self.now:%Y-%m-%d}.json"
-        try:
-            return float(json.loads(f.read_text()).get("usd", 0.0))
-        except (OSError, ValueError):
-            return 0.0
+        return budget.spent_today(self.s, self.now)
 
     def _record_spend(self) -> None:
         """Add this run's Claude usage (API-equivalent dollars) to today's total. Called once per run,
-        whatever the outcome (dry runs and interrupted runs included: their calls used tokens all the same)."""
-        f = self.s.state_dir / f"spend-{self.now:%Y-%m-%d}.json"
+        whatever the outcome (dry runs and interrupted runs included: their calls used tokens all the same).
+        It goes through jobs.budget.add_spend, which locks the file the job runner writes too (D13)."""
         with contextlib.suppress(OSError):
-            f.write_text(json.dumps({"usd": round(self._spend_today() + self.cost, 4)}))
+            budget.add_spend(self.s, self.cost, self.now)
 
     # ---- main -------------------------------------------------------------------------------
     def run(self) -> RunReport:
@@ -1014,10 +1026,12 @@ class EditionRun:
             image_items: dict[int, ItemRef] = {}
             image_posts: dict[int, PostRef] = {}
             for g in groups:
-                arts: list[NumberedItem] = []
+                per_source: list[list[NumberedItem]] = []
                 for b in batches:
                     if b.source.group_id != g.id:
                         continue
+                    mine: list[NumberedItem] = []
+                    per_source.append(mine)
                     for it in b.items:
                         if it.url_canonical not in id_map:
                             logger.warning("%s: the API returned no id for %s; skipped", g.slug, it.url)
@@ -1025,7 +1039,7 @@ class EditionRun:
                         db_id, is_new = id_map[it.url_canonical]
                         if db_id not in image_items:
                             image_items[db_id] = item_ref(db_id, it, b.source, b.result.route)
-                        arts.append(
+                        mine.append(
                             NumberedItem(
                                 idx=0,
                                 kind="article",
@@ -1041,7 +1055,11 @@ class EditionRun:
                                 is_new=is_new,
                             )
                         )
-                arts = arts[:MAX_ARTICLES_PER_GROUP]
+                # Over the cap, the list is taken round robin over the group's feeds (each newest first), so
+                # every source is heard rather than the first few filling it (D11 coverage).
+                arts = [a for xs in per_source for a in xs]
+                if len(arts) > MAX_ARTICLES_PER_GROUP:
+                    arts = round_robin(per_source)[:MAX_ARTICLES_PER_GROUP]
                 posts: list[NumberedItem] = []
                 try:
                     for p in self.api.get_posts(info.since, group=g.slug)[:MAX_POSTS_PER_GROUP]:
@@ -1189,15 +1207,7 @@ class EditionRun:
                     logger.warning("glossary update failed: %s", e)
             self._finish(run_id, "ok", source_results)
             report.status = "ok"
-            if pub and pub.status == "review":
-                ntfy(
-                    s.ntfy_topic,
-                    f"{info.run_id} held for review",
-                    f"{pub.flagged or 0} of {report.stories} stories flagged; approve or release it in the admin",
-                )
-            elif s.ntfy_on_success and not info.backfill:
-                summary = f"{report.stories} stories, ${self.cost:.2f}"
-                ntfy(s.ntfy_topic, f"{info.run_id} {report.publish_status}", summary)
+            self._notify_delivered(info, report, pub)
             return report
         except KeyboardInterrupt:
             # systemd stops the unit with SIGINT (manual stop or the TimeoutStartSec cap): record it.
@@ -1335,6 +1345,37 @@ class EditionRun:
             self._finish(self.api.start_run("edition", info.date, info.slot), "skipped", [], error=error)
         except Exception as e:  # noqa: BLE001
             logger.warning("could not record the skipped run: %s", e)
+
+    def _notify_delivered(self, info: SlotInfo, report: RunReport, pub: PublishOut | None) -> None:
+        """ntfy after a delivered edition. Held for review (publish_policy auto or hold): always, it needs
+        the editor. Published (D14, the default "publish" policy): every story is live marked "not
+        reviewed"; with flagged stories the message says how many await review (sent whenever it is not a
+        backfill, as they are the ones to look at first), otherwise the success summary only with
+        NTFY_ON_SUCCESS. A backfill sends no success message, as before."""
+        s = self.s
+        flagged = (pub.flagged or 0) if pub else 0
+        if pub and pub.status == "review":
+            ntfy(
+                s.ntfy_topic,
+                f"{info.run_id} held for review",
+                f"{flagged} of {report.stories} stories flagged; approve or release it in the admin",
+            )
+            return
+        if info.backfill:
+            return
+        total = (pub.stories if pub and pub.stories is not None else None) or report.stories
+        if pub and pub.status == "published" and flagged:
+            ntfy(
+                s.ntfy_topic,
+                f"{info.run_id} published, {flagged} flagged",
+                f"{total} stories published, marked not reviewed; {flagged} flagged by QA await review "
+                f"(admin, Review), ${self.cost:.2f}",
+            )
+        elif s.ntfy_on_success:
+            summary = f"{report.stories} stories, ${self.cost:.2f}"
+            if pub and pub.status == "published":
+                summary = f"{total} stories published, none flagged; they await review in the admin, ${self.cost:.2f}"
+            ntfy(s.ntfy_topic, f"{info.run_id} {report.publish_status}", summary)
 
     def _empty(self, report: RunReport, run_id: int | None, info: SlotInfo, why: str) -> RunReport:
         """The slot gets no edition. Nothing crashed, but somebody has to know: alert, and the CLI

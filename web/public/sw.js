@@ -17,7 +17,9 @@
  *   downloads, other origins, and any response that is not a plain 200 (redirects included).
  * - A navigation that fails with nothing kept gets /{locale}/offline, or a built-in page.
  * - Sync: the page posts {type: "tb:sync", manifest} (from /api/offline/manifest: the latest
- *   editions and their stories, and the reader's Saved shelf); pages are fetched one at a time.
+ *   editions and their stories, and the reader's Saved shelf); pages are fetched one at a time. A kept
+ *   page is fetched again when it is a day old or its review token (`rev`, D14) changed, and the
+ *   manifest's `drop` list (stories the editors withdrew) is deleted from the device first.
  * - Sign-out clears every cache (images included): the message {type: "tb:clear"}, a sign-in page that answers 200
  *   (it renders only for someone signed out; the logout route lands on ?ok=signed_out there), a page
  *   containing data-tb-offline="clear", or a sync that the server sends to sign in. A manifest for a
@@ -34,6 +36,12 @@ const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
 const MEDIA_VERSION = "v1";
 const MEDIA_CACHE = `${CACHE_PREFIX}media-${MEDIA_VERSION}`;
 const CACHED_AT = "x-tb-cached-at";
+/**
+ * What a kept page showed about editorial review (D14): the page's data-tb-rev token, kept as a header. A sync
+ * whose manifest gives a page another token fetches it again (an editor reviewed or withdrew a story since).
+ */
+const REV = "x-tb-rev";
+const REV_ATTR = /\bdata-tb-rev="([a-z0-9.]{1,40})"/;
 const STATE_KEY = "/__tb/state.json";
 const CLEAR_MARKER = 'data-tb-offline="clear"';
 const SIGNED_OUT_PARAM = "signedout";
@@ -235,9 +243,12 @@ function keepable(res) {
   return res.status === 200 && res.type === "basic" && !res.redirected && (res.headers.get("content-type") || "").includes("text/html");
 }
 
-/** The HTML as kept: the body as text, plus the time it was kept. */
+/** The HTML as kept: the body as text, plus the time it was kept and its review token (data-tb-rev), if any. */
 function stamped(text, res) {
-  return new Response(text, { status: 200, headers: { "Content-Type": res.headers.get("content-type") || "text/html; charset=utf-8", [CACHED_AT]: new Date().toISOString() } });
+  const headers = { "Content-Type": res.headers.get("content-type") || "text/html; charset=utf-8", [CACHED_AT]: new Date().toISOString() };
+  const rev = REV_ATTR.exec(text);
+  if (rev) headers[REV] = rev[1];
+  return new Response(text, { status: 200, headers });
 }
 
 /** A kept page as served: marked on <html> so the page can tell the reader it is a saved copy. */
@@ -349,6 +360,10 @@ async function sync(m, opts) {
   const gen = generation;
   const pagesCache = await caches.open(PAGES_CACHE);
   const staticCache = await caches.open(STATIC_CACHE);
+  // Withdrawn stories (D14): their kept copies go before anything else, so their text is not readable offline.
+  for (const u of Array.isArray(m.drop) ? m.drop.slice(0, 500) : []) {
+    if (typeof u === "string" && u.startsWith("/") && !u.startsWith("//") && READER_PAGE.test(u)) await pagesCache.delete(u);
+  }
   // On a data-saving connection, keep the editions and the shelf, not every story of every edition.
   const pages = m.pages.filter(validPage).filter((p) => !opts.saveData || p.kind !== "story" || p.shelf);
   const assets = new Set();
@@ -358,7 +373,8 @@ async function sync(m, opts) {
     if (gen !== generation) return { aborted: true };
     const hit = await pagesCache.match(p.url);
     const age = hit ? Date.now() - (Date.parse(hit.headers.get(CACHED_AT) || "") || 0) : Infinity;
-    if (hit && !p.fresh && age < PAGE_REFRESH_MS) {
+    const sameRev = typeof p.rev !== "string" || (hit && hit.headers.get(REV)) === p.rev;
+    if (hit && !p.fresh && age < PAGE_REFRESH_MS && sameRev) {
       kept++;
       continue;
     }

@@ -9,6 +9,9 @@ import { DEFAULT_PREFS, IMAGE_PREFS, storedPrefs, type ImagesPref } from "./auth
 import { dateAt, distinctSourceCount, outletsOf, storiesByGroup } from "./view";
 import { dirOf, formatDate, formatHijri, formatTime, localDigits, picked, TZ, type Locale, type Slot, type UrduDigits } from "./urdu";
 import type { SavedStory } from "./saved";
+import { manualDisclosure, manualTag } from "./manual-text";
+import { reviewCounts, reviewState } from "./review-state";
+import { reviewLineText, reviewPillText } from "./review-text";
 
 /*
  * Editions and the Saved shelf as ONE self-contained HTML file (decision D3): inline CSS, the
@@ -183,6 +186,7 @@ main>.edition:first-child>header{border-block-start:0;padding-block-start:0}
 .context{margin:0}
 .pill{display:inline-block;padding:.05em .55em;border-radius:999px;font-size:.85rem;font-weight:600;background:var(--surface-2);color:var(--ink-2)}
 .pill.accent{background:var(--accent);color:var(--accent-ink)}
+.pill.flag{background:transparent;border:1px solid currentColor}
 .contested{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:.25rem 1rem .5rem}
 .contested :is(h4,h5,h6){color:var(--warn)}
 .list{margin:.25rem 0;padding-inline-start:1.25rem}
@@ -384,8 +388,9 @@ function masthead(ctx: Ctx, extra: string): string {
 function colophon(ctx: Ctx, onlineUrl: string): string {
   const now = new Date();
   const when = `${formatDate(now, ctx.locale, { dateStyle: "long" }, ctx.digits)} · ${formatTime(now, ctx.locale, ctx.digits)}`;
-  const reviewed = ctx.editorName ? ` ${esc(ctx.t("edition.reviewedBy", { name: ctx.editorName }))}.` : "";
-  return `<footer class="colophon meta"><p>${esc(ctx.disclosure)}${reviewed}</p>`
+  // The site-wide line makes no claim about any one story (D14); the editor in charge is named, not as a reviewer.
+  const editor = ctx.editorName ? `<p>${esc(ctx.t.markup("review.editorInCharge", { name: ctx.editorName, n: (c) => c }))}</p>` : "";
+  return `<footer class="colophon meta"><p>${esc(ctx.disclosure)}</p>${editor}`
     + `<p>${esc(ctx.t("download.downloadedOn", { date: when }))}</p>`
     + `<p>${esc(ctx.t("download.onlineAt"))} <a href="${esc(onlineUrl)}" class="url" dir="ltr">${esc(onlineUrl)}</a></p></footer>`;
 }
@@ -409,9 +414,11 @@ function story(ctx: Ctx, s: StoryFull, level: number, anchor: string, contextLin
   const sub = h(level + 1);
   const cov = s.coverage ?? (outlets.length > 1 ? "broad" : "single-source");
   const pills = [
+    s.origin === "manual" ? `<span class="pill">${esc(manualTag(t, s))}</span>` : "",
     s.tag === "must-read" ? `<span class="pill accent">${esc(t("tags.must-read"))}</span>` : "",
     s.thread ? `<span class="pill">${esc(t("story.thread"))}</span>` : "",
-    s.qaStatus === "flagged" ? `<span class="pill">${esc(t("qa.flagged"))}</span>` : "",
+    // D14: whether an editor has reviewed it (nothing on a manual entry).
+    reviewState(s) ? `<span class="pill${reviewState(s) === "flagged" ? " flag" : ""}">${esc(reviewPillText(t, s))}</span>` : "",
     `<span>${esc(t(`coverage.${cov}`))}</span>`,
     `<span>${esc(num(t("story.sources", { count: outlets.length })))}</span>`,
   ].filter(Boolean).join(" · ");
@@ -461,6 +468,17 @@ function story(ctx: Ctx, s: StoryFull, level: number, anchor: string, contextLin
     }
     parts.push(`</ul>`);
   }
+  // An editor's story carries its own disclosure (D12); an AI story says so, and where its review stands (D14),
+  // with the automatic check's note when it raised a question.
+  if (s.origin === "manual") parts.push(`<p class="meta">${esc(manualDisclosure(t, s))}</p>`);
+  else {
+    const stop = l === "ur" ? "۔" : ".";
+    parts.push(`<p class="meta">${esc(num(`${t("review.aiWritten", { count: outlets.length })}${stop} ${reviewLineText(t, s, l, digits)}${stop}`))}</p>`);
+    if (s.qaStatus === "flagged") {
+      const note = s.qaNote.trim();
+      parts.push(`<p class="meta">${esc(s.reviewedAt ? t("review.checkHadNoted") : t("review.checkNoted"))}${note ? ` <bdi class="latin" lang="en" dir="ltr">${esc(note)}</bdi>` : ""}</p>`);
+    }
+  }
   const permalink = `${ctx.site}/${l}/story/${s.id}`;
   parts.push(`<p class="meta">${esc(ctx.t("download.onlineAt"))} <a href="${esc(permalink)}" class="url" dir="ltr">${esc(permalink)}</a></p>`);
   parts.push(`</article>`);
@@ -490,7 +508,9 @@ function edition(ctx: Ctx, ed: EditionFull, level: number, idPrefix: string): st
   out.push(`<p class="meta"><time datetime="${esc(ed.date)}">${esc(et.date)}</time> · ${esc(et.hijri)}</p>`);
   out.push(`<${h(level)} id="${idPrefix}e-${ed.id}-h">${esc(et.title)}</${h(level)}>`);
   const compiled = ed.publishedAt ? localDigits(t("edition.compiledAt", { time: formatTime(ed.publishedAt, l, digits), count: sources }), l, digits) : "";
-  const reviewed = ctx.editorName ? t("edition.reviewedBy", { name: ctx.editorName }) : "";
+  // D14: how far editorial review had got when the file was made.
+  const rc = reviewCounts(ed.stories);
+  const reviewed = rc.total ? localDigits(t(rc.manual ? "review.editionCountAi" : "review.editionCount", { reviewed: rc.reviewed, total: rc.total }), l, digits) : "";
   if (compiled || reviewed) out.push(`<p class="meta">${esc([compiled, reviewed].filter(Boolean).join(" · "))}</p>`);
   out.push(`</header>`);
   // Contents: group names, then each story's headline, linking inside the file.

@@ -7,9 +7,16 @@ import { Field, Input, Textarea, Select, Button } from "@/components/admin/form"
 import { SHIPPED_TIMES } from "@/lib/admin/util";
 import { MODES, siteThemeDefaults, THEMES } from "@/lib/view";
 import en from "@/messages/en.json";
+import { publishPolicyOf, type PublishPolicy } from "@/lib/codes";
 
 export const dynamic = "force-dynamic";
 const SLOTS = ["subh", "dopahar", "shaam"] as const;
+/** The publish policies (D14, lib/codes.ts PUBLISH_POLICIES) with what each does. */
+const POLICIES: Array<[PublishPolicy, string, string]> = [
+  ["publish", "Publish, review later (default)", "Every edition goes out as soon as the worker finishes, flagged stories included. Each story shows readers \"Not reviewed yet\" (a flagged one \"Check raised a question\", with the check's note) until an editor marks it reviewed on the Review page."],
+  ["auto", "Hold only if something is flagged", "An edition with no flagged story publishes at once (its stories still show \"Not reviewed yet\"). One with a flagged story waits under Editions until an editor publishes it."],
+  ["hold", "Hold every edition", "Nothing goes out until an editor publishes it under Editions. Its stories still show \"Not reviewed yet\" until marked reviewed."],
+];
 /** What the worker uses while settings has no edition_times row. */
 const SHIPPED: Record<(typeof SLOTS)[number], string> = SHIPPED_TIMES;
 
@@ -20,6 +27,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const str = (k: string, d = "") => (typeof s[k] === "string" ? (s[k] as string) : d);
   const current = Object.fromEntries(SLOTS.map((k) => [k, times[k] ?? SHIPPED[k]])) as typeof SHIPPED;
   const themeDefaults = siteThemeDefaults(s);
+  const policy = publishPolicyOf(s.publish_policy);
   return (
     <AdminShell title="Settings" flash={flash}>
       <form action={saveSettings} className="card grid max-w-3xl gap-3 p-4 sm:grid-cols-3">
@@ -27,9 +35,20 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <Field label="Dopahar (midday)"><Input name="dopahar" type="time" defaultValue={current.dopahar} required /></Field>
         <Field label="Shaam (evening)"><Input name="shaam" type="time" defaultValue={current.shaam} required /></Field>
         <p className="meta -mt-1 sm:col-span-3">The worker makes each edition within 10 minutes of its time (Asia/Karachi). A change applies from the next check; see <a href="#worker-timer">Worker schedule</a>.</p>
-        <Field label="Publish policy" hint="auto publishes unless stories are flagged; hold keeps every edition for approval"><Select name="publish_policy" defaultValue={str("publish_policy", "auto")} options={[["auto", "auto"], ["hold", "hold"]]} /></Field>
-        <Field label="Editor name" hint="Shown on the disclosure line"><Input name="editor_name" defaultValue={str("editor_name")} /></Field>
+        <fieldset className="sm:col-span-3">
+          <legend className="mb-1 text-sm font-semibold">Publish policy (what the worker does with a finished edition)</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {POLICIES.map(([value, label, hint]) => (
+              <label key={value} className="flex items-start gap-2 rounded border border-rule bg-surface p-2 text-sm">
+                <input type="radio" name="publish_policy" value={value} defaultChecked={policy === value} className="mt-1 h-4 w-4" required />
+                <span><span className="block font-semibold">{label}</span><span className="meta block">{hint}</span></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <Field label="Editor in charge" hint="Named in the site footer as the editor in charge. It does not say they reviewed every story: each story shows who reviewed it, if anyone (D14)"><Input name="editor_name" defaultValue={str("editor_name")} /></Field>
         <Field label="Hijri adjustment (days)" hint="Set when the Ruet-e-Hilal date differs from the computed one"><Input name="hijri_adjust" type="number" min={-3} max={3} defaultValue={Number(s.hijri_adjust ?? 0)} /></Field>
+        <Field label="Translations per reader per day" hint="Full-article Urdu translations (D9) a reader may ask for daily; editors and owners get at least 25"><Input name="translate_daily_limit" type="number" min={0} max={1000} defaultValue={Number.isInteger(Number(s.translate_daily_limit)) ? Number(s.translate_daily_limit) : 10} /></Field>
         <Field label="Site name (EN)"><Input name="site_name_en" defaultValue={str("site_name_en", "Tabayyun")} required /></Field>
         <Field label="Site name (UR)"><Input name="site_name_ur" defaultValue={str("site_name_ur", "تبیُّن")} lang="ur" dir="rtl" required /></Field>
         <Field label="Default palette" hint="Until a reader picks one under Display"><Select name="default_theme" defaultValue={themeDefaults.palette} options={THEMES.map(({ id }) => [id, `${en.themes[id]} (${en.themes[`${id}Hint`]})`] as [string, string])} /></Field>

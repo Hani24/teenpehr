@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/admin/session";
+import { roleAtLeast } from "@/lib/auth";
 import { getEditionById, getEditionGroupLeads } from "@/lib/admin/data";
 import { publishEdition, holdEdition, releaseEdition, updateLead } from "@/lib/admin/actions";
 import { fmtDate } from "@/lib/admin/util";
@@ -15,7 +16,8 @@ import { StoryEditor } from "@/components/admin/story-editor";
 export const dynamic = "force-dynamic";
 
 export default async function EditionPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  await requireAdmin();
+  const user = await requireAdmin();
+  const owner = roleAtLeast(user.role, "owner");
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
   const [ed, leads, flash] = await Promise.all([getEditionById(id), getEditionGroupLeads(id), flashFrom(searchParams)]);
@@ -53,7 +55,7 @@ export default async function EditionPage({ params, searchParams }: { params: Pr
                 <Button>Save lead</Button>
               </form>
             ) : <p className="mb-3 text-sm"><span className="font-semibold">Lead:</span> {g.leadEn} <span lang="ur" dir="rtl" className="ms-3">{g.leadUr}</span></p>}
-            <div className="space-y-4">{stories.map((s) => <StoryEditor key={s.id} story={s} editionId={ed.id} editable={editable} hiderName={s.imageHiddenBy != null ? hiders.get(s.imageHiddenBy) ?? null : null} />)}</div>
+            <div className="space-y-4">{stories.map((s) => <StoryEditor key={s.id} story={s} editionId={ed.id} editable={editable} owner={owner} hiderName={s.imageHiddenBy != null ? hiders.get(s.imageHiddenBy) ?? null : null} />)}</div>
           </section>
         );
       })}

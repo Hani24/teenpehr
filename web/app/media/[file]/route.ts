@@ -1,4 +1,4 @@
-import { and, eq, exists, isNull, or } from "drizzle-orm";
+import { and, eq, exists, isNotNull, isNull, or } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getCurrentUser, roleAtLeast } from "@/lib/auth";
 import { isMediaFileName } from "@/lib/media";
@@ -11,7 +11,8 @@ import { openMediaFile } from "@/lib/media-store";
  * Files never change (content-addressed), so a reader's browser may keep them for a year; no shared cache
  * may (private).
  *
- * A reader gets a file only while a published story shows it: a story of a published edition whose image
+ * A reader gets a file only while a published story shows it: a story of a published edition (or one live
+ * on the Editor's desk, D12) whose image
  * (not hidden by an editor, and of an item or post that story cites) has this file's sha256. So a hidden image
  * stops being served even to someone who kept its URL. Editors and owners get any stored file (the admin shows
  * drafts, and hidden images to the editor who may review them).
@@ -28,7 +29,9 @@ async function shownToReaders(sha256: string): Promise<boolean> {
   const [row] = await db.select({ id: stories.id }).from(images)
     .innerJoin(stories, eq(stories.imageId, images.id))
     .innerJoin(editions, eq(editions.id, stories.editionId))
-    .where(and(eq(images.sha256, sha256), isNull(stories.imageHiddenAt), eq(editions.status, "published"), cited))
+    // Published, or live on the Editor's desk (D12, lib/desk.ts) ahead of its edition.
+    // Never a story the editors withdrew (D14).
+    .where(and(eq(images.sha256, sha256), isNull(stories.imageHiddenAt), isNull(stories.withdrawnAt), or(eq(editions.status, "published"), isNotNull(stories.deskAt)), cited))
     .limit(1);
   return !!row;
 }

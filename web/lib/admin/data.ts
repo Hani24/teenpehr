@@ -4,22 +4,30 @@ import { db, schema } from "@/db";
 import { getEditionFull } from "@/lib/queries";
 import { normalizeUrdu, type Slot } from "@/lib/urdu";
 
-const { groups, sources, handles, topics, glossary, editions, editionGroups, runs, runSources, stories, items, storySources } = schema;
+const { groups, sources, handles, topics, glossary, editions, editionGroups, runs, runSources, stories, items, storySources, storyReports, workerJobs } = schema;
 
 export async function dashboard() {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Karachi" }).format(new Date());
-  const [todaysEditions, recentRuns, srcStats, edCount] = await Promise.all([
+  const [todaysEditions, recentRuns, srcStats, edCount, openReports, jobStats] = await Promise.all([
     db.select().from(editions).where(eq(editions.date, today)),
     db.select().from(runs).orderBy(desc(runs.startedAt)).limit(10),
     db.select({ active: sql<number>`count(*) filter (where ${sources.active})`, failing: sql<number>`count(*) filter (where ${sources.active} and ${sources.failStreak} >= 3)`, total: sql<number>`count(*)` }).from(sources).where(isNull(sources.archivedAt)),
     db.select({ n: sql<number>`count(*)` }).from(editions).where(eq(editions.status, "published")),
+    // D8 reports waiting for an editor, and D9/D12 jobs waiting for (or stuck in) the worker.
+    db.select({ n: sql<number>`count(*)` }).from(storyReports).where(eq(storyReports.status, "open")),
+    db.select({
+      queued: sql<number>`count(*) filter (where ${workerJobs.status} = 'queued')`,
+      running: sql<number>`count(*) filter (where ${workerJobs.status} = 'running')`,
+      failedToday: sql<number>`count(*) filter (where ${workerJobs.status} = 'failed' and ${workerJobs.updatedAt} > now() - interval '1 day')`,
+    }).from(workerJobs),
   ]);
   const itemsByRun = new Map<number, number>();
   if (recentRuns.length) {
     const rows = await db.select({ runId: runSources.runId, n: sql<number>`sum(${runSources.items})` }).from(runSources).groupBy(runSources.runId);
     rows.forEach((r) => itemsByRun.set(r.runId, Number(r.n)));
   }
-  return { today, todaysEditions, recentRuns: recentRuns.map((r) => ({ ...r, items: itemsByRun.get(r.id) ?? 0 })), srcStats: srcStats[0], published: Number(edCount[0].n) };
+  return { today, todaysEditions, recentRuns: recentRuns.map((r) => ({ ...r, items: itemsByRun.get(r.id) ?? 0 })), srcStats: srcStats[0], published: Number(edCount[0].n),
+    openReports: Number(openReports[0].n), jobs: { queued: Number(jobStats[0].queued), running: Number(jobStats[0].running), failedToday: Number(jobStats[0].failedToday) } };
 }
 
 export async function listGroups() {

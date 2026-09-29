@@ -10,6 +10,8 @@ import { dateAt, outletsOf } from "@/lib/view";
 import { SaveButton } from "@/components/save-button";
 import { DownloadMenu, ShelfDownloadLink } from "@/components/download-menu";
 import { SourceChips } from "@/components/source-chips";
+import { ManualBadge } from "@/components/manual-badge";
+import { ReviewPill } from "@/components/review-badge";
 
 /*
  * The reader's Saved shelf (decision D3): saved editions, then saved stories, newest saved first.
@@ -137,6 +139,9 @@ function StoryRow({ s, locale: l, digits, labels, t }: { s: SavedStory; locale: 
       <h3 id={headingId} className="headline mt-1 text-[length:var(--step-2)]" {...langAttrs(title.lang, l)}>
         <Link href={`/story/${story.id}`} className="no-underline hover:underline">{title.text}</Link>
       </h3>
+      {story.origin === "manual"
+        ? <p className="ui mt-2"><ManualBadge story={story} shown={title.lang} /></p>
+        : <p className="ui mt-2"><ReviewPill story={story} /></p>}
       <p className="prose clamp-3 mt-2 text-ink" {...langAttrs(summary.lang, l)}>{summary.text}</p>
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <SourceChips outlets={outletsOf(story)} labels={labels} locale={l} digits={digits} />

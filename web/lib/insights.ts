@@ -21,13 +21,13 @@ export async function syncEntityStats(): Promise<number> {
   const updated = await rows(sql`with s as (
       select se.entity_id, count(distinct se.story_id)::int as n, min(ed.published_at) as first, max(ed.published_at) as last
       from story_entities se join stories st on st.id = se.story_id join editions ed on ed.id = st.edition_id
-      where ed.status = 'published' and ed.published_at is not null group by se.entity_id)
+      where ed.status = 'published' and ed.published_at is not null and st.withdrawn_at is null group by se.entity_id)
     update entities e set mention_count = s.n, first_seen_at = s.first, last_seen_at = s.last from s
     where e.id = s.entity_id and (e.mention_count, e.first_seen_at, e.last_seen_at) is distinct from (s.n, s.first, s.last)
     returning e.id`);
   const cleared = await rows(sql`update entities e set mention_count = 0 where e.mention_count <> 0 and not exists (
       select 1 from story_entities se join stories st on st.id = se.story_id join editions ed on ed.id = st.edition_id
-      where se.entity_id = e.id and ed.status = 'published') returning e.id`);
+      where se.entity_id = e.id and ed.status = 'published' and st.withdrawn_at is null) returning e.id`);
   return updated.length + cleared.length;
 }
 
@@ -38,7 +38,7 @@ export async function trendingTopics(): Promise<Trend[]> {
       count(*) filter (where ed.published_at >= now() - interval '7 days')::int as now,
       count(*) filter (where ed.published_at < now() - interval '7 days')::int as before
     from stories s join editions ed on ed.id = s.edition_id cross join lateral unnest(s.topics) as t(topic)
-    where ed.status = 'published' and ed.published_at >= now() - interval '14 days'
+    where ed.status = 'published' and s.withdrawn_at is null and ed.published_at >= now() - interval '14 days'
     group by t.topic order by now desc, before desc`);
   return r.map((x) => ({ key: String(x.topic), label: String(x.topic), now: Number(x.now), before: Number(x.before) }));
 }
@@ -49,7 +49,7 @@ export async function trendingEntities(limit = 20): Promise<Trend[]> {
       count(distinct s.id) filter (where ed.published_at >= now() - interval '7 days')::int as now,
       count(distinct s.id) filter (where ed.published_at < now() - interval '7 days')::int as before
     from story_entities se join stories s on s.id = se.story_id join editions ed on ed.id = s.edition_id join entities en on en.id = se.entity_id
-    where ed.status = 'published' and ed.published_at >= now() - interval '14 days'
+    where ed.status = 'published' and s.withdrawn_at is null and ed.published_at >= now() - interval '14 days'
     group by en.id order by now desc, (count(distinct s.id) filter (where ed.published_at >= now() - interval '7 days')) - (count(distinct s.id) filter (where ed.published_at < now() - interval '7 days')) desc
     limit ${limit}`);
   return r.map((x) => ({ key: String(x.slug), label: String(x.name_en), labelUr: String(x.name_ur), kind: String(x.kind), now: Number(x.now), before: Number(x.before) }));
@@ -96,7 +96,7 @@ const matrix = (r: Row[], days: string[]): DayMatrix => {
 export async function storiesPerGroupPerDay(days = 14): Promise<DayMatrix> {
   const r = await rows(sql`select g.slug as key, g.name_en as label, ed.date::text as day, count(*)::int as count, min(g."order") as ord
     from stories s join editions ed on ed.id = s.edition_id join groups g on g.id = s.group_id
-    where ed.status = 'published' and ed.date > (now() at time zone ${KHI})::date - ${days}::int
+    where ed.status = 'published' and s.withdrawn_at is null and ed.date > (now() at time zone ${KHI})::date - ${days}::int
     group by g.slug, g.name_en, ed.date order by ord, g.slug, day`);
   return matrix(r, lastDays(days));
 }
@@ -148,7 +148,7 @@ export type Coverage = {
 };
 /** Which outlets, with their perspectives, the published stories of the last `days` days cite. */
 export async function coverageByPerspective(days = 30): Promise<Coverage> {
-  const since = sql`ed.status = 'published' and ed.published_at >= now() - make_interval(days => ${days})`;
+  const since = sql`ed.status = 'published' and s.withdrawn_at is null and ed.published_at >= now() - make_interval(days => ${days})`;
   const mix = await rows(sql`select coalesce(s.coverage::text, 'unset') as coverage, count(*)::int as stories
     from stories s join editions ed on ed.id = s.edition_id where ${since} group by 1 order by stories desc`);
   const bySource = await rows(sql`select src.name, src.perspective, g.name_en as grp, count(distinct s.id)::int as stories,

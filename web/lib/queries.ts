@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { storedPrefs } from "@/lib/auth/prefs";
@@ -18,8 +18,8 @@ const { editions, editionGroups, stories, groups, threads, settings, glossary } 
  * changes what readers see expires the tag it touches. CACHE_SECONDS is only the safety net for
  * changes made outside the app (psql, db/backfill.ts). Drafts and the admin read the database directly.
  */
-export const EDITIONS_TAG = "editions";
-export const SETTINGS_TAG = "settings";
+import { EDITIONS_TAG, SETTINGS_TAG } from "./cache-tags";
+export { EDITIONS_TAG, SETTINGS_TAG };
 const CACHE_SECONDS = 600;
 
 // unstable_cache keeps JSON, which would turn every Date into a string: Dates are tagged on the way
@@ -50,6 +50,8 @@ const itemCols = { search: false, raw: false } as const;
 const postCols = { raw: false } as const;
 // Where the worker downloaded an image is never shown or linked to readers (lib/media.ts StoryImage).
 const imageCols = { sourceUrl: false, createdAt: false } as const;
+// Who reviewed a story (D14): only the name readers see ("Reviewed by <name>"), never the account's email.
+const reviewerCols = { columns: { name: true } } as const;
 
 /** Every settings row, read now (the admin, the worker's config, publishing). */
 export async function getSettings(): Promise<Record<string, unknown>> {
@@ -92,6 +94,8 @@ export const getGroups = cached("groups", [EDITIONS_TAG], async () =>
  * A full edition with groups, stories, sources, posts and each story's image (null when it has none; an
  * editor-hidden one is still here with stories.image_hidden_at set: show it through lib/media.ts
  * storyImage()), read now. Published only unless `includeDrafts`. This is also the published snapshot.
+ * Readers' loads leave out stories the editors withdrew (D14); `includeDrafts` (the admin, the snapshot)
+ * keeps them, with stories.withdrawn_at set.
  */
 async function loadEdition(date: string, slot: Slot, includeDrafts: boolean) {
   const ed = await db.query.editions.findFirst({
@@ -100,13 +104,15 @@ async function loadEdition(date: string, slot: Slot, includeDrafts: boolean) {
       groups: { with: { group: true }, orderBy: (g, { asc }) => [asc(g.order)] },
       stories: {
         columns: storyCols,
-        orderBy: (s, { asc }) => [asc(s.groupId), asc(s.order)],
+        where: includeDrafts ? undefined : (s, { isNull: none }) => none(s.withdrawnAt),
+        orderBy: (s, { asc }) => [asc(s.groupId), asc(s.order), asc(s.id)], // id: ties (a manual story beside the worker's) stay put
         with: {
           thread: true,
           sources: { with: { item: { columns: itemCols, with: { source: true } } } },
           posts: { with: { post: { columns: postCols } } },
           corrections: { orderBy: (c, { asc }) => [asc(c.createdAt)] },
           image: { columns: imageCols },
+          reviewer: reviewerCols,
         },
       },
     },
@@ -158,7 +164,7 @@ export async function getEditionLeads(editionId: number) {
 
 export const getStoryFull = cached("story-full", [EDITIONS_TAG], async (id: number) => {
   const s = await db.query.stories.findFirst({
-    where: eq(stories.id, id),
+    where: and(eq(stories.id, id), isNull(stories.withdrawnAt)),
     columns: storyCols,
     with: {
       edition: true, group: true, thread: true,
@@ -166,15 +172,53 @@ export const getStoryFull = cached("story-full", [EDITIONS_TAG], async (id: numb
       posts: { with: { post: { columns: postCols } } },
       corrections: { orderBy: (c, { asc }) => [asc(c.createdAt), asc(c.id)] },
       image: { columns: imageCols },
+      reviewer: reviewerCols,
     },
   });
-  if (!s || s.edition.status !== "published") return null;
+  // Published, or live on the Editor's desk ahead of its edition (D12, lib/desk.ts): then s.deskAt is set and
+  // s.edition is an unpublished edition the page must not link to. A withdrawn story (D14) is not here:
+  // getWithdrawnStory says what its address shows instead.
+  if (!s || (s.edition.status !== "published" && !s.deskAt)) return null;
   return s;
 });
 
+/**
+ * A story the editors withdrew (D14) that readers could see before (published, or live on the Editor's
+ * desk): only when and why, never its text. Null for anything else (the address is then a 404).
+ */
+export const getWithdrawnStory = cached("story-withdrawn", [EDITIONS_TAG], async (id: number) => {
+  const [w] = await db.select({
+    id: stories.id, withdrawnAt: stories.withdrawnAt, noteEn: stories.withdrawNoteEn, noteUr: stories.withdrawNoteUr,
+  }).from(stories).innerJoin(editions, eq(editions.id, stories.editionId))
+    .where(and(eq(stories.id, id), isNotNull(stories.withdrawnAt), or(eq(editions.status, "published"), isNotNull(stories.deskAt))));
+  if (!w?.withdrawnAt) return null;
+  return { id: w.id, withdrawnAt: w.withdrawnAt, noteEn: w.noteEn, noteUr: w.noteUr };
+});
+export type WithdrawnStory = NonNullable<Awaited<ReturnType<typeof getWithdrawnStory>>>;
+
+/**
+ * The Editor's desk strip (D12, lib/desk.ts): manual stories live ahead of their edition, newest first. A
+ * desk story leaves the strip when the edition it joined is published (it is then an ordinary story of it).
+ */
+export const getDeskStories = cached("desk", [EDITIONS_TAG], async () =>
+  db.query.stories.findMany({
+    where: and(isNotNull(stories.deskAt), isNull(stories.withdrawnAt), inArray(stories.editionId, db.select({ id: editions.id }).from(editions).where(ne(editions.status, "published")))),
+    columns: storyCols,
+    orderBy: (s, { desc }) => [desc(s.deskAt), desc(s.id)],
+    with: {
+      group: true, thread: true,
+      sources: { with: { item: { columns: itemCols, with: { source: true } } } },
+      posts: { with: { post: { columns: postCols } } },
+      corrections: { orderBy: (c, { asc }) => [asc(c.createdAt), asc(c.id)] },
+      image: { columns: imageCols },
+      reviewer: reviewerCols,
+    },
+  }));
+export type DeskStory = Awaited<ReturnType<typeof getDeskStories>>[number];
+
 /** All published appearances of a thread, newest edition first. */
 export const getThreadStories = cached("thread-stories", [EDITIONS_TAG], async (threadId: number) => {
-  const rows = await db.query.stories.findMany({ where: eq(stories.threadId, threadId), columns: storyCols, with: { edition: true } });
+  const rows = await db.query.stories.findMany({ where: and(eq(stories.threadId, threadId), isNull(stories.withdrawnAt)), columns: storyCols, with: { edition: true } });
   return rows.filter((r) => r.edition.status === "published")
     .sort((a, b) => b.edition.date.localeCompare(a.edition.date) || SLOTS.indexOf(b.edition.slot) - SLOTS.indexOf(a.edition.slot));
 });

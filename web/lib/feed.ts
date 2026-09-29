@@ -1,8 +1,11 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
-import { listPublishedEditions, getEditionFull, getCachedSettings } from "./queries";
+import { listPublishedEditions, getEditionFull, getCachedSettings, getSitePrefs } from "./queries";
 import { isLocale, picked, slotNames, type Locale, type Slot } from "./urdu";
 import { outletsOf } from "./view";
+import { manualTag } from "./manual-text";
+import { reviewState } from "./review-state";
+import { checkNoteText, reviewLineText, reviewPillText } from "./review-text";
 
 /*
  * The feeds carry the last FEED_EDITIONS published editions (three days at three a day), newest
@@ -14,11 +17,14 @@ const FEED_EDITIONS = 9;
 
 export async function buildFeed(localeParam: string) {
   const locale = (isLocale(localeParam) ? localeParam : "en") as Locale;
-  const [list, settings, ts] = await Promise.all([
+  const [list, settings, ts, tAll, prefs] = await Promise.all([
     listPublishedEditions(FEED_EDITIONS),
     getCachedSettings(),
     getTranslations({ locale, namespace: "site" }),
+    getTranslations({ locale }),
+    getSitePrefs(),
   ]);
+  const digits = locale === "ur" ? prefs.digitsUr : undefined;
   const editions = (await Promise.all(list.map((e) => getEditionFull(e.date, e.slot as Slot)))).filter((e) => e !== null);
   const site = process.env.SITE_URL ?? "http://localhost:3000";
   const configured = locale === "ur" ? settings.site_name_ur : settings.site_name_en;
@@ -39,6 +45,13 @@ export async function buildFeed(localeParam: string) {
         group: groupOf.get(s.groupId)?.name ?? "",
         edition,
         sources: outletsOf(s).map((o) => ({ name: o.name, url: o.url })),
+        /** D12: an editor's story says so in every feed ("Manual entry · added by <name>"); "" for AI stories. */
+        manual: manualTag(tAll, s),
+        /**
+         * D14, AI stories: the review pill ("Not reviewed yet" …), the full line ("Reviewed by <name> · <when>")
+         * and a flagged story's automatic-check note; all "" for a manual entry.
+         */
+        review: { state: reviewState(s), pill: reviewPillText(tAll, s), line: reviewLineText(tAll, s, locale, digits), checkNote: checkNoteText(tAll, s) },
       };
     });
   });
@@ -55,7 +68,7 @@ export function toRss(f: Awaited<ReturnType<typeof buildFeed>>) {
       <guid isPermaLink="true">${i.url}</guid>
       <pubDate>${i.date.toUTCString()}</pubDate>
       ${i.group ? `<category>${esc(i.group)}</category>\n      ` : ""}<category>${esc(i.edition)}</category>
-      <description>${esc(i.summary)}${i.sources.length ? esc(` (${i.sources.map((s) => s.name).join(", ")})`) : ""}</description>
+      ${i.manual ? `<category>${esc(i.manual)}</category>\n      ` : ""}${i.review.pill ? `<category>${esc(i.review.pill)}</category>\n      ` : ""}<description>${i.manual ? esc(`${i.manual}${f.locale === "ur" ? "۔" : "."} `) : ""}${esc(i.summary)}${i.sources.length ? esc(` (${i.sources.map((s) => s.name).join(", ")})`) : ""}${reviewSuffix(i, f.locale)}</description>
     </item>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -72,6 +85,13 @@ ${items}
 `;
 }
 
+/** " Not yet reviewed by an editor." (and a flagged story's check note) after an AI story's summary, escaped. */
+function reviewSuffix(i: Awaited<ReturnType<typeof buildFeed>>["items"][number], locale: Locale): string {
+  if (!i.review.line) return "";
+  const stop = locale === "ur" ? "۔" : ".";
+  return esc(` ${i.review.line}${stop}${i.review.checkNote ? ` ${i.review.checkNote}` : ""}`);
+}
+
 export function toJsonFeed(f: Awaited<ReturnType<typeof buildFeed>>) {
   return {
     version: "https://jsonfeed.org/version/1.1",
@@ -80,9 +100,10 @@ export function toJsonFeed(f: Awaited<ReturnType<typeof buildFeed>>) {
     feed_url: `${f.site}/${f.locale}/feed.json`,
     language: f.locale === "ur" ? "ur-PK" : "en-PK",
     items: f.items.map((i) => ({
-      id: i.id, url: i.url, title: i.title, summary: i.summary, date_published: i.date.toISOString(), tags: [i.group, i.edition].filter(Boolean),
+      id: i.id, url: i.url, title: i.title, summary: i.summary, date_published: i.date.toISOString(), tags: [i.group, i.edition, i.manual, i.review.pill].filter(Boolean),
       ...(i.lang !== f.locale ? { language: i.lang === "ur" ? "ur-PK" : "en-PK" } : {}),
       _sources: i.sources,
+      ...(i.review.state ? { _review: { state: i.review.state, line: i.review.line, ...(i.review.checkNote ? { check_note: i.review.checkNote } : {}) } } : {}),
     })),
   };
 }

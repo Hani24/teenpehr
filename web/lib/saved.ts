@@ -1,11 +1,12 @@
 import "server-only";
 import { cache } from "react";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getEditionFull, type EditionFull } from "./queries";
 import { formatDate, picked, type Locale, type Slot } from "./urdu";
 import { dateAt } from "./view";
+import { editionRev, storyRev } from "./review-state";
 
 /*
  * The reader's Saved shelf (decision D3 in docs/PLAN.md): stories and whole editions, per account.
@@ -21,6 +22,7 @@ const storyCols = { searchEn: false, searchUr: false } as const;
 const itemCols = { search: false, raw: false } as const;
 const postCols = { raw: false } as const;
 const imageCols = { sourceUrl: false, createdAt: false } as const;
+const reviewerCols = { columns: { name: true } } as const; // D14 "Reviewed by <name>": the name only
 
 /** Most saved rows a page, a download or the offline manifest will read (newest first). */
 export const SHELF_MAX_STORIES = 300;
@@ -69,11 +71,13 @@ export async function listSavedStories(userId: number, limit = SHELF_MAX_STORIES
           posts: { with: { post: { columns: postCols } } },
           corrections: { orderBy: (c, { asc }) => [asc(c.createdAt), asc(c.id)] },
           image: { columns: imageCols },
+          reviewer: reviewerCols,
         },
       },
     },
   });
-  return rows.filter((r) => r.story.edition.status === "published").map((r) => ({ savedAt: r.createdAt, story: r.story }));
+  // A story the editors withdrew (D14) leaves the shelf and its downloads; its page says it was withdrawn.
+  return rows.filter((r) => r.story.edition.status === "published" && !r.story.withdrawnAt).map((r) => ({ savedAt: r.createdAt, story: r.story }));
 }
 export type SavedStory = Awaited<ReturnType<typeof listSavedStories>>[number];
 
@@ -86,7 +90,7 @@ export async function listSavedEditions(userId: number, limit = SHELF_MAX_EDITIO
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const [counts, leads] = await Promise.all([
-    db.select({ editionId: stories.editionId, id: stories.id }).from(stories).where(inArray(stories.editionId, ids)),
+    db.select({ editionId: stories.editionId, id: stories.id }).from(stories).where(and(inArray(stories.editionId, ids), isNull(stories.withdrawnAt))),
     db.query.editionGroups.findMany({ where: (g, { inArray: within }) => within(g.editionId, ids), with: { group: true }, orderBy: (g, { asc }) => [asc(g.order)] }),
   ]);
   const n = new Map<number, number>();
@@ -114,6 +118,9 @@ export async function loadShelf(userId: number): Promise<{ editions: Array<{ sav
 
 /* ---- offline manifest ----------------------------------------------------------------------- */
 
+/** The columns lib/review-state.ts reads, for plain selects of stories. */
+const reviewCols = { origin: stories.origin, qaStatus: stories.qaStatus, reviewedAt: stories.reviewedAt, withdrawnAt: stories.withdrawnAt };
+
 /** Published editions the offline cache always keeps, newest first. */
 export const OFFLINE_LATEST_EDITIONS = 3;
 /** Upper bound on page URLs one manifest hands the service worker. */
@@ -134,6 +141,12 @@ export type OfflinePage = {
   shelf?: boolean;
   date?: string;
   slot?: Slot;
+  /**
+   * What the page shows about editorial review (D14, lib/review-state.ts storyRev/editionRev). The page
+   * carries the same token (data-tb-rev), and public/sw.js fetches a kept copy again when they differ, so a
+   * story an editor reviews after it was kept does not stay "not reviewed" offline.
+   */
+  rev?: string;
 };
 export type OfflineManifest = {
   v: 1;
@@ -149,6 +162,11 @@ export type OfflineManifest = {
   version: string;
   /** The worker also keeps the scripts, styles and fonts each page names (fonts included: the Urdu faces are in its inline CSS). */
   pages: OfflinePage[];
+  /**
+   * Story pages the editors withdrew (D14) among the kept editions and the shelf: the worker deletes its kept
+   * copy of each, so a withdrawn story's text does not stay readable offline.
+   */
+  drop: string[];
 };
 
 /**
@@ -163,16 +181,21 @@ export async function offlineManifest(userId: number, locale: Locale, labels: { 
       .innerJoin(editions, eq(editions.id, savedEditions.editionId))
       .where(and(eq(savedEditions.userId, userId), eq(editions.status, "published")))
       .orderBy(desc(savedEditions.createdAt)).limit(SHELF_MAX_EDITIONS),
-    db.select({ id: stories.id, titleEn: stories.titleEn, titleUr: stories.titleUr }).from(savedStories)
+    db.select({ id: stories.id, titleEn: stories.titleEn, titleUr: stories.titleUr, ...reviewCols }).from(savedStories)
       .innerJoin(stories, eq(stories.id, savedStories.storyId)).innerJoin(editions, eq(editions.id, stories.editionId))
       .where(and(eq(savedStories.userId, userId), eq(editions.status, "published")))
       .orderBy(desc(savedStories.createdAt)).limit(SHELF_MAX_STORIES),
   ]);
   const edIds = [...new Set([...latest, ...savedEds].map((e) => e.id))];
-  const edStories = edIds.length
-    ? await db.select({ id: stories.id, editionId: stories.editionId, groupId: stories.groupId, order: stories.order, titleEn: stories.titleEn, titleUr: stories.titleUr })
+  const edStoriesAll = edIds.length
+    ? await db.select({ id: stories.id, editionId: stories.editionId, groupId: stories.groupId, order: stories.order, titleEn: stories.titleEn, titleUr: stories.titleUr, ...reviewCols })
       .from(stories).where(inArray(stories.editionId, edIds)).orderBy(stories.editionId, stories.groupId, stories.order)
     : [];
+  // Withdrawn stories (D14) are not kept; their pages go from the device (`drop`).
+  const edStories = edStoriesAll.filter((s) => !s.withdrawnAt);
+  const drop = [...new Set([...edStoriesAll, ...savedSt].filter((s) => s.withdrawnAt).map((s) => `/${locale}/story/${s.id}`))];
+  const storiesOf = new Map<number, typeof edStories>();
+  for (const s of edStories) storiesOf.set(s.editionId, [...(storiesOf.get(s.editionId) ?? []), s]);
 
   const pages: OfflinePage[] = [];
   const seen = new Set<string>();
@@ -191,21 +214,21 @@ export async function offlineManifest(userId: number, locale: Locale, labels: { 
   add({ url: `/${locale}/offline`, kind: "offline", title: labels.offline });
   for (const e of [...latest, ...savedEds]) {
     const saved = savedEdIds.has(e.id) || undefined;
-    add({ url: `/${locale}/${e.date}/${e.slot}`, kind: "edition", title: edTitle(e), date: e.date, slot: e.slot as Slot, saved, shelf: saved });
+    add({ url: `/${locale}/${e.date}/${e.slot}`, kind: "edition", title: edTitle(e), date: e.date, slot: e.slot as Slot, saved, shelf: saved, rev: editionRev(storiesOf.get(e.id) ?? []) });
   }
   const storyTitle = (s: { titleEn: string; titleUr: string }) => {
     const t = picked(s, "title", locale);
     return { title: t.text, lang: t.lang === locale ? undefined : t.lang };
   };
-  for (const s of savedSt) add({ url: `/${locale}/story/${s.id}`, kind: "story", ...storyTitle(s), saved: true, shelf: true });
+  for (const s of savedSt) if (!s.withdrawnAt) add({ url: `/${locale}/story/${s.id}`, kind: "story", ...storyTitle(s), saved: true, shelf: true, rev: storyRev(s) });
   // Stories of the editions above, newest edition first (the order `latest` then `savedEds` gave).
   const order = new Map(edIds.map((id, i) => [id, i]));
   for (const s of [...edStories].sort((a, b) => (order.get(a.editionId)! - order.get(b.editionId)!) || a.groupId - b.groupId || a.order - b.order)) {
-    add({ url: `/${locale}/story/${s.id}`, kind: "story", ...storyTitle(s), saved: savedStIds.has(s.id) || undefined, shelf: savedStIds.has(s.id) || savedEdIds.has(s.editionId) || undefined });
+    add({ url: `/${locale}/story/${s.id}`, kind: "story", ...storyTitle(s), saved: savedStIds.has(s.id) || undefined, shelf: savedStIds.has(s.id) || savedEdIds.has(s.editionId) || undefined, rev: storyRev(s) });
   }
 
-  const version = hashString(`${locale}|${pages.map((p) => p.url).join(",")}`);
-  return { v: 1, locale, owner: String(userId), generatedAt: new Date().toISOString(), version, pages };
+  const version = hashString(`${locale}|${pages.map((p) => `${p.url}#${p.rev ?? ""}`).join(",")}|${drop.join(",")}`);
+  return { v: 1, locale, owner: String(userId), generatedAt: new Date().toISOString(), version, pages, drop };
 }
 
 /** Short stable hash (FNV-1a, 32-bit, base 36): only compares two manifests, never secret. */

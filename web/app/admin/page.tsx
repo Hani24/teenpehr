@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/session";
 import { dashboard } from "@/lib/admin/data";
+import { reviewQueueCounts } from "@/lib/admin/review";
 import { getSettings } from "@/lib/queries";
 import { fmtDate, fmtDuration, fmtMoney } from "@/lib/admin/util";
 import { AdminShell } from "@/components/admin/shell";
@@ -11,7 +12,7 @@ const SLOTS = ["subh", "dopahar", "shaam"] as const;
 
 export default async function Dashboard() {
   await requireAdmin();
-  const [d, settings] = await Promise.all([dashboard(), getSettings()]);
+  const [d, settings, review] = await Promise.all([dashboard(), getSettings(), reviewQueueCounts()]);
   const times = (settings.edition_times as Record<string, string> | undefined) ?? {};
   return (
     <AdminShell title="Dashboard">
@@ -31,9 +32,15 @@ export default async function Dashboard() {
         </div>
       </section>
       <section aria-labelledby="health" className="mb-6 grid gap-3 sm:grid-cols-3">
+        {/* D14: editions publish without waiting; these are the stories still showing readers "not reviewed yet". */}
+        <div className="card p-3"><p className="meta">Stories awaiting review</p><p className="text-2xl font-semibold">{review.unreviewed}</p><Link href="/admin/review" className="meta">Review</Link></div>
+        <div className="card p-3"><p className="meta">Of them flagged by QA</p><p className={`text-2xl font-semibold ${review.flagged ? "text-accent" : ""}`}>{review.flagged}</p><Link href="/admin/review" className="meta">Review flagged first</Link></div>
         <div className="card p-3"><p className="meta">Active sources</p><p className="text-2xl font-semibold">{Number(d.srcStats.active)} <span className="meta">of {Number(d.srcStats.total)}</span></p></div>
         <div className="card p-3"><p className="meta">Sources failing 3+ runs</p><p className={`text-2xl font-semibold ${Number(d.srcStats.failing) ? "text-accent" : ""}`}>{Number(d.srcStats.failing)}</p><Link href="/admin/sources?active=1" className="meta">Review sources</Link></div>
         <div className="card p-3"><p className="meta">Published editions</p><p className="text-2xl font-semibold">{d.published}</p><Link href="/admin/editions" className="meta">All editions</Link></div>
+        <div className="card p-3"><p className="meta">Open mistake reports</p><p className={`text-2xl font-semibold ${d.openReports ? "text-accent" : ""}`}>{d.openReports}</p><Link href="/admin/reports" className="meta">Reports queue</Link></div>
+        <div className="card p-3"><p className="meta">Worker jobs queued · running</p><p className="text-2xl font-semibold">{d.jobs.queued} · {d.jobs.running}</p><Link href="/admin/jobs" className="meta">Jobs</Link></div>
+        <div className="card p-3"><p className="meta">Jobs failed in the last day</p><p className={`text-2xl font-semibold ${d.jobs.failedToday ? "text-accent" : ""}`}>{d.jobs.failedToday}</p><Link href="/admin/jobs?status=failed" className="meta">Failed jobs</Link></div>
       </section>
       <section aria-labelledby="runs">
         <h2 id="runs" className="mb-2 font-semibold">Last 10 runs</h2>

@@ -1,5 +1,5 @@
 "use server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { requireUser } from "@/lib/auth";
@@ -47,7 +47,7 @@ export async function toggleSaveStory(storyId: number, opts?: SaveOpts): Promise
     if (gone.length) return { ok: true, saved: false };
   }
   const [s] = await db.select({ id: stories.id }).from(stories).innerJoin(editions, eq(editions.id, stories.editionId))
-    .where(and(eq(stories.id, p.id), eq(editions.status, "published")));
+    .where(and(eq(stories.id, p.id), eq(editions.status, "published"), isNull(stories.withdrawnAt))); // a withdrawn story (D14) cannot be saved
   if (!s) return { ok: false, error: "not_found" };
   await db.insert(savedStories).values({ userId: p.userId, storyId: p.id }).onConflictDoNothing();
   return { ok: true, saved: true };

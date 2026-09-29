@@ -137,6 +137,59 @@ def test_review_after_publish_alerts_the_editor(settings):
     assert _titles(alerts) == ["2026-09-23-dopahar held for review"]
 
 
+# ---- D14: publish by default, flagged stories live and awaiting review ------------------------------
+@respx.mock
+def test_published_with_flagged_stories_says_they_await_review(settings):
+    settings.ntfy_topic = "tp"
+    runs, fin, items, put, pub, glos = _mock_api()
+    pub.mock(
+        return_value=httpx.Response(
+            200, json={"status": "published", "stories": 9, "flagged": 3, "url": "/en/2026-09-23/dopahar"}
+        )
+    )
+    alerts = _ntfy()
+    report = _run(settings, dry_run=False).run()
+    assert report.status == "ok" and report.publish_status == "published"
+    assert _titles(alerts) == ["2026-09-23-dopahar published, 3 flagged"]
+    body = alerts.calls[0].request.content.decode()
+    assert "9 stories published, marked not reviewed" in body and "3 flagged by QA await review" in body
+    assert json.loads(pub.calls[0].request.content) == {"force": False, "notify": True}
+
+
+@respx.mock
+@pytest.mark.parametrize("on_success", [False, True])
+def test_published_without_flags_notifies_only_with_success_notes(settings, on_success):
+    settings.ntfy_topic = "tp"
+    settings.ntfy_on_success = on_success
+    runs, fin, items, put, pub, glos = _mock_api()
+    pub.mock(return_value=httpx.Response(200, json={"status": "published", "stories": 9, "flagged": 0}))
+    alerts = _ntfy()
+    report = _run(settings, dry_run=False).run()
+    assert report.publish_status == "published"
+    if on_success:
+        assert _titles(alerts) == ["2026-09-23-dopahar published"]
+        assert "9 stories published, none flagged; they await review" in alerts.calls[0].request.content.decode()
+    else:
+        assert not alerts.called
+
+
+@respx.mock
+def test_backfill_published_with_flagged_stories_sends_nothing(settings):
+    settings.ntfy_topic = "tp"
+    settings.ntfy_on_success = True
+    runs, fin, items, put, pub, glos = _mock_api()
+    pub.mock(return_value=httpx.Response(200, json={"status": "published", "stories": 9, "flagged": 3}))
+    alerts = _ntfy()
+    api = WorkerApi(BASE, "tok", backoff=0)
+    late = datetime(2026, 9, 23, 16, 0, tzinfo=KHI)  # three hours after dopahar: a backfill
+    report = EditionRun(
+        settings, api, _fake_llm(), FakeFetcher(), slot="dopahar", date="2026-09-23", dry_run=False, now=late
+    ).run()
+    assert report.backfill and report.publish_status == "published"
+    assert json.loads(pub.calls[0].request.content) == {"force": False, "notify": False}
+    assert not alerts.called
+
+
 # ---- --groups runs (#4) ------------------------------------------------------------------------
 @respx.mock
 def test_groups_run_on_an_existing_draft_is_partial_and_publishes(settings):

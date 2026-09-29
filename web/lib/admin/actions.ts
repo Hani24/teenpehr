@@ -5,6 +5,7 @@ import { and, asc, eq, isNotNull, isNull, notExists, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { httpUrl } from "@/lib/contracts";
+import { PUBLISH_POLICIES, SOURCE_KINDS } from "@/lib/codes";
 import { normalizeUrdu } from "@/lib/urdu";
 import { HIDE_IN_MODES } from "@/lib/view";
 import { PALETTES, READING_MODES } from "@/lib/auth/prefs";
@@ -13,11 +14,16 @@ import { requireAdmin } from "./session";
 import { all, bool, list, num, parseOrRedirect, pgError, SHIPPED_TIMES, str, ur, withFlash, type ActionState } from "./util";
 import { sourceUsage } from "./data";
 import { publishEditionById } from "./publish";
+import { writeAudit } from "./manual";
 import { FetchTimeoutError, looksPublicHost, NotPublicError, publicGet } from "./public-fetch";
 
 const { sources, groups, topics, handles, glossary, editions, editionGroups, stories, corrections, settings, items, runSources } = schema;
 /** What readers see changed: the rendered pages and the cached edition data and settings (lib/queries.ts). */
 const site = () => { revalidatePath("/", "layout"); updateTag(EDITIONS_TAG); updateTag(SETTINGS_TAG); };
+/** A same-site admin page from a form's `back` field, or null (then the caller's own page). */
+function adminBack(b: string): string | null {
+  return /^\/admin(?:\/[A-Za-z0-9/_\-.#?=&%]*)?$/.test(b) && !b.includes("//") ? b : null;
+}
 /** Palette and mode ids come from lib/auth/prefs.ts and lib/view.ts, so adding a palette needs no edit here. */
 const paletteId = z.enum(PALETTES), modeId = z.enum(READING_MODES), hideInMode = z.enum(HIDE_IN_MODES);
 
@@ -25,7 +31,7 @@ const paletteId = z.enum(PALETTES), modeId = z.enum(READING_MODES), hideInMode =
 const sourceSchema = z.object({
   name: z.string().min(1).max(120),
   group_id: z.coerce.number().int().positive(),
-  kind: z.enum(["rss", "html", "gnews", "youtube", "telegram"]),
+  kind: z.enum(SOURCE_KINDS),
   // The worker fetches it: never a loopback, private or link-local address (it checks resolved addresses too).
   url: httpUrl.refine((s) => { try { return looksPublicHost(new URL(s).hostname); } catch { return true; /* httpUrl reports it */ } }, "must be a public internet address"),
   lang: z.string().min(2).max(8),
@@ -262,9 +268,18 @@ export async function updateStory(fd: FormData): Promise<void> {
   const d = await parseOrRedirect(storySchema, Object.fromEntries(keys.map((k) => [k, k.endsWith("_ur") ? ur(fd, k) : str(fd, k)])), back);
   await failTo(back, await db.transaction(async (tx) => {
     const locked = await lockEditable(tx, editionId); if (locked) return locked;
-    const r = await tx.update(stories).set({ titleEn: d.title_en, titleUr: d.title_ur, summaryEn: d.summary_en, summaryUr: d.summary_ur, whyEn: d.why_en, whyUr: d.why_ur, contestedEn: d.contested_en, contestedUr: d.contested_ur, tag: d.tag, coverage: d.coverage || null, order: d.order, qaStatus: d.qa_status, qaNote: d.qa_note })
-      .where(and(eq(stories.id, id), eq(stories.editionId, editionId))).returning({ id: stories.id });
-    return r.length ? null : { error: `Story ${id} is not in this edition (a worker rerun may have replaced the draft); reload the page.` };
+    const [cur] = await tx.select({ origin: stories.origin, deskAt: stories.deskAt }).from(stories)
+      .where(and(eq(stories.id, id), eq(stories.editionId, editionId))).for("update");
+    if (!cur) return { error: `Story ${id} is not in this edition (a worker rerun may have replaced the draft); reload the page.` };
+    // A manual story live on the Editor's desk (D12, lib/desk.ts) is immutable like a published one.
+    if (cur.deskAt) return { error: `Story ${id} is live on the Editor's desk and can no longer be edited; add a correction instead.` };
+    // An editor's story is edited on its own page, which queues the missing language's fill and keeps
+    // qa 'manual' and its placement rules (lib/admin/manual-actions.ts); this form would skip all that.
+    if (cur.origin === "manual") return { error: `Story ${id} is a manual entry; edit it at /admin/stories/${id}.` };
+    await tx.update(stories).set({ titleEn: d.title_en, titleUr: d.title_ur, summaryEn: d.summary_en, summaryUr: d.summary_ur, whyEn: d.why_en, whyUr: d.why_ur, contestedEn: d.contested_en, contestedUr: d.contested_ur, tag: d.tag, coverage: d.coverage || null, order: d.order,
+      qaStatus: d.qa_status, qaNote: d.qa_note })
+      .where(eq(stories.id, id));
+    return null;
   }));
   revalidatePath(back);
   redirect(await withFlash(`${back}#story-${id}`, { ok: `Story ${id} saved.` }));
@@ -290,7 +305,9 @@ export async function publishEdition(fd: FormData): Promise<void> {
   const r = await publishEditionById(id, bool(fd, "force"));
   revalidatePath(back); revalidatePath("/admin/editions"); revalidatePath("/admin");
   if ("error" in r) redirect(await withFlash(back, { error: r.error }));
-  redirect(await withFlash(back, r.status === "published" ? { ok: "Published." } : { error: `${r.flagged} flagged stories; held for review. Fix them or publish with force.` }));
+  redirect(await withFlash(back, r.status === "published"
+    ? { ok: "Published. Its stories show readers they are not reviewed yet until an editor marks them reviewed on the Review page." }
+    : { error: `${r.flagged} flagged stories; held for review. Fix them or publish with force.` }));
 }
 /** Draft → review. The status guard is in the UPDATE so it cannot undo a publish that just happened. */
 export async function holdEdition(fd: FormData): Promise<void> {
@@ -310,24 +327,30 @@ export async function releaseEdition(fd: FormData): Promise<void> {
   revalidatePath(back); revalidatePath("/admin/editions"); revalidatePath("/admin");
   redirect(await withFlash(back, r ? { ok: "Released to draft. A worker run for this slot may now replace it." } : { error: "Only an edition in review can be released." }));
 }
-/** Corrections are appended to published stories; drafts are edited directly. */
+/**
+ * Corrections are appended to published stories; drafts are edited directly. `back` (optional): the admin page
+ * to return to, e.g. the Review page (D14), which uses this same flow.
+ */
 export async function addCorrection(fd: FormData): Promise<void> {
-  await requireAdmin();
+  const user = await requireAdmin();
   const storyId = num(fd, "story_id"); const editionId = num(fd, "edition_id");
   const textEn = str(fd, "text_en"), textUr = ur(fd, "text_ur");
   if (!storyId || !editionId) return;
-  const back = `/admin/editions/${editionId}`;
+  const fromReview = adminBack(str(fd, "back"));
+  const back = fromReview ?? `/admin/editions/${editionId}`;
   if (!textEn) redirect(await withFlash(back, { error: "Correction text (English) is required." }));
   await failTo(back, await db.transaction(async (tx): Promise<Fail | null> => {
-    const [s] = await tx.select({ status: editions.status }).from(stories).innerJoin(editions, eq(editions.id, stories.editionId))
+    const [s] = await tx.select({ status: editions.status, deskAt: stories.deskAt }).from(stories).innerJoin(editions, eq(editions.id, stories.editionId))
       .where(and(eq(stories.id, storyId), eq(stories.editionId, editionId)));
     if (!s) return { error: `Story ${storyId} is not part of this edition.` };
-    if (s.status !== "published") return { error: "Corrections are for published editions; edit the draft directly." };
+    // Published stories, and manual stories live on the Editor's desk (D12), take corrections; drafts are edited.
+    if (s.status !== "published" && !s.deskAt) return { error: "Corrections are for published editions; edit the draft directly." };
     await tx.insert(corrections).values({ storyId, textEn: textEn.slice(0, 2000), textUr: textUr.slice(0, 2000) });
+    await writeAudit(tx, user.id, "story.correction", `story:${storyId}`, { edition_id: editionId, text_en: textEn.slice(0, 200) });
     return null;
   }));
   revalidatePath(back); site();
-  redirect(await withFlash(`${back}#story-${storyId}`, { ok: "Correction added." }));
+  redirect(await withFlash(`${back}${fromReview ? "" : `#story-${storyId}`}`, { ok: "Correction added." }));
 }
 
 // ---- story images (D6) ------------------------------------------------------------------
@@ -351,7 +374,9 @@ export async function hideStoryImage(fd: FormData): Promise<void> {
     const [e] = await tx.select({ status: editions.status }).from(editions).where(eq(editions.id, d.edition_id)).for("update");
     if (!e) return { error: "Edition not found.", to: "/admin/editions" };
     const inEdition = and(eq(stories.id, d.story_id), eq(stories.editionId, d.edition_id), isNotNull(stories.imageId));
-    if (e.status === "published") {
+    // A story live on the Editor's desk (D12) is shown to readers like a published one: hide, never remove.
+    const [live] = await tx.select({ deskAt: stories.deskAt }).from(stories).where(and(eq(stories.id, d.story_id), eq(stories.editionId, d.edition_id)));
+    if (e.status === "published" || live?.deskAt) {
       const rows = await tx.update(stories).set({ imageHiddenAt: new Date(), imageHiddenBy: user.id })
         .where(and(inEdition, isNull(stories.imageHiddenAt))).returning({ id: stories.id });
       return rows.length ? { published: true } : { error: `Story ${d.story_id} has no image to hide in this edition, or it is hidden already.` };
@@ -372,18 +397,20 @@ export async function hideStoryImage(fd: FormData): Promise<void> {
 const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
 const settingsSchema = z.object({
   subh: z.string().regex(timeRe), dopahar: z.string().regex(timeRe), shaam: z.string().regex(timeRe),
-  publish_policy: z.enum(["auto", "hold"]), editor_name: z.string().max(100), site_name_en: z.string().min(1).max(60), site_name_ur: z.string().min(1).max(60),
+  publish_policy: z.enum(PUBLISH_POLICIES), editor_name: z.string().max(100), site_name_en: z.string().min(1).max(60), site_name_ur: z.string().min(1).max(60),
   disclosure_en: z.string().max(600), disclosure_ur: z.string().max(600), digits_ur: z.enum(["latn", "arabext"]), default_theme: paletteId, default_mode: modeId,
   hijri_adjust: z.coerce.number().int().min(-3).max(3), ntfy_note: z.string().max(300),
+  translate_daily_limit: z.coerce.number().int().min(0).max(1000),
 }).refine((d) => d.subh < d.dopahar && d.dopahar < d.shaam, { path: ["edition_times"], message: "must run subh, then dopahar, then shaam on the same day" });
 export async function saveSettings(fd: FormData): Promise<void> {
   await requireAdmin();
-  const keys = ["subh", "dopahar", "shaam", "publish_policy", "editor_name", "site_name_en", "site_name_ur", "disclosure_en", "disclosure_ur", "digits_ur", "default_theme", "default_mode", "hijri_adjust", "ntfy_note"] as const;
+  const keys = ["subh", "dopahar", "shaam", "publish_policy", "editor_name", "site_name_en", "site_name_ur", "disclosure_en", "disclosure_ur", "digits_ur", "default_theme", "default_mode", "hijri_adjust", "ntfy_note", "translate_daily_limit"] as const;
   const d = await parseOrRedirect(settingsSchema, Object.fromEntries(keys.map((k) => [k, k.endsWith("_ur") && k !== "digits_ur" ? ur(fd, k) : str(fd, k)])), "/admin/settings");
   const values: Record<string, unknown> = {
     edition_times: { subh: d.subh, dopahar: d.dopahar, shaam: d.shaam }, timezone: "Asia/Karachi", publish_policy: d.publish_policy, editor_name: d.editor_name,
     site_name_en: d.site_name_en, site_name_ur: d.site_name_ur, disclosure_en: d.disclosure_en, disclosure_ur: d.disclosure_ur, digits_ur: d.digits_ur,
     default_theme: d.default_theme, default_mode: d.default_mode, hijri_adjust: d.hijri_adjust, ntfy_note: d.ntfy_note,
+    translate_daily_limit: d.translate_daily_limit,
   };
   const timesChanged = await db.transaction(async (tx) => {
     const [prev] = await tx.select({ value: settings.value }).from(settings).where(eq(settings.key, "edition_times")).for("update");
