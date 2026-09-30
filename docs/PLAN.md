@@ -428,7 +428,7 @@ Next.js App Router with TypeScript, the stack you already run in the World-Model
 - **PWA.** Manifest, install prompt, the service worker above, and web push for the three edition times (later). A native app is not needed for v1.
 - **Feeds out.** RSS and JSON Feed per locale, private to each account: a feed reader cannot sign in, so each reader makes a secret link with a token on their account page (`/{locale}/feed.xml?token=…`), which they can replace or turn off. Signing out everywhere, a password change or reset, an owner's sign-out and disabling the account turn it off too (it outlives a session, so it must not outlive "sign out everywhere"). Without a valid token the feeds answer 401. The deskboard widget can consume the product through an owner's link instead of its own pipeline.
 - **Share images.** Open Graph image per edition and per story generated at publish time; render Urdu ones with a headless browser rather than Satori, whose RTL and Nastaliq support is unreliable.
-- **Hosting.** Vercel or Cloudflare (OpenNext) for the app, Neon or Supabase for Postgres, Cloudflare R2 or S3 for edition snapshots and images. The laptop worker talks only to an authenticated publish API, never to the database directly, so the laptop can be replaced by a server later without touching the app.
+- **Hosting.** One Docker image (`web/Dockerfile`) on the Hetzner server in Germany under Coolify (Traefik, Let's Encrypt) at https://tabayyun.code19.dev, with a Coolify-managed PostgreSQL 17 on the same server and the edition snapshots and images on the app's persistent `/data` volume, backed up nightly off the server (docs/DEPLOY.md, 30 September 2026; it replaces the earlier Vercel or Cloudflare, Neon or Supabase, R2 or S3 plan). The laptop worker talks only to an authenticated publish API, never to the database directly, so the laptop can be replaced by a server later without touching the app.
 - **Accessibility baseline.** WCAG 2.2 AA everywhere, AAA in Wazeh with high contrast. Keyboard navigation, visible focus, no hover-only controls, 44 px targets on mobile.
 - **Analytics.** Privacy-friendly (Plausible or Umami), no tracking cookies; the only cookie is the sign-in session, which needs no consent banner.
 - **Admin.** Same app under `/admin`, for editors and owners signed in with their own accounts (D2), route handlers with zod.
@@ -572,7 +572,7 @@ Decisions only you can make:
 - [x] Publishing policy: publish every edition at once and review afterwards, story by story (D14, 29 September 2026); holding when a story is flagged (`auto`) or always (`hold`) stays selectable.
 - [ ] Groups at launch: the six proposed; keep deskboard's AI, robotics and science topics as a private "Tech" group or leave them in deskboard only.
 - [x] Billing: the Claude subscription through Claude Code on this laptop, later a dedicated one (decided 28 September 2026); no API key. Usage limits are shared with interactive Claude Code use on the same account.
-- [ ] Hosting: Vercel or Cloudflare for the app; Neon or Supabase for Postgres.
+- [x] Hosting: the Hetzner server under Coolify, the app as one Docker image and a Coolify-managed PostgreSQL 17 (30 September 2026, docs/DEPLOY.md).
 - [x] The named human editor: each reviewed story names its reviewer (D14); Settings' editor name is the "editor in charge" in the footer.
 - [ ] Urdu digits: Western by default (CLDR) or Urdu digits, at least for Wazeh (each reader can now choose, D4).
 - [ ] Landing language: Urdu first or English first for a new visitor.

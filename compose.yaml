@@ -1,5 +1,5 @@
-# Local Postgres, for development and for the laptop deployment (infra/README.md). A hosted
-# deployment would use Neon or Supabase instead (see docs/PLAN.md).
+# Local Postgres, for development and for running the site on the laptop (infra/README.md). The live
+# site uses a Coolify-managed Postgres 17 on the Hetzner server (docs/DEPLOY.md).
 services:
   db:
     image: postgres:17-alpine

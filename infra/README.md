@@ -2,6 +2,11 @@
 
 Everything runs as systemd **user** units, so nothing here needs root except the lid settings.
 
+The live site and its database run on the Hetzner server ([docs/DEPLOY.md](../docs/DEPLOY.md)); the laptop runs
+the worker, with `SITE_URL=https://tabayyun.code19.dev` in `worker/.env`. Steps 1 and 2 put the database and the
+web app on the laptop, for development or as a fallback; for the worker alone skip them and leave
+`teenpehr-web.service` uninstalled (the worker units' `Wants=` would start it).
+
 ```bash
 loginctl enable-linger $USER                  # user units run without a login session and after a reboot
 mkdir -p ~/.config/systemd/user && cp infra/systemd/* ~/.config/systemd/user/
@@ -39,7 +44,7 @@ limits as interactive sessions on it; the dollar figures in run logs and the adm
 does not stop the timer). When the CLI is signed out, the next due slot fails once (an ntfy alert) and
 runs as soon as `uv run teenpehr health` shows `"logged_in": true` again.
 
-Rebuild after every web change (step 2's build line), then `systemctl --user restart teenpehr-web`.
+When the laptop serves the site: rebuild after every web change (step 2's build line), then `systemctl --user restart teenpehr-web`.
 The worker units also pull `teenpehr-web.service` in (`Wants=`) and start only once it answers, so
 a run after a reboot finds the API up even if step 2's `enable` was skipped; step 2 still matters
 for readers.
@@ -113,4 +118,5 @@ closed the endpoint). The collector also posts its own ntfy note when a single L
 Logs: `journalctl --user -u news-worker -f` (or `x-collector`, `teenpehr-web`, `teenpehr-jobs`).
 
 Edition snapshots (the JSON written at publish) go to `~/.local/share/teenpehr/snapshots`, set by
-`EDITION_SNAPSHOT_DIR` in `teenpehr-web.service`; never inside `web/.next/`, which each build wipes.
+`EDITION_SNAPSHOT_DIR` in `teenpehr-web.service` (on the server, `/data/snapshots`); never inside `web/.next/`,
+which each build wipes.

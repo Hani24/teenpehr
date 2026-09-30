@@ -2,7 +2,8 @@
 
 The Next.js app for Tabayyun: reader site (`app/[locale]`, invite-only), admin (`app/admin`), worker API
 (`app/api/worker`, bearer token, outside the login wall). See the root [README](../README.md),
-[docs/PLAN.md](../docs/PLAN.md) and [docs/API.md](../docs/API.md).
+[docs/PLAN.md](../docs/PLAN.md) and [docs/API.md](../docs/API.md). The live site is one Docker image (`Dockerfile`)
+on the Hetzner server under Coolify: [docs/DEPLOY.md](../docs/DEPLOY.md).
 
 ```bash
 npm run dev          # http://localhost:3000/en · /ur · /admin
@@ -10,7 +11,7 @@ npm run typecheck && npm run lint && npm run build
 npm run db:push -- --force && npm run db:seed   # dev schema (db:prepare first, then drizzle-kit push) + seed data (db/seed/*.json)
 npm run sources:apply -- --dry-run   # then without --dry-run: apply the audited source list (D11) to an existing database
 npm run db:backfill  # after a schema push on an existing database: one-off data fixes (idempotent, see db/backfill.ts)
-npm run db:migrate   # a new production database: applies db/migrations/ in order
+npm run db:migrate   # a new database by hand: applies db/migrations/ in order (the Docker image migrates itself at start)
 npm run user:invite -- --email you@example.com --role owner   # print a one-time invite link (first owner; --kind reset for a new password)
 npm run fonts        # re-download and subset every self-hosted font (bash scripts/fonts.sh nastaliq naskh vazir for some)
 ```
@@ -26,13 +27,19 @@ index by index):
   `npm run db:backfill`, which makes the data changes the migrations carry (the Wazeh and Tabayyun renames,
   the default palette).
   Push re-applies the `'{}'::text[]` array defaults every time; that is a drizzle-kit quirk and changes nothing.
-- **Migrations** (a new production database): `npm run db:migrate` applies `db/migrations/` in order:
-  `0000_extensions` (custom), `0001_baseline` (generated from the schema), `0002_wazeh_tabayyun` and
-  `0003_default_palette` (data), `0004_story_images` and `0005_feedback_jobs_manual` (D7–D13). Then `npm run db:seed`.
+- **Migrations** (production, and a new database): `db/migrations/` in order: `0000_extensions` (custom),
+  `0001_baseline` (generated from the schema), `0002_wazeh_tabayyun` and `0003_default_palette` (data),
+  `0004_story_images` and `0005_feedback_jobs_manual` (D7–D13), `0006_review_state` (D14). The Docker image applies
+  them at every start (`scripts/migrate.mjs`, run by `scripts/docker-entrypoint.sh`): what is newer than the
+  journal, all of them on an empty database, and on a pushed database restored from a dump (tables, no journal) it
+  records the migrations its structure already matches, compared with each migration's snapshot, without running
+  them (docs/DEPLOY.md); `node scripts/migrate.mjs --dry-run` says what it would do. By hand on a new database:
+  `npm run db:migrate`, then `npm run db:seed`.
   The seed switches a source on only when its recorded audit check is `ok` (D11); on an existing database use
   `npm run sources:apply` instead, which also follows moved feeds (`previous_urls`) and turns failing rows off.
-  After a schema change, `npm run db:generate` adds the next one. Do not run migrations on a pushed
-  database: its tables already exist; keep it on push.
+  After a schema change, `npm run db:generate` adds the next one; commit its `meta/` snapshot and journal too (the
+  migrator compares against them). Do not run `npm run db:migrate` on a pushed database: its tables already exist;
+  keep it on push.
 
 Nothing the worker stores is deleted (docs/PLAN.md, D5). Search: `stories.search_en` (English, stemmed,
 weighted title > keywords and summary > why and contested), `stories.search_ur` and `items.search` (`simple`) are
@@ -42,7 +49,7 @@ stories and items without those columns and without `raw` (see `lib/queries.ts`)
 Published data is cached across requests (`lib/queries.ts`: `unstable_cache` with the tags `editions` and
 `settings`, Dates revived on the way out). Publishing expires `editions` (`lib/admin/publish.ts`), and every admin
 action that changes what readers see expires both; a change made outside the app (psql, a backfill) shows within
-ten minutes, or at once after `systemctl --user restart teenpehr-web`.
+ten minutes, or at once after a restart (`systemctl --user restart teenpehr-web` on the laptop, Restart in Coolify).
 
 ## Accounts
 
@@ -139,11 +146,12 @@ the year 2000, so they never collide with real slots or snapshot files.
 - **Messages.** `messages/en.json` and `ur.json` have the same keys; `global.d.ts` types `t()` against
   `en.json`, so `npm run typecheck` fails on a key that does not exist.
 - **Snapshots.** Published editions are also written as JSON to `EDITION_SNAPSHOT_DIR` (default
-  `~/.local/share/teenpehr/snapshots`), never inside `.next/`, which every build wipes. Each story carries its
+  `~/.local/share/teenpehr/snapshots`; `/data/snapshots` in the Docker image), never inside `.next/`, which every build wipes. Each story carries its
   image's metadata (credit, alt, size, `graphic`, variant files), not the image itself.
 - **Publisher images** (docs/PLAN.md D6). The worker uploads each story's image through `POST /api/worker/images`
   as re-encoded WebP variants; the files go to `MEDIA_DIR` as `<sha256>-<w>.webp` (absolute; default
-  `~/.local/share/teenpehr/media`; the systemd unit sets the same, never inside `.next/`) and the row to `images`.
+  `~/.local/share/teenpehr/media`; the systemd unit sets the same, the Docker image `/data/media`; never inside `.next/`)
+  and the row to `images`.
   `GET /media/<file>` serves them to signed-in readers only (`app/media/[file]/route.ts`, walled by the proxy too),
   privately cached for a year; a reader gets only files a published, not-hidden story shows (editors get any). Back the directory up with the database: a published story's image lives only there.
   Names, limits and the `<img>` attributes are in `lib/media.ts`; files in `lib/media-store.ts` (server only).

@@ -19,10 +19,11 @@ editable copy is the Claude Doc "Bilingual News Digest Plan".
 | `web/` | Next.js 16 app: invite-only reader site (en/ur, RTL, palettes and the Wazeh reading mode), admin, accounts, and the worker API |
 | `worker/` | Python worker (Claude Agent SDK): collect → dedupe → curate → Urdu → QA → publish |
 | `infra/systemd/` | User timers and services for the laptop (3 editions/day, X collector, alerts) |
-| `docs/` | Plan, research, API contract |
+| `docs/` | Plan, research, API contract, deployment runbook |
 | `compose.yaml` | Local Postgres 17 |
 
-Production build for the laptop or a VPS: `cd web && npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && node .next/standalone/server.js` (see `infra/systemd/teenpehr-web.service`). On the laptop, [infra/README.md](infra/README.md) sets up the whole stack as user units that come back after a reboot: the database, the web app, the edition and X timers, and ntfy alerts.
+The live site runs as one Docker image (`web/Dockerfile`) on the Hetzner server under Coolify, at
+https://tabayyun.code19.dev: [docs/DEPLOY.md](docs/DEPLOY.md). Production build on the laptop instead: `cd web && npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && node .next/standalone/server.js` (see `infra/systemd/teenpehr-web.service`). On the laptop, [infra/README.md](infra/README.md) sets up the whole stack as user units that come back after a reboot: the database, the web app, the edition and X timers, and ntfy alerts.
 
 ## Quickstart
 
